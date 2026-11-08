@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-08T14:35:06.164299+00:00",
+  "updated_at": "2026-11-08T14:37:33.561087+00:00",
   "contacted_emails": [
     "benny.json@gmail.com",
     "support@0xinsider.com",
@@ -8,7 +8,8 @@
     "manny.ruesch@gmail.com",
     "info@ddm-it.de",
     "unclecode@kidocode.com",
-    "info+oss@xbp-europe.com"
+    "info+oss@xbp-europe.com",
+    "tsenangthatayotlhe04@gmail.com"
   ],
   "contacted_users": [
     "bennyjo",
@@ -18,7 +19,8 @@
     "manny-ruesch",
     "dasdigitalemomentum",
     "unclecode",
-    "xbp-europe"
+    "xbp-europe",
+    "thatayotlhe04"
   ],
   "history": [
     {
@@ -76,6 +78,13 @@
       "track": "track_b",
       "repo": "XBP-Europe/sagemath-mcp",
       "sent_date": "2026-11-08T14:35:06.164299+00:00"
+    },
+    {
+      "username": "thatayotlhe04",
+      "email": "tsenangthatayotlhe04@gmail.com",
+      "track": "track_b",
+      "repo": "Thatayotlhe04/Parallelogram",
+      "sent_date": "2026-11-08T14:37:33.561066+00:00"
     }
   ]
 }
