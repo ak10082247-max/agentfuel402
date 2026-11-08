@@ -1,0 +1,14 @@
+{
+  "actorOutputSchemaVersion": 1,
+  "title": "AgentFuel402 Output Schema",
+  "description": "Defines the output results of the AgentFuel402 data factory",
+  "type": "object",
+  "properties": {
+    "dataset": {
+      "type": "string",
+      "title": "Results Dataset",
+      "description": "Dataset containing all acquired lead signals, clean Markdown, or e-commerce records",
+      "template": "{{links.apiDefaultDatasetUrl}}/items"
+    }
+  }
+}

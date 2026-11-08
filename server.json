@@ -1,0 +1,14 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schema/server.json",
+  "name": "io.github.ak10082247-max/agentfuel402",
+  "title": "AgentFuel402 — Consumable Data Factory",
+  "description": "High-frequency consumable B2B leads, e-commerce stock, clean Markdown, and SDK metadata for AI agents via MCP.",
+  "version": "1.0.0",
+  "remotes": [
+    {
+      "type": "http",
+      "url": "https://agentfuel402.ak10082247.workers.dev/mcp"
+    }
+  ],
+  "categories": ["finance", "developer-tools", "productivity"]
+}

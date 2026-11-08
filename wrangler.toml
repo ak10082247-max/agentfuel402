@@ -1,0 +1,14 @@
+name = "agentfuel402"
+main = "worker.js"
+compatibility_date = "2024-11-11"
+account_id = "399816be9d4332789f68c30dfb87f390"
+workers_dev = true
+
+[vars]
+SERVICE_NAME = "agentfuel402"
+ENVIRONMENT = "production"
+MERCHANT_BASE_ADDRESS = "0x80E0Ae84679b7f11bE171DaADd492FBECf628cd6"
+MERCHANT_SOLANA_ATA = "DD3A7jaXFeHcif9eYj6Vhomuxypat5Yxi8ow6wxz27yL"
+MERCHANT_SOLANA_OWNER = "9wuMysgXwNhtQeqJgGByAiMYc4EjzZ5wUSmnjrrt3ffh"
+SOLANA_FEE_PAYER = "CjNFTjvBhbJJd2B5ePPMHRLx1ELZpa8dwQgGL727eKww"
+PAYAI_FACILITATOR = "https://facilitator.payai.network"

@@ -1,0 +1,27 @@
+name: AgentFuel402 Edge Keepalive & Health Probe
+
+on:
+  schedule:
+    - cron: "0 */4 * * *"
+  workflow_dispatch:
+
+jobs:
+  ping_edge:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Health Check Cloudflare Edge
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://agentfuel402.ak10082247.workers.dev/health)
+          echo "Health status: $STATUS"
+          if [ "$STATUS" -ne 200 ]; then
+            echo "Health check failed with $STATUS"
+            exit 1
+          fi
+
+      - name: Probe Free Preview Route
+        run: |
+          PREVIEW_STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://agentfuel402.ak10082247.workers.dev/v1/preview/b2b-intent-leads)
+          echo "Preview status: $PREVIEW_STATUS"
+          if [ "$PREVIEW_STATUS" -ne 200 ]; then
+            exit 1
+          fi

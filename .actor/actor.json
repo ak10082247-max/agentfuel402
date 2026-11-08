@@ -1,0 +1,33 @@
+{
+  "actorSpecification": 1,
+  "name": "agentfuel402",
+  "title": "AgentFuel402: B2B Intent Leads, E-Com Price & Clean Markdown Factory",
+  "description": "High-frequency consumable data engine for AI agents & scrapers: B2B buying signals from Show HN, SSRF-safe Markdown sanitization, and live e-commerce price & stock monitoring.",
+  "version": "1.0",
+  "dockerfile": "../Dockerfile",
+  "readme": "../README.md",
+  "payPerEvent": {
+    "events": {
+      "lead-signal-fetch": {
+        "eventTitle": "Lead Signal Fetch",
+        "eventDescription": "Real-time B2B buying intent signal extraction from newly launched tech companies, hiring alerts, and tech stacks.",
+        "eventPriceUsd": 0.03
+      },
+      "clean-markdown-fetch": {
+        "eventTitle": "Clean Markdown Fetch",
+        "eventDescription": "SSRF-protected, ad-free clean Markdown conversion with deterministic prompt-injection defense.",
+        "eventPriceUsd": 0.015
+      },
+      "ecom-product-check": {
+        "eventTitle": "E-Commerce Product Check",
+        "eventDescription": "Live price, in-stock availability, SKU variants, and discount delta extraction for Shopify and Schema.org products.",
+        "eventPriceUsd": 0.015
+      }
+    }
+  },
+  "input": "./input_schema.json",
+  "output": "./output_schema.json",
+  "storages": {
+    "dataset": "./dataset_schema.json"
+  }
+}

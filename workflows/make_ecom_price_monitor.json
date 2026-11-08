@@ -1,0 +1,42 @@
+{
+  "name": "AgentFuel402 - E-Commerce Price & Stock Live Monitor",
+  "scenario": {
+    "modules": [
+      {
+        "id": 1,
+        "module": "builtin:BasicTrigger",
+        "version": 1,
+        "parameters": {
+          "interval": 3600
+        },
+        "metadata": {
+          "designer": {
+            "x": 0,
+            "y": 0
+          }
+        }
+      },
+      {
+        "id": 2,
+        "module": "http:ActionMakeRequest",
+        "version": 3,
+        "parameters": {
+          "url": "https://agentfuel402.ak10082247.workers.dev/v1/preview/ecom-price-stock",
+          "method": "GET",
+          "headers": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "metadata": {
+          "designer": {
+            "x": 300,
+            "y": 0
+          }
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,71 @@
+{
+  "actorSpecification": 1,
+  "schemaVersion": 1,
+  "title": "AgentFuel402 Dataset Schema",
+  "description": "Real-time non-cacheable data points from B2B intent signals, clean Markdown, e-commerce pricing, and live SDK metadata.",
+  "fields": {
+    "status": {
+      "type": "string",
+      "title": "Status",
+      "description": "Execution status",
+      "example": "success",
+      "nullable": false
+    },
+    "event_name": {
+      "type": "string",
+      "title": "Charged Event",
+      "description": "Apify Pay-Per-Event identifier",
+      "example": "lead-signal-fetch",
+      "nullable": false
+    },
+    "feed": {
+      "type": "string",
+      "title": "Feed Endpoint",
+      "description": "Feed identifier",
+      "example": "/v1/fuel/b2b-intent-leads",
+      "nullable": false
+    },
+    "timestamp_ms": {
+      "type": "number",
+      "title": "Timestamp (ms)",
+      "description": "Timestamp of observation",
+      "example": 1730000000000,
+      "nullable": false
+    },
+    "leads": {
+      "type": "array",
+      "title": "B2B Leads",
+      "description": "Array of extracted buying intent signals",
+      "nullable": true
+    },
+    "markdown": {
+      "type": "string",
+      "title": "Clean Markdown",
+      "description": "Sanitized LLM Markdown content",
+      "nullable": true
+    },
+    "price": {
+      "type": "number",
+      "title": "Price",
+      "description": "Real-time product price",
+      "nullable": true
+    }
+  },
+  "views": {
+    "overview": {
+      "title": "Overview",
+      "transformation": {
+        "fields": ["status", "event_name", "feed", "timestamp_ms"]
+      },
+      "display": {
+        "component": "table",
+        "properties": {
+          "status": { "label": "Status" },
+          "event_name": { "label": "Event" },
+          "feed": { "label": "Feed Endpoint" },
+          "timestamp_ms": { "label": "Timestamp (ms)" }
+        }
+      }
+    }
+  }
+}

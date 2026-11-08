@@ -1,0 +1,39 @@
+{
+  "title": "AgentFuel402 Input Schema",
+  "type": "object",
+  "schemaVersion": 1,
+  "properties": {
+    "mode": {
+      "title": "Execution Mode",
+      "type": "string",
+      "description": "Select data feed engine to execute",
+      "editor": "select",
+      "default": "b2b-intent-leads",
+      "enum": ["b2b-intent-leads", "llm-clean-markdown", "ecom-price-stock"],
+      "enumTitles": ["B2B Intent Leads ($0.030 USD)", "LLM Clean Markdown ($0.015 USD)", "E-Commerce Price & Stock ($0.015 USD)"]
+    },
+    "url": {
+      "title": "Target URL",
+      "type": "string",
+      "description": "Target webpage or product URL for Markdown or E-Commerce extraction",
+      "editor": "textfield",
+      "default": "https://news.ycombinator.com"
+    },
+    "limit": {
+      "title": "Leads Limit",
+      "type": "integer",
+      "description": "Maximum number of B2B lead signals to return",
+      "default": 10,
+      "minimum": 1,
+      "maximum": 50
+    },
+    "category": {
+      "title": "B2B Category",
+      "type": "string",
+      "description": "Filter leads by industry / category",
+      "default": "all",
+      "editor": "select",
+      "enum": ["all", "ai", "devtools", "saas", "ecommerce"]
+    }
+  }
+}
