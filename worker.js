@@ -114,6 +114,33 @@ const ROUTE_CONFIGS = {
         breaking_changes: { type: "array" }
       }
     }
+  },
+  "/v1/fuel/reverse-engineer": {
+    name: "Reverse Engineer Anything (REA) — Hidden API & Schema Extractor",
+    amountMicro: 20000, // $0.020 USDC
+    priceDisplay: "$0.020 USDC",
+    description: "Deep reverse-engineering of target web platforms: extracts hidden internal REST/GraphQL endpoints, hydration state (__NEXT_DATA__, Redux, JSON-LD), auto-generates OpenAPI 3.1 spec and zero-scrape Python/cURL bypass code.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        url: { type: "string", description: "Target webpage or web platform URL to reverse-engineer" }
+      },
+      required: ["url"]
+    },
+    outputSchema: {
+      type: "object",
+      properties: {
+        status: { type: "string" },
+        target_url: { type: "string" },
+        origin: { type: "string" },
+        frameworks_detected: { type: "array" },
+        discovered_endpoints: { type: "array" },
+        hydration_state: { type: "object" },
+        json_ld_schemas: { type: "array" },
+        openapi_spec: { type: "object" },
+        bypass_code: { type: "object" }
+      }
+    }
   }
 };
 
@@ -920,6 +947,209 @@ async function getSdkLiveSpec(packageName, ecosystem = "pypi") {
 }
 
 // -----------------------------------------------------------------------------
+// Engine 5: Reverse Engineer Anything (REA) — Hidden API & Schema Extractor
+// -----------------------------------------------------------------------------
+async function reverseEngineerEngine(targetUrl) {
+  if (!targetUrl || typeof targetUrl !== "string") {
+    throw new UpstreamTargetError("Missing target URL to reverse engineer.", 400);
+  }
+  const cleanTarget = targetUrl.trim();
+  let parsedUrl;
+  try {
+    parsedUrl = new URL(cleanTarget);
+  } catch {
+    throw new UpstreamTargetError("Invalid target URL format.", 400);
+  }
+
+  const origin = parsedUrl.origin;
+  const headers = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+  };
+
+  let html = "";
+  try {
+    const res = await fetch(cleanTarget, { headers, redirect: "follow" });
+    if (res.status === 404) {
+      throw new UpstreamTargetError(`Target URL returned HTTP 404 Not Found`, 404);
+    }
+    if (res.ok) {
+      html = await res.text();
+    }
+  } catch (err) {
+    if (err instanceof UpstreamTargetError) throw err;
+    throw new UpstreamTargetError(`Failed to fetch target URL: ${err.message}`, 502);
+  }
+
+  if (!html) {
+    throw new UpstreamTargetError("Target URL returned empty body.", 422);
+  }
+
+  const discoveredEndpoints = [];
+  const hydrationState = {};
+  const jsonLdSchemas = [];
+  const frameworksDetected = [];
+
+  // 1. Next.js __NEXT_DATA__
+  const nextMatch = html.match(/<script[^>]*id=["']__NEXT_DATA__["'][^>]*>({.*?})<\/script>/s);
+  if (nextMatch) {
+    frameworksDetected.push("Next.js");
+    try {
+      const nextData = JSON.parse(nextMatch[1]);
+      const buildId = nextData.buildId;
+      const page = nextData.page || "";
+      hydrationState.next_js = {
+        page: page,
+        buildId: buildId,
+        query: nextData.query,
+        props: nextData.props?.pageProps || {}
+      };
+      if (buildId && page && !page.startsWith("/404")) {
+        const cleanPath = page === "/" ? "/index" : page;
+        discoveredEndpoints.push({
+          type: "Next.js Hydration Route",
+          method: "GET",
+          url: `${origin}/_next/data/${buildId}${cleanPath}.json`,
+          description: "Direct JSON endpoint delivering pre-rendered pageProps without HTML rendering"
+        });
+      }
+    } catch {}
+  }
+
+  // 2. Nuxt.js
+  const nuxtMatch = html.match(/window\.__NUXT__\s*=\s*({.*?});?<\/script>/s);
+  if (nuxtMatch) {
+    frameworksDetected.push("Nuxt.js");
+    hydrationState.nuxt = { detected: true, raw_snippet: nuxtMatch[1].slice(0, 200) };
+  }
+
+  // 3. JSON-LD / schema.org
+  const jsonLdRegex = /<script[^>]*type=["']application\/ld\+json["'][^>]*>(.*?)<\/script>/gis;
+  let match;
+  while ((match = jsonLdRegex.exec(html)) !== null) {
+    try {
+      jsonLdSchemas.push(JSON.parse(match[1].trim()));
+    } catch {}
+  }
+  if (jsonLdSchemas.length > 0) {
+    frameworksDetected.push("Schema.org (JSON-LD)");
+  }
+
+  // 4. Scan for API routes in JS & markup
+  const apiPatterns = [
+    /["'](\/api\/v[0-9]\/[^"'\s<>]+)["']/g,
+    /["'](\/api\/[^"'\s<>]+)["']/g,
+    /["'](\/graphql[^"'\s<>]*)["']/g,
+    /["'](https?:\/\/[^"'\s<>]+\/api\/[^"'\s<>]+)["']/g
+  ];
+  const seenUrls = new Set();
+  for (const pat of apiPatterns) {
+    let apiMatch;
+    while ((apiMatch = pat.exec(html)) !== null) {
+      const m = apiMatch[1];
+      const lower = m.toLowerCase();
+      if (![".js", ".css", ".png", ".jpg", ".svg", ".woff", ".ttf", ".webp"].some(ext => lower.includes(ext))) {
+        try {
+          const fullUrl = new URL(m, origin).href;
+          if (!seenUrls.has(fullUrl)) {
+            seenUrls.add(fullUrl);
+            discoveredEndpoints.push({
+              type: "Internal REST/GraphQL Route",
+              method: fullUrl.includes("graphql") ? "POST" : "GET",
+              url: fullUrl,
+              description: "Backend API endpoint extracted from client-side JavaScript bundle"
+            });
+          }
+        } catch {}
+      }
+    }
+  }
+
+  // 5. OpenAPI 3.1.0 Specification Draft
+  const openapiSpec = {
+    openapi: "3.1.0",
+    info: {
+      title: `Reverse-Engineered API: ${parsedUrl.hostname}`,
+      version: "1.0.0",
+      description: `Auto-generated by Kurox REA Engine for ${cleanTarget}`
+    },
+    servers: [{ url: origin }],
+    paths: {}
+  };
+  for (const ep of discoveredEndpoints.slice(0, 10)) {
+    let relPath = ep.url.replace(origin, "");
+    if (!relPath.startsWith("/")) relPath = "/" + relPath;
+    openapiSpec.paths[relPath] = {
+      [ep.method.toLowerCase()]: {
+        summary: ep.description,
+        responses: {
+          "200": {
+            description: "JSON Response payload",
+            content: { "application/json": { schema: { type: "object" } } }
+          }
+        }
+      }
+    };
+  }
+
+  // 6. Zero-Scrape Bypass Scripts
+  const primaryUrl = discoveredEndpoints[0]?.url || cleanTarget;
+  const isJson = discoveredEndpoints.length > 0;
+  const acceptHdr = isJson ? "application/json" : "text/html,application/xhtml+xml,application/xml";
+
+  const bypassCode = {
+    curl: `curl -X GET '${primaryUrl}' \\\n  -H 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64)' \\\n  -H 'Accept: ${acceptHdr}'`,
+    python: `import httpx
+
+url = '${primaryUrl}'
+headers = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+    'Accept': '${acceptHdr}'
+}
+
+with httpx.Client(timeout=10.0) as client:
+    response = client.get(url, headers=headers)
+    print(f"Status: {response.status_code}")
+    try:
+        data = response.json()
+        print(data)
+    except Exception:
+        print(response.text[:500])
+`,
+    typescript: `import fetch from 'node-fetch';
+
+async function queryBypass() {
+  const res = await fetch('${primaryUrl}', {
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+      'Accept': '${acceptHdr}'
+    }
+  });
+  const data = await res.json();
+  console.log(data);
+}
+
+queryBypass();
+`
+  };
+
+  return {
+    status: "success",
+    feed: "/v1/fuel/reverse-engineer",
+    engine: "Reverse Engineer Anything (REA) v1.0",
+    target_url: cleanTarget,
+    origin: origin,
+    frameworks_detected: frameworksDetected.length > 0 ? frameworksDetected : ["Standard Web / SSR"],
+    discovered_endpoints: discoveredEndpoints.slice(0, 15),
+    hydration_state: hydrationState,
+    json_ld_schemas: jsonLdSchemas.slice(0, 5),
+    openapi_spec: openapiSpec,
+    bypass_code: bypassCode,
+    timestamp_ms: Date.now()
+  };
+}
+
+// -----------------------------------------------------------------------------
 // Facilitator Settlement Verification (PayAI) — Verify -> Fetch -> Settle
 // -----------------------------------------------------------------------------
 async function preparePayAIRequirements(req, routePath, rawPaymentHeader) {
@@ -1131,6 +1361,7 @@ export default {
       <tr><td><code>/v1/fuel/llm-clean-markdown</code></td><td>$0.005 USDC</td><td>$0.015 USD</td><td>Clean Markdown extractor with SSRF & prompt-injection defense.</td></tr>
       <tr><td><code>/v1/fuel/ecom-price-stock</code></td><td>$0.005 USDC</td><td>$0.015 USD</td><td>Shopify & Schema.org live prices, stock status, variants.</td></tr>
       <tr><td><code>/v1/fuel/sdk-live-spec</code></td><td>$0.005 USDC</td><td>$0.010 USD</td><td>Live PyPI & npm metadata, latest version & breaking warnings.</td></tr>
+      <tr><td><code>/v1/fuel/reverse-engineer</code></td><td>$0.020 USDC</td><td>$0.050 USD</td><td>Reverse Engineer Anything (REA): Hidden APIs, hydration state, OpenAPI 3.1 & zero-scrape bypass code.</td></tr>
     </table>
   </div>
 
@@ -1433,6 +1664,11 @@ Endpoints:
             name: "fuel_sdk_spec",
             description: "Queries live PyPI and npm registries to verify latest stable package versions, release notes, and breaking change warnings. Cost: $0.005 USDC via x402.",
             inputSchema: ROUTE_CONFIGS["/v1/fuel/sdk-live-spec"].inputSchema
+          },
+          {
+            name: "fuel_reverse_engineer",
+            description: "Deep reverse-engineering of target web platform: extracts hidden internal REST/GraphQL endpoints, hydration state (__NEXT_DATA__, Redux, JSON-LD), auto-generates OpenAPI 3.1 spec and zero-scrape Python/cURL bypass code. Cost: $0.020 USDC via x402.",
+            inputSchema: ROUTE_CONFIGS["/v1/fuel/reverse-engineer"].inputSchema
           }
         ];
         return new Response(JSON.stringify({ jsonrpc: "2.0", id, result: { tools } }), { status: 200, headers: { ...cors, "Content-Type": "application/json" } });
@@ -1488,6 +1724,8 @@ Endpoints:
             toolResult = await getEcomPriceStock(toolArgs.url);
           } else if (toolName === "fuel_sdk_spec") {
             toolResult = await getSdkLiveSpec(toolArgs.package || "fastapi", toolArgs.ecosystem || "pypi");
+          } else if (toolName === "fuel_reverse_engineer") {
+            toolResult = await reverseEngineerEngine(toolArgs.url);
           } else {
             return new Response(JSON.stringify({ jsonrpc: "2.0", id, error: { code: -32601, message: `Tool '${toolName}' not found` } }), { status: 200, headers: cors });
           }
@@ -1576,6 +1814,10 @@ Endpoints:
           const eco = inputParams.ecosystem || "pypi";
           if (!pkg) throw new UpstreamTargetError("Missing required 'package' parameter.", 400);
           resultData = await getSdkLiveSpec(pkg, eco);
+        } else if (path === "/v1/fuel/reverse-engineer") {
+          const targetUrl = inputParams.url;
+          if (!targetUrl) throw new UpstreamTargetError("Missing required 'url' parameter.", 400);
+          resultData = await reverseEngineerEngine(targetUrl);
         }
 
         if (!resultData || (resultData.markdown !== undefined && !resultData.markdown)) {

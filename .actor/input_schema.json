@@ -9,8 +9,8 @@
       "description": "Select data feed engine to execute",
       "editor": "select",
       "default": "b2b-intent-leads",
-      "enum": ["b2b-intent-leads", "llm-clean-markdown", "ecom-price-stock"],
-      "enumTitles": ["B2B Intent Leads ($0.030 USD)", "LLM Clean Markdown ($0.015 USD)", "E-Commerce Price & Stock ($0.015 USD)"]
+      "enum": ["b2b-intent-leads", "llm-clean-markdown", "ecom-price-stock", "reverse-engineer-anything"],
+      "enumTitles": ["B2B Intent Leads ($0.030 USD)", "LLM Clean Markdown ($0.015 USD)", "E-Commerce Price & Stock ($0.015 USD)", "Reverse Engineer Anything (REA) ($0.050 USD)"]
     },
     "url": {
       "title": "Target URL",

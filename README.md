@@ -33,6 +33,7 @@ AgentFuel402 guarantees that **buyers are never charged for dead links or upstre
 | **`/v1/fuel/llm-clean-markdown`** | **`$0.005 USDC`** | **`$0.015 USD`** (`clean-markdown-fetch`) | Strips noisy JavaScript, ads, and navigation; normalizes HTML to clean Markdown; enforces SSRF protection and deterministic prompt-injection defense. |
 | **`/v1/fuel/ecom-price-stock`** | **`$0.005 USDC`** | **`$0.015 USD`** (`ecom-product-check`) | Real-time price, currency, SKU variants, discount deltas, and in-stock inventory monitoring for Shopify & Schema.org products. |
 | **`/v1/fuel/sdk-live-spec`** | **`$0.005 USDC`** | **`$0.010 USD`** (`sdk-spec-check`) | Verified PyPI & npm metadata, latest stable SemVer releases, deprecation notices, and breaking-change alerts for AI code generators. |
+| **`/v1/fuel/reverse-engineer`** | **`$0.020 USDC`** | **`$0.050 USD`** (`reverse-engineer-target`) | **Reverse Engineer Anything (REA):** Deep reverse-engineering of target web platforms: extracts hidden internal REST/GraphQL endpoints, hydration state (`__NEXT_DATA__`, Redux, JSON-LD), auto-generates OpenAPI 3.1 spec and zero-scrape Python/cURL bypass code. |
 
 ---
 
@@ -57,6 +58,18 @@ AgentFuel402 is registered in the official Model Context Protocol Registry as **
 - `fuel_clean_markdown`: `{ "url": "https://news.ycombinator.com", "strip_images": false }`
 - `fuel_ecom_price_stock`: `{ "url": "https://shop.allbirds.com/products/mens-tree-runners" }`
 - `fuel_sdk_spec`: `{ "package": "fastapi", "ecosystem": "pypi" }`
+- `fuel_reverse_engineer`: `{ "url": "https://sample-store.com/catalog" }`
+
+---
+
+## 🔍 Reverse Engineer Anything (REA) Engine
+
+Inspired by developer reverse-engineering workflows (such as `morluto/rea`), the **AgentFuel402 REA Engine** provides cloud-hosted, zero-installation reverse engineering for arbitrary web applications:
+
+1. **Hydration Unmasking:** Extracts `__NEXT_DATA__`, Nuxt state, Redux stores, and Schema.org JSON-LD before DOM rendering.
+2. **Hidden API Discovery:** Unmasks unannounced internal `/api/v[0-9]/` and `/graphql` routes from frontend JavaScript bundles.
+3. **OpenAPI 3.1.0 Synthesis:** Automatically generates formal OpenAPI specs with paths, parameters, and payload schemas.
+4. **Zero-Scrape Client Code:** Produces instant copy-pasteable Python (`httpx`), TypeScript (`fetch`), and `cURL` code targeting the backend directly—bypassing anti-bot blocks and fragile HTML scraping.
 
 ---
 

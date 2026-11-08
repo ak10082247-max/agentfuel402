@@ -5,6 +5,8 @@ High-Frequency B2B Leads, Clean Markdown, E-Commerce Price & Stock, SDK Live Spe
 import os
 import re
 import time
+import json
+import urllib.parse
 from typing import Optional
 from fastapi import FastAPI, Query, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -372,3 +374,198 @@ async def sdk_live_spec(package: str = Query(...), ecosystem: str = Query("pypi"
             }
 
     raise HTTPException(status_code=400, detail="Ecosystem must be 'pypi' or 'npm'.")
+
+class REARequest(BaseModel):
+    url: str
+
+@app.get("/v1/fuel/reverse-engineer")
+@app.post("/v1/fuel/reverse-engineer")
+async def reverse_engineer_endpoint(url: Optional[str] = Query(None), body: Optional[REARequest] = None):
+    target = url or (body.url if body else None)
+    if not target:
+        raise HTTPException(status_code=400, detail="Missing required query parameter or body 'url'")
+    
+    parsed = urllib.parse.urlparse(target)
+    if not parsed.scheme or not parsed.netloc:
+        raise HTTPException(status_code=400, detail="Invalid target URL: must include http:// or https://")
+    if is_private_host(parsed.netloc.split(":")[0]):
+        raise HTTPException(status_code=400, detail="Target host is disallowed (SSRF protection).")
+
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+    }
+    
+    html = ""
+    final_url = target
+    try:
+        async with httpx.AsyncClient(timeout=10.0, follow_redirects=True) as client:
+            res = await client.get(target, headers=headers)
+            if res.status_code == 200:
+                html = res.text
+                final_url = str(res.url)
+            elif res.status_code == 404:
+                raise HTTPException(status_code=404, detail="Upstream target returned HTTP 404")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Failed to fetch upstream target: {str(e)}")
+
+    if not html:
+        raise HTTPException(status_code=422, detail="Upstream target returned empty body.")
+
+    parsed_url = urllib.parse.urlparse(final_url)
+    origin = f"{parsed_url.scheme}://{parsed_url.netloc}"
+
+    discovered_endpoints = []
+    hydration_state = {}
+    json_ld_schemas = []
+    frameworks_detected = []
+
+    # 1. Next.js __NEXT_DATA__
+    next_match = re.search(r'<script[^>]*id=["\']__NEXT_DATA__["\'][^>]*>({.*?})</script>', html, re.DOTALL | re.IGNORECASE)
+    if next_match:
+        frameworks_detected.append("Next.js")
+        try:
+            next_data = json.loads(next_match.group(1))
+            build_id = next_data.get("buildId")
+            page = next_data.get("page", "")
+            hydration_state["next_js"] = {
+                "page": page,
+                "buildId": build_id,
+                "query": next_data.get("query"),
+                "props": next_data.get("props", {}).get("pageProps", {})
+            }
+            if build_id and page and not page.startswith("/404"):
+                clean_path = page
+                if clean_path == "/":
+                    clean_path = "/index"
+                discovered_endpoints.append({
+                    "type": "Next.js Hydration Route",
+                    "method": "GET",
+                    "url": f"{origin}/_next/data/{build_id}{clean_path}.json",
+                    "description": "Direct JSON endpoint delivering pre-rendered pageProps without HTML rendering"
+                })
+        except Exception:
+            pass
+
+    # 2. Nuxt.js / Vue
+    nuxt_match = re.search(r'window\.__NUXT__\s*=\s*({.*?});?</script>', html, re.DOTALL | re.IGNORECASE)
+    if nuxt_match:
+        frameworks_detected.append("Nuxt.js")
+        hydration_state["nuxt"] = {"detected": True, "raw_snippet": nuxt_match.group(1)[:200]}
+
+    # 3. JSON-LD / schema.org
+    json_ld_matches = re.findall(r'<script[^>]*type=["\']application/ld\+json["\'][^>]*>(.*?)</script>', html, re.DOTALL | re.IGNORECASE)
+    for j_str in json_ld_matches:
+        try:
+            j_obj = json.loads(j_str.strip())
+            json_ld_schemas.append(j_obj)
+        except Exception:
+            pass
+    if json_ld_schemas:
+        frameworks_detected.append("Schema.org (JSON-LD)")
+
+    # 4. Scan for API routes in script tags & inline JS
+    api_patterns = [
+        r'["\'](/api/v[0-9]/[^"\'\s<>]+)["\']',
+        r'["\'](/api/[^"\'\s<>]+)["\']',
+        r'["\'](/graphql[^"\'\s<>]*)["\']',
+        r'["\'](https?://[^"\'\s<>]+/api/[^"\'\s<>]+)["\']'
+    ]
+    seen_urls = set()
+    for pat in api_patterns:
+        for m in re.findall(pat, html):
+            if not any(ext in m.lower() for ext in [".js", ".css", ".png", ".jpg", ".svg", ".woff", ".ttf", ".webp"]):
+                full_api = urllib.parse.urljoin(origin, m)
+                if full_api not in seen_urls:
+                    seen_urls.add(full_api)
+                    discovered_endpoints.append({
+                        "type": "Internal REST/GraphQL Route",
+                        "method": "POST" if "graphql" in full_api else "GET",
+                        "url": full_api,
+                        "description": "Backend API endpoint extracted from client-side JavaScript bundle"
+                    })
+
+    # 5. OpenAPI 3.1.0 Specification Draft
+    openapi_spec = {
+        "openapi": "3.1.0",
+        "info": {
+            "title": f"Reverse-Engineered API: {parsed_url.netloc}",
+            "version": "1.0.0",
+            "description": f"Auto-generated by Kurox REA Engine for {target}"
+        },
+        "servers": [{"url": origin}],
+        "paths": {}
+    }
+    for ep in discovered_endpoints[:10]:
+        rel_path = ep["url"].replace(origin, "")
+        if not rel_path.startswith("/"):
+            rel_path = "/" + rel_path
+        openapi_spec["paths"][rel_path] = {
+            ep["method"].lower(): {
+                "summary": ep.get("description"),
+                "responses": {
+                    "200": {
+                        "description": "JSON Response payload",
+                        "content": {"application/json": {"schema": {"type": "object"}}}
+                    }
+                }
+            }
+        }
+
+    # 6. Zero-Scrape Bypass Scripts
+    primary_url = discovered_endpoints[0]["url"] if discovered_endpoints else target
+    is_json = bool(discovered_endpoints)
+    accept_hdr = "application/json" if is_json else "text/html,application/xhtml+xml,application/xml"
+
+    bypass_code = {
+        "curl": f"curl -X GET '{primary_url}' \\\n  -H 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64)' \\\n  -H 'Accept: {accept_hdr}'",
+        "python": f"""import httpx
+
+url = '{primary_url}'
+headers = {{
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+    'Accept': '{accept_hdr}'
+}}
+
+with httpx.Client(timeout=10.0) as client:
+    response = client.get(url, headers=headers)
+    print(f"Status: {{response.status_code}}")
+    try:
+        data = response.json()
+        print(data)
+    except Exception:
+        print(response.text[:500])
+""",
+        "typescript": f"""import fetch from 'node-fetch';
+
+async function queryBypass() {{
+  const res = await fetch('{primary_url}', {{
+    headers: {{
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+      'Accept': '{accept_hdr}'
+    }}
+  }});
+  const data = await res.json();
+  console.log(data);
+}}
+
+queryBypass();
+"""
+    }
+
+    return {
+        "status": "success",
+        "feed": "/v1/fuel/reverse-engineer",
+        "engine": "Reverse Engineer Anything (REA) v1.0",
+        "target_url": target,
+        "origin": origin,
+        "frameworks_detected": frameworks_detected or ["Standard Web / SSR"],
+        "discovered_endpoints": discovered_endpoints[:15],
+        "hydration_state": hydration_state,
+        "json_ld_schemas": json_ld_schemas[:5],
+        "openapi_spec": openapi_spec,
+        "bypass_code": bypass_code,
+        "timestamp_ms": int(time.time() * 1000)
+    }

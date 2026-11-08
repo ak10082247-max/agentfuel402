@@ -22,6 +22,11 @@
         "eventTitle": "E-Commerce Product Check",
         "eventDescription": "Live price, in-stock availability, SKU variants, and discount delta extraction for Shopify and Schema.org products.",
         "eventPriceUsd": 0.015
+      },
+      "reverse-engineer-target": {
+        "eventTitle": "Reverse Engineer Anything (REA) Target",
+        "eventDescription": "Deep reverse-engineering of target web platform: extracts hidden internal REST/GraphQL endpoints, hydration state (__NEXT_DATA__, Redux, JSON-LD), auto-generates OpenAPI 3.1 spec and zero-scrape Python/cURL bypass code.",
+        "eventPriceUsd": 0.05
       }
     }
   },

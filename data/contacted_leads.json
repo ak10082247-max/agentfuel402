@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-08T15:06:17.624801+00:00",
+  "updated_at": "2026-11-08T16:45:28.349238+00:00",
   "contacted_emails": [
     "benny.json@gmail.com",
     "support@0xinsider.com",
@@ -17,7 +17,9 @@
     "hppatial@gmail.com",
     "jh@profectify.com",
     "github@aiqadam.org",
-    "sanufalahi5034@gmail.com"
+    "sanufalahi5034@gmail.com",
+    "founder@substratesystems.io",
+    "beto.zip@ludix.app"
   ],
   "contacted_users": [
     "bennyjo",
@@ -36,7 +38,9 @@
     "himanshupatial26",
     "jannikco",
     "aiqadam",
-    "mohammedfalahi"
+    "mohammedfalahi",
+    "artexis10",
+    "beto-zip"
   ],
   "history": [
     {
@@ -157,6 +161,20 @@
       "track": "track_agentfuel",
       "repo": "mohammedfalahi/ai-competitor-intelligence-engine",
       "sent_date": "2026-11-08T15:06:17.624772+00:00"
+    },
+    {
+      "username": "artexis10",
+      "email": "founder@substratesystems.io",
+      "track": "track_canaryguard",
+      "repo": "Artexis10/exomem",
+      "sent_date": "2026-11-08T16:45:21.891580+00:00"
+    },
+    {
+      "username": "beto-zip",
+      "email": "beto.zip@ludix.app",
+      "track": "track_agentfuel",
+      "repo": "beto-zip/web-scraping-firecrawl-vpn",
+      "sent_date": "2026-11-08T16:45:28.349238+00:00"
     }
   ]
 }
