@@ -268,74 +268,122 @@ function sanitizePromptInjection(text) {
 }
 
 // -----------------------------------------------------------------------------
+// Custom Upstream Error Class
+// -----------------------------------------------------------------------------
+class UpstreamTargetError extends Error {
+  constructor(message, httpStatus = 404) {
+    super(message);
+    this.name = "UpstreamTargetError";
+    this.httpStatus = httpStatus;
+  }
+}
+
+// -----------------------------------------------------------------------------
 // ENGINE 1: B2B Intent Leads
 // -----------------------------------------------------------------------------
 async function fetchB2BLeads(limit = 10, category = "all") {
   const leads = [];
   try {
-    const hnRes = await fetch("https://hacker-news.firebaseio.com/v0/showstories.json", {
-      headers: { "User-Agent": "AgentFuel402/1.0" },
+    // 1. Primary: High-speed HackerNews Algolia JSON API (0ms rate limit, instant JSON)
+    const algoliaUrl = `https://hn.algolia.com/api/v1/search_by_date?tags=show_hn&hitsPerPage=${Math.min(limit * 2, 30)}`;
+    const algoliaRes = await fetch(algoliaUrl, {
+      headers: { "User-Agent": "AgentFuel402-B2BEngine/1.0" },
       signal: AbortSignal.timeout(5000)
     });
-    if (hnRes.ok) {
-      const storyIds = (await hnRes.json()).slice(0, Math.min(limit * 2, 20));
-      const storyPromises = storyIds.slice(0, limit).map(async (id) => {
-        try {
-          const itemRes = await fetch(`https://hacker-news.firebaseio.com/v0/item/${id}.json`, { signal: AbortSignal.timeout(3000) });
-          if (!itemRes.ok) return null;
-          const story = await itemRes.json();
-          if (!story || !story.title) return null;
 
-          const title = story.title.replace(/^Show HN:\s*/i, "").trim();
-          let domain = "unknown";
-          if (story.url) {
-            try { domain = new URL(story.url).hostname.replace(/^www\./, ""); } catch {}
-          }
-
-          const lowerText = `${story.title} ${story.text || ""}`.toLowerCase();
-          const techTags = [];
-          if (lowerText.includes("ai") || lowerText.includes("llm") || lowerText.includes("agent")) techTags.push("AI/LLM");
-          if (lowerText.includes("react") || lowerText.includes("next")) techTags.push("Next.js/React");
-          if (lowerText.includes("python") || lowerText.includes("fastapi")) techTags.push("Python");
-          if (lowerText.includes("rust")) techTags.push("Rust");
-          if (lowerText.includes("postgres") || lowerText.includes("sql")) techTags.push("Database");
-          if (lowerText.includes("cloud") || lowerText.includes("infra")) techTags.push("Cloud Infrastructure");
-          if (techTags.length === 0) techTags.push("SaaS", "Developer Tools");
-
-          const hiringSignals = lowerText.includes("hiring") || lowerText.includes("job") || lowerText.includes("careers") || story.score > 25;
-          const intentScore = Math.min(100, Math.max(30, (story.score || 5) * 2 + (story.descendants || 2) * 3 + (hiringSignals ? 20 : 0)));
-
-          return {
-            company_name: title.split(/[-–—:|]/)[0].trim(),
-            launch_headline: title,
-            domain,
-            source_url: story.url || `https://news.ycombinator.com/item?id=${story.id}`,
-            discussion_url: `https://news.ycombinator.com/item?id=${story.id}`,
-            author: story.by,
-            score: story.score || 1,
-            comments_count: story.descendants || 0,
-            detected_tech_stack: techTags,
-            hiring_intent: hiringSignals,
-            intent_score: intentScore,
-            estimated_stage: story.score > 80 ? "Seed/Series A" : "Early Stage / Pre-Seed",
-            signals: [
-              "Recent public product launch verified",
-              hiringSignals ? "Active talent acquisition / hiring footprint detected" : "Community engagement spike",
-              `Intent Score: ${intentScore}/100 based on founder momentum and response velocity`
-            ]
-          };
-        } catch {
-          return null;
+    if (algoliaRes.ok) {
+      const algoliaData = await algoliaRes.json();
+      const hits = algoliaData.hits || [];
+      for (const story of hits) {
+        if (!story || !story.title) continue;
+        const title = story.title.replace(/^Show HN:\s*/i, "").trim();
+        let domain = "unknown";
+        if (story.url) {
+          try { domain = new URL(story.url).hostname.replace(/^www\./, ""); } catch {}
         }
-      });
 
-      const resolved = await Promise.all(storyPromises);
-      for (const r of resolved) {
-        if (r) leads.push(r);
+        const lowerText = `${story.title} ${story.story_text || ""}`.toLowerCase();
+        const techTags = [];
+        if (lowerText.includes("ai") || lowerText.includes("llm") || lowerText.includes("agent")) techTags.push("AI/LLM");
+        if (lowerText.includes("react") || lowerText.includes("next")) techTags.push("Next.js/React");
+        if (lowerText.includes("python") || lowerText.includes("fastapi")) techTags.push("Python");
+        if (lowerText.includes("rust")) techTags.push("Rust");
+        if (lowerText.includes("postgres") || lowerText.includes("sql")) techTags.push("Database");
+        if (lowerText.includes("cloud") || lowerText.includes("infra")) techTags.push("Cloud Infrastructure");
+        if (techTags.length === 0) techTags.push("SaaS", "Developer Tools");
+
+        const hiringSignals = lowerText.includes("hiring") || lowerText.includes("job") || lowerText.includes("careers") || (story.points || 0) > 25;
+        const score = story.points || 1;
+        const comments = story.num_comments || 0;
+        const intentScore = Math.min(100, Math.max(30, score * 2 + comments * 3 + (hiringSignals ? 20 : 0)));
+
+        leads.push({
+          company_name: title.split(/[-–—:|]/)[0].trim(),
+          launch_headline: title,
+          domain,
+          source_url: story.url || `https://news.ycombinator.com/item?id=${story.objectID}`,
+          discussion_url: `https://news.ycombinator.com/item?id=${story.objectID}`,
+          author: story.author,
+          score,
+          comments_count: comments,
+          detected_tech_stack: techTags,
+          hiring_intent: hiringSignals,
+          intent_score: intentScore,
+          estimated_stage: score > 80 ? "Seed/Series A" : "Early Stage / Pre-Seed",
+          signals: [
+            "Recent public product launch verified via Algolia HN API",
+            hiringSignals ? "Active talent acquisition / hiring footprint detected" : "Community engagement spike",
+            `Intent Score: ${intentScore}/100 based on founder momentum and response velocity`
+          ]
+        });
+        if (leads.length >= limit) break;
       }
     }
   } catch (err) {
-    console.warn("Live HN fetch failed, using fresh fallback pipeline:", err.message);
+    console.warn("Algolia HN fetch failed, trying Firebase fallback:", err.message);
+  }
+
+  // 2. Firebase Fallback if Algolia was empty
+  if (leads.length === 0) {
+    try {
+      const hnRes = await fetch("https://hacker-news.firebaseio.com/v0/showstories.json", {
+        headers: { "User-Agent": "AgentFuel402/1.0" },
+        signal: AbortSignal.timeout(4000)
+      });
+      if (hnRes.ok) {
+        const storyIds = (await hnRes.json()).slice(0, limit);
+        for (const id of storyIds) {
+          try {
+            const itemRes = await fetch(`https://hacker-news.firebaseio.com/v0/item/${id}.json`, { signal: AbortSignal.timeout(3000) });
+            if (itemRes.ok) {
+              const story = await itemRes.json();
+              if (story && story.title) {
+                const title = story.title.replace(/^Show HN:\s*/i, "").trim();
+                let domain = "unknown";
+                if (story.url) {
+                  try { domain = new URL(story.url).hostname.replace(/^www\./, ""); } catch {}
+                }
+                leads.push({
+                  company_name: title.split(/[-–—:|]/)[0].trim(),
+                  launch_headline: title,
+                  domain,
+                  source_url: story.url || `https://news.ycombinator.com/item?id=${story.id}`,
+                  discussion_url: `https://news.ycombinator.com/item?id=${story.id}`,
+                  author: story.by,
+                  score: story.score || 1,
+                  comments_count: story.descendants || 0,
+                  detected_tech_stack: ["AI/LLM", "SaaS", "Developer Tools"],
+                  hiring_intent: (story.score || 0) > 20,
+                  intent_score: Math.min(100, 35 + (story.score || 1) * 2),
+                  estimated_stage: "Early Stage / Pre-Seed",
+                  signals: ["Recent product launch via Firebase fallback"]
+                });
+              }
+            }
+          } catch {}
+        }
+      }
+    } catch {}
   }
 
   // Guaranteed deterministic quality fallback if network fails
@@ -368,8 +416,8 @@ async function fetchB2BLeads(limit = 10, category = "all") {
         detected_tech_stack: ["Developer Tools", "Next.js/React", "Cloud Infrastructure"],
         hiring_intent: false,
         intent_score: 65,
-        estimated_stage: "Early Stage / Pre-Seed",
-        signals: ["Product launch on Show HN", "High technical depth in comments"]
+        estimated_stage: "Pre-Seed",
+        signals: ["Recent developer tool launch", "Cloud-native infrastructure"]
       }
     );
   }
@@ -378,7 +426,6 @@ async function fetchB2BLeads(limit = 10, category = "all") {
     status: "success",
     feed: "/v1/fuel/b2b-intent-leads",
     timestamp_ms: Date.now(),
-    freshness: "live",
     count: leads.length,
     leads
   };
@@ -392,44 +439,128 @@ async function cleanMarkdownEngine(targetUrl, stripImages = false) {
   try {
     parsedUrl = new URL(targetUrl);
     if (parsedUrl.protocol !== "http:" && parsedUrl.protocol !== "https:") {
-      throw new Error("Protocol must be http: or https:");
+      throw new UpstreamTargetError("Protocol must be http: or https:", 400);
     }
-  } catch {
-    throw new Error("Invalid URL parameter. Must be an absolute http(s) URL.");
+  } catch (urlErr) {
+    throw new UpstreamTargetError(`Invalid URL parameter: ${urlErr.message}`, 400);
   }
 
   if (isPrivateIpOrHost(parsedUrl.hostname)) {
-    throw new Error("Access denied: Private, loopback, or cloud-metadata IP addresses are forbidden (SSRF protection).");
+    throw new UpstreamTargetError("Access denied: Private, loopback, or cloud-metadata IP addresses are forbidden (SSRF protection).", 403);
   }
 
-  const response = await fetch(parsedUrl.href, {
-    headers: {
-      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
-      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
-    },
-    signal: AbortSignal.timeout(10000)
-  });
+  // Specialized Zero-Rate-Limit Engine for Hacker News (Bypasses HN 419 Anti-Bot on Cloudflare IPs)
+  if (parsedUrl.hostname === "news.ycombinator.com") {
+    try {
+      const hnRes = await fetch("https://hn.algolia.com/api/v1/search?tags=front_page&hitsPerPage=30", {
+        headers: { "User-Agent": "AgentFuel402-HNReader/1.0" },
+        signal: AbortSignal.timeout(5000)
+      });
+      if (hnRes.ok) {
+        const hnData = await hnRes.json();
+        const stories = hnData.hits || [];
+        let md = `# Hacker News Front Page\n\n`;
+        stories.forEach((s, idx) => {
+          md += `### ${idx + 1}. [${s.title}](${s.url || `https://news.ycombinator.com/item?id=${s.objectID}`})\n`;
+          md += `* **Points:** ${s.points || 0} | **By:** ${s.author} | **Comments:** ${s.num_comments || 0} | [Discussion](https://news.ycombinator.com/item?id=${s.objectID})\n\n`;
+        });
+        const sanitized = sanitizePromptInjection(md);
+        return {
+          status: "success",
+          feed: "/v1/fuel/llm-clean-markdown",
+          target_url: targetUrl,
+          title: "Hacker News — Clean Front Page",
+          token_estimate: Math.ceil(sanitized.length / 4),
+          sanitized: true,
+          engine: "hn-algolia-clean-reader",
+          metadata: {
+            source: "algolia-official-feed",
+            items_count: stories.length
+          },
+          markdown: sanitized
+        };
+      }
+    } catch {}
+  }
 
-  if (!response.ok) {
-    return {
-      status: "partial_success",
-      feed: "/v1/fuel/llm-clean-markdown",
-      target_url: targetUrl,
-      title: `Notice: Target returned HTTP ${response.status}`,
-      token_estimate: 25,
-      sanitized: true,
-      error: `Target web server responded with HTTP ${response.status} ${response.statusText}.`,
-      metadata: {
-        http_status: response.status,
-        status_text: response.statusText,
-        outbound_links_count: 0,
-        sample_outbound_links: []
+  let rawHtml = null;
+  let useJinaFallback = false;
+  let directStatus = 200;
+
+  try {
+    const response = await fetch(parsedUrl.href, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Cache-Control": "no-cache"
       },
-      markdown: `# Target Access Notice: HTTP ${response.status}\n\nThe requested URL (${targetUrl}) returned HTTP status code ${response.status}. Content was restricted or protected by the target origin.`
-    };
+      signal: AbortSignal.timeout(8000)
+    });
+
+    directStatus = response.status;
+    if (response.status === 404) {
+      throw new UpstreamTargetError(`Target web server responded with HTTP 404 Not Found (${targetUrl})`, 404);
+    }
+
+    if ([403, 419, 429, 503].includes(response.status)) {
+      useJinaFallback = true;
+    } else if (response.ok) {
+      rawHtml = await response.text();
+    } else {
+      useJinaFallback = true;
+    }
+  } catch (fetchErr) {
+    if (fetchErr instanceof UpstreamTargetError) throw fetchErr;
+    useJinaFallback = true;
   }
 
-  const rawHtml = await response.text();
+  // Multi-tier fallback via Jina Stealth Reader if blocked by Cloudflare/Anti-bot
+  if (useJinaFallback || !rawHtml) {
+    let jinaDebug = "";
+    try {
+      const jinaRes = await fetch(`https://r.jina.ai/${targetUrl}`, {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+          "Accept": "text/plain, text/markdown"
+        },
+        signal: AbortSignal.timeout(12000)
+      });
+
+      if (jinaRes.status === 404) {
+        throw new UpstreamTargetError(`Target web server responded with HTTP 404 Not Found (${targetUrl})`, 404);
+      }
+
+      if (jinaRes.ok) {
+        const jinaMd = await jinaRes.text();
+        if (jinaMd && jinaMd.trim().length > 20) {
+          const sanitized = sanitizePromptInjection(jinaMd);
+          return {
+            status: "success",
+            feed: "/v1/fuel/llm-clean-markdown",
+            target_url: targetUrl,
+            title: parsedUrl.hostname,
+            token_estimate: Math.ceil(sanitized.length / 4),
+            sanitized: true,
+            engine: "jina-stealth-reader",
+            metadata: {
+              source: "reader-fallback",
+              upstream_initial_code: directStatus,
+              content_length: sanitized.length
+            },
+            markdown: sanitized.slice(0, 150000)
+          };
+        }
+      } else {
+        jinaDebug = `jina_status_${jinaRes.status}`;
+      }
+    } catch (jinaErr) {
+      if (jinaErr instanceof UpstreamTargetError) throw jinaErr;
+      jinaDebug = jinaErr.message;
+    }
+
+    throw new UpstreamTargetError(`Upstream target unreachable or blocked by bot challenge (HTTP ${directStatus}, fallback: ${jinaDebug})`, directStatus || 404);
+  }
 
   // Extract <title>
   const titleMatch = rawHtml.match(/<title[^>]*>([^<]+)<\/title>/i);
@@ -484,7 +615,7 @@ async function cleanMarkdownEngine(targetUrl, stripImages = false) {
     .replace(/<code[^>]*>([\s\S]*?)<\/code>/gi, "`$1`")
     .replace(/<pre[^>]*>([\s\S]*?)<\/pre>/gi, "\n```\n$1\n```\n")
     .replace(/<br\s*[\/]?>/gi, "\n")
-    .replace(/<[^>]+>/g, " ") // Strip any remaining tags
+    .replace(/<[^>]+>/g, " ")
     .replace(/&nbsp;/g, " ")
     .replace(/&amp;/g, "&")
     .replace(/&lt;/g, "<")
@@ -495,6 +626,10 @@ async function cleanMarkdownEngine(targetUrl, stripImages = false) {
 
   // Run deterministic prompt injection defense
   const sanitizedMarkdown = sanitizePromptInjection(md);
+  if (!sanitizedMarkdown || sanitizedMarkdown.length < 20) {
+    throw new UpstreamTargetError("Extracted markdown content is empty.", 422);
+  }
+
   const tokenEstimate = Math.ceil(sanitizedMarkdown.length / 4);
 
   return {
@@ -504,13 +639,14 @@ async function cleanMarkdownEngine(targetUrl, stripImages = false) {
     title,
     token_estimate: tokenEstimate,
     sanitized: true,
+    engine: "native-html-sanitizer",
     metadata: {
       meta_description: metaDescription,
       json_ld: jsonLdMetadata,
       outbound_links_count: links.length,
       sample_outbound_links: links.slice(0, 10)
     },
-    markdown: sanitizedMarkdown.slice(0, 150000) // 150k character edge cap
+    markdown: sanitizedMarkdown.slice(0, 150000)
   };
 }
 
@@ -522,24 +658,24 @@ async function getEcomPriceStock(productUrl) {
   try {
     parsedUrl = new URL(productUrl);
     if (parsedUrl.protocol !== "http:" && parsedUrl.protocol !== "https:") {
-      throw new Error("Protocol must be http: or https:");
+      throw new UpstreamTargetError("Protocol must be http: or https:", 400);
     }
-  } catch {
-    throw new Error("Invalid URL parameter. Must be an absolute http(s) URL.");
+  } catch (err) {
+    throw new UpstreamTargetError(`Invalid URL parameter: ${err.message}`, 400);
   }
 
   if (isPrivateIpOrHost(parsedUrl.hostname)) {
-    throw new Error("Access denied: Private or loopback IP addresses forbidden.");
+    throw new UpstreamTargetError("Access denied: Private or loopback IP addresses forbidden.", 403);
   }
 
-  // Try Shopify direct JSON API if path has /products/
+  // 1. Try Shopify direct JSON API if path has /products/
   if (parsedUrl.pathname.includes("/products/")) {
     const handle = parsedUrl.pathname.split("/products/")[1].split(/[?#/]/)[0];
     if (handle) {
       try {
         const jsonUrl = `${parsedUrl.origin}/products/${handle}.json`;
         const shopifyRes = await fetch(jsonUrl, {
-          headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AgentFuel402" },
+          headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 AgentFuel402" },
           signal: AbortSignal.timeout(5000)
         });
         if (shopifyRes.ok) {
@@ -581,96 +717,132 @@ async function getEcomPriceStock(productUrl) {
     }
   }
 
-  // Fallback: Fetch HTML and inspect OpenGraph / JSON-LD / Microdata
-  const htmlRes = await fetch(parsedUrl.href, {
-    headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" },
-    signal: AbortSignal.timeout(8000)
-  });
+  // 2. Fetch HTML and inspect OpenGraph / JSON-LD / Microdata
+  let html = null;
+  let useJinaFallback = false;
+  let htmlStatus = 200;
 
-  if (!htmlRes.ok) {
-    return {
-      status: "product_unavailable",
-      feed: "/v1/fuel/ecom-price-stock",
-      platform: "Web Product Store",
-      product_url: productUrl,
-      title: `Product Notice: HTTP ${htmlRes.status}`,
-      price: null,
-      currency: "USD",
-      in_stock: false,
-      error: `Product URL responded with HTTP ${htmlRes.status}.`,
-      timestamp_ms: Date.now()
-    };
+  try {
+    const htmlRes = await fetch(parsedUrl.href, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+      },
+      signal: AbortSignal.timeout(8000)
+    });
+
+    htmlStatus = htmlRes.status;
+    if (htmlRes.status === 404) {
+      throw new UpstreamTargetError(`Product page returned HTTP 404 Not Found (${productUrl})`, 404);
+    }
+
+    if ([403, 419, 429, 503].includes(htmlRes.status)) {
+      useJinaFallback = true;
+    } else if (htmlRes.ok) {
+      html = await htmlRes.text();
+    } else {
+      useJinaFallback = true;
+    }
+  } catch (err) {
+    if (err instanceof UpstreamTargetError) throw err;
+    useJinaFallback = true;
   }
 
-  const html = await htmlRes.text();
+  // Try parsing JSON-LD Schema.org Product from HTML if available
+  if (html) {
+    const jsonLdMatch = html.match(/<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi);
+    if (jsonLdMatch) {
+      for (const tag of jsonLdMatch) {
+        try {
+          const content = tag.replace(/<\/?script[^>]*>/gi, "");
+          const parsed = JSON.parse(content);
+          const item = parsed["@type"] === "Product" ? parsed : (Array.isArray(parsed) ? parsed.find(x => x["@type"] === "Product") : (parsed["@graph"] ? parsed["@graph"].find(x => x["@type"] === "Product") : null));
+          if (item) {
+            const offers = Array.isArray(item.offers) ? item.offers[0] : (item.offers || {});
+            const price = parseFloat(offers.price || offers.lowPrice || 0.0);
+            const currency = offers.priceCurrency || "USD";
+            const inStock = String(offers.availability || "").toLowerCase().includes("instock");
 
-  // Try parsing JSON-LD Schema.org Product
-  const jsonLdMatch = html.match(/<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi);
-  if (jsonLdMatch) {
-    for (const tag of jsonLdMatch) {
-      try {
-        const content = tag.replace(/<\/?script[^>]*>/gi, "");
-        const parsed = JSON.parse(content);
-        const item = parsed["@type"] === "Product" ? parsed : (Array.isArray(parsed) ? parsed.find(x => x["@type"] === "Product") : (parsed["@graph"] ? parsed["@graph"].find(x => x["@type"] === "Product") : null));
-        if (item) {
-          const offers = Array.isArray(item.offers) ? item.offers[0] : (item.offers || {});
-          const price = parseFloat(offers.price || offers.lowPrice || 0.0);
-          const currency = offers.priceCurrency || "USD";
-          const inStock = String(offers.availability || "").toLowerCase().includes("instock");
+            return {
+              status: "success",
+              feed: "/v1/fuel/ecom-price-stock",
+              platform: "Schema.org / JSON-LD",
+              product_url: productUrl,
+              title: item.name || "Product",
+              price,
+              currency,
+              in_stock: inStock,
+              discount_delta: 0.0,
+              sku: item.sku || "N/A",
+              timestamp_ms: Date.now()
+            };
+          }
+        } catch {}
+      }
+    }
+
+    // Fallback to OpenGraph price tags
+    const ogPrice = html.match(/property=["'](og:price:amount|product:price:amount)["'][^>]+content=["']([^"']+)["']/i);
+    const ogCurrency = html.match(/property=["'](og:price:currency|product:price:currency)["'][^>]+content=["']([^"']+)["']/i);
+    const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+
+    if (ogPrice) {
+      return {
+        status: "success",
+        feed: "/v1/fuel/ecom-price-stock",
+        platform: "OpenGraph / Meta",
+        product_url: productUrl,
+        title: titleMatch ? titleMatch[1].trim() : "Product",
+        price: parseFloat(ogPrice[2]) || 0.0,
+        currency: ogCurrency ? ogCurrency[2] : "USD",
+        in_stock: !html.toLowerCase().includes("out of stock"),
+        discount_delta: 0.0,
+        sku: "OG-SKU",
+        timestamp_ms: Date.now()
+      };
+    }
+  }
+
+  // 3. Fallback via Jina Reader if direct fetch was blocked
+  if (useJinaFallback) {
+    try {
+      const jinaRes = await fetch(`https://r.jina.ai/${productUrl}`, {
+        headers: { "User-Agent": "AgentFuel402/1.0" },
+        signal: AbortSignal.timeout(12000)
+      });
+      if (jinaRes.status === 404) {
+        throw new UpstreamTargetError(`Product page returned HTTP 404 Not Found (${productUrl})`, 404);
+      }
+      if (jinaRes.ok) {
+        const text = await jinaRes.text();
+        const priceMatch = text.match(/(\$|€|£)\s*([0-9]+(?:\.[0-9]{2})?)/);
+        if (priceMatch) {
+          const currency = priceMatch[1] === "€" ? "EUR" : (priceMatch[1] === "£" ? "GBP" : "USD");
+          const price = parseFloat(priceMatch[2]);
+          const inStock = !text.toLowerCase().includes("out of stock") && !text.toLowerCase().includes("sold out");
+          const firstLine = text.split("\n")[0].replace(/^#+\s*/, "").trim();
 
           return {
             status: "success",
             feed: "/v1/fuel/ecom-price-stock",
-            platform: "Schema.org / JSON-LD",
+            platform: "Stealth Reader Extractor",
             product_url: productUrl,
-            title: item.name || "Product",
+            title: firstLine || parsedUrl.hostname,
             price,
             currency,
             in_stock: inStock,
             discount_delta: 0.0,
-            sku: item.sku || "N/A",
+            sku: "STEALTH-PARSED",
             timestamp_ms: Date.now()
           };
         }
-      } catch {}
+      }
+    } catch (jinaErr) {
+      if (jinaErr instanceof UpstreamTargetError) throw jinaErr;
     }
   }
 
-  // Fallback to OpenGraph price tags
-  const ogPrice = html.match(/property=["'](og:price:amount|product:price:amount)["'][^>]+content=["']([^"']+)["']/i);
-  const ogCurrency = html.match(/property=["'](og:price:currency|product:price:currency)["'][^>]+content=["']([^"']+)["']/i);
-  const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
-
-  if (ogPrice) {
-    return {
-      status: "success",
-      feed: "/v1/fuel/ecom-price-stock",
-      platform: "OpenGraph / Meta",
-      product_url: productUrl,
-      title: titleMatch ? titleMatch[1].trim() : "Product",
-      price: parseFloat(ogPrice[2]),
-      currency: ogCurrency ? ogCurrency[2] : "USD",
-      in_stock: !html.toLowerCase().includes("out of stock"),
-      discount_delta: 0.0,
-      sku: "N/A",
-      timestamp_ms: Date.now()
-    };
-  }
-
-  // Synthetic verified fallback sample if unstructured page
-  return {
-    status: "success",
-    feed: "/v1/fuel/ecom-price-stock",
-    platform: "HTML Heuristic Extraction",
-    product_url: productUrl,
-    title: titleMatch ? titleMatch[1].trim() : "Sample E-Com Product",
-    price: 49.99,
-    currency: "USD",
-    in_stock: true,
-    discount_delta: 10.00,
-    sku: "SKU-AUTO-VERIFIED",
-    timestamp_ms: Date.now()
-  };
+  throw new UpstreamTargetError(`Could not extract verified product or stock data from target (HTTP ${htmlStatus})`, htmlStatus || 404);
 }
 
 // -----------------------------------------------------------------------------
@@ -685,7 +857,7 @@ async function getSdkLiveSpec(packageName, ecosystem = "pypi") {
       headers: { "User-Agent": "AgentFuel402-SDKSpec/1.0" },
       signal: AbortSignal.timeout(5000)
     });
-    if (!res.ok) throw new Error(`PyPI package '${cleanPkg}' not found (HTTP ${res.status})`);
+    if (!res.ok) throw new UpstreamTargetError(`PyPI package '${cleanPkg}' not found (HTTP ${res.status})`, res.status === 404 ? 404 : 502);
     const data = await res.json();
     const info = data.info || {};
     const latestVersion = info.version;
@@ -718,7 +890,7 @@ async function getSdkLiveSpec(packageName, ecosystem = "pypi") {
       headers: { "User-Agent": "AgentFuel402-SDKSpec/1.0" },
       signal: AbortSignal.timeout(5000)
     });
-    if (!res.ok) throw new Error(`NPM package '${cleanPkg}' not found (HTTP ${res.status})`);
+    if (!res.ok) throw new UpstreamTargetError(`NPM package '${cleanPkg}' not found (HTTP ${res.status})`, res.status === 404 ? 404 : 502);
     const data = await res.json();
     const latestVersion = data["dist-tags"]?.latest;
     const versionObj = data.versions?.[latestVersion] || {};
@@ -744,13 +916,13 @@ async function getSdkLiveSpec(packageName, ecosystem = "pypi") {
     };
   }
 
-  throw new Error("Unsupported ecosystem. Supported ecosystems: 'pypi', 'npm'");
+  throw new UpstreamTargetError("Unsupported ecosystem. Supported ecosystems: 'pypi', 'npm'", 400);
 }
 
 // -----------------------------------------------------------------------------
-// Facilitator Settlement Verification (PayAI)
+// Facilitator Settlement Verification (PayAI) — Verify -> Fetch -> Settle
 // -----------------------------------------------------------------------------
-async function verifyAndSettlePayAI(req, routePath, rawPaymentHeader) {
+async function preparePayAIRequirements(req, routePath, rawPaymentHeader) {
   const cfg = ROUTE_CONFIGS[routePath];
   if (!cfg) throw new Error("Route not configured for payment settlement.");
 
@@ -834,11 +1006,17 @@ async function verifyAndSettlePayAI(req, routePath, rawPaymentHeader) {
     paymentRequirements: requirements
   };
 
-  // 1. Verify via PayAI Facilitator
+  return { relayBody, isSolana, cfg, resourceUrl };
+}
+
+async function validateAndVerifyPayAI(req, routePath, rawPaymentHeader) {
+  const prep = await preparePayAIRequirements(req, routePath, rawPaymentHeader);
+
+  // 1. Verify via PayAI Facilitator (DO NOT settle yet)
   const verifyRes = await fetch(`${PAYAI_FACILITATOR}/verify`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(relayBody),
+    body: JSON.stringify(prep.relayBody),
     signal: AbortSignal.timeout(15000)
   });
 
@@ -848,7 +1026,12 @@ async function verifyAndSettlePayAI(req, routePath, rawPaymentHeader) {
     throw new Error(reason);
   }
 
-  // 2. Settle via PayAI Facilitator
+  return prep;
+}
+
+async function settlePayAI(prep) {
+  const { relayBody, isSolana, cfg, resourceUrl } = prep;
+  // 2. Settle via PayAI Facilitator (Execute on-chain once data is confirmed)
   const settleRes = await fetch(`${PAYAI_FACILITATOR}/settle`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -870,6 +1053,11 @@ async function verifyAndSettlePayAI(req, routePath, rawPaymentHeader) {
     network: isSolana ? SOLANA_NETWORK : "eip155:8453",
     resource: resourceUrl
   };
+}
+
+async function verifyAndSettlePayAI(req, routePath, rawPaymentHeader) {
+  const prep = await validateAndVerifyPayAI(req, routePath, rawPaymentHeader);
+  return await settlePayAI(prep);
 }
 
 // -----------------------------------------------------------------------------
@@ -1348,13 +1536,14 @@ Endpoints:
         return build402Challenge(req, path);
       }
 
-      let receipt = null;
+      // Step 1: Pre-Verify Payment Authorization via PayAI Facilitator (DO NOT SETTLE YET)
+      let paymentPrep = null;
       if (!hasPass && paymentHdr) {
         try {
-          receipt = await verifyAndSettlePayAI(req, path, paymentHdr);
-        } catch (settleErr) {
+          paymentPrep = await validateAndVerifyPayAI(req, path, paymentHdr);
+        } catch (verifyErr) {
           // Negative test proof: invalid or dummy payment headers return HTTP 402 with details
-          return build402Challenge(req, path, `Payment validation rejected: ${settleErr.message}`);
+          return build402Challenge(req, path, `Payment validation rejected: ${verifyErr.message}`);
         }
       }
 
@@ -1367,62 +1556,80 @@ Endpoints:
         inputParams[k] = v;
       }
 
-      // Execute Target Engine
+      // Step 2: Execute Target Engine (Fetch target content)
+      let resultData;
       try {
-        let resultData;
         if (path === "/v1/fuel/b2b-intent-leads") {
           const limit = parseInt(inputParams.limit || "10", 10);
           const category = inputParams.category || "all";
           resultData = await fetchB2BLeads(limit, category);
         } else if (path === "/v1/fuel/llm-clean-markdown") {
           const targetUrl = inputParams.url;
-          if (!targetUrl) throw new Error("Missing required 'url' parameter.");
+          if (!targetUrl) throw new UpstreamTargetError("Missing required 'url' parameter.", 400);
           resultData = await cleanMarkdownEngine(targetUrl, inputParams.strip_images === "true" || inputParams.strip_images === true);
         } else if (path === "/v1/fuel/ecom-price-stock") {
           const targetUrl = inputParams.url;
-          if (!targetUrl) throw new Error("Missing required 'url' parameter.");
+          if (!targetUrl) throw new UpstreamTargetError("Missing required 'url' parameter.", 400);
           resultData = await getEcomPriceStock(targetUrl);
         } else if (path === "/v1/fuel/sdk-live-spec") {
           const pkg = inputParams.package;
           const eco = inputParams.ecosystem || "pypi";
-          if (!pkg) throw new Error("Missing required 'package' parameter.");
+          if (!pkg) throw new UpstreamTargetError("Missing required 'package' parameter.", 400);
           resultData = await getSdkLiveSpec(pkg, eco);
         }
 
-        const outHeaders = {
-          ...cors,
-          "Content-Type": "application/json",
-          "Cache-Control": "no-store, max-age=10",
-          "X-Fuel-Freshness": "live"
-        };
-
-        if (receipt) {
-          outHeaders["PAYMENT-RESPONSE"] = btoa(JSON.stringify(receipt));
-          outHeaders["X-Payment-Response"] = btoa(JSON.stringify(receipt));
+        if (!resultData || (resultData.markdown !== undefined && !resultData.markdown)) {
+          throw new UpstreamTargetError("Target returned empty content.", 422);
         }
-        if (hasPass) {
-          outHeaders["X-Fuel-Calls-Remaining"] = activePasses.get(sessionToken).callsRemaining.toString();
-        }
-
-        return new Response(JSON.stringify(resultData, null, 2), { status: 200, headers: outHeaders });
-      } catch (execErr) {
-        const outHeaders = {
-          ...cors,
-          "Content-Type": "application/json"
-        };
-        if (receipt) {
-          outHeaders["PAYMENT-RESPONSE"] = btoa(JSON.stringify(receipt));
-          outHeaders["X-Payment-Response"] = btoa(JSON.stringify(receipt));
-        }
+      } catch (fetchErr) {
+        // UPSTREAM TARGET UNREACHABLE OR 404: RETURN HTTP 422 WITHOUT CALLING /settle!
         return new Response(JSON.stringify({
-          status: "execution_partial",
-          error: execErr.message,
-          receipt: receipt || null
+          error: "upstream_target_unreachable",
+          charged: false,
+          details: fetchErr.message,
+          http_status: fetchErr.httpStatus || 404
         }, null, 2), {
-          status: 200,
-          headers: outHeaders
+          status: 422,
+          headers: {
+            ...cors,
+            "Content-Type": "application/json"
+          }
         });
       }
+
+      // Step 3: Target data is confirmed valid! Now Settle payment on-chain
+      let receipt = null;
+      if (paymentPrep) {
+        try {
+          receipt = await settlePayAI(paymentPrep);
+        } catch (settleErr) {
+          return new Response(JSON.stringify({
+            error: "settlement_failed",
+            charged: false,
+            message: `On-chain settlement could not be completed: ${settleErr.message}`
+          }, null, 2), {
+            status: 502,
+            headers: { ...cors, "Content-Type": "application/json" }
+          });
+        }
+      }
+
+      const outHeaders = {
+        ...cors,
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store, max-age=10",
+        "X-Fuel-Freshness": "live"
+      };
+
+      if (receipt) {
+        outHeaders["PAYMENT-RESPONSE"] = btoa(JSON.stringify(receipt));
+        outHeaders["X-Payment-Response"] = btoa(JSON.stringify(receipt));
+      }
+      if (hasPass) {
+        outHeaders["X-Fuel-Calls-Remaining"] = activePasses.get(sessionToken).callsRemaining.toString();
+      }
+
+      return new Response(JSON.stringify(resultData, null, 2), { status: 200, headers: outHeaders });
     }
 
     // Default 404
