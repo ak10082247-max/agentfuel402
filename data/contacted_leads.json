@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-08T16:45:28.349238+00:00",
+  "updated_at": "2026-11-08T19:41:08.468311+00:00",
   "contacted_emails": [
     "benny.json@gmail.com",
     "support@0xinsider.com",
@@ -19,7 +19,8 @@
     "github@aiqadam.org",
     "sanufalahi5034@gmail.com",
     "founder@substratesystems.io",
-    "beto.zip@ludix.app"
+    "beto.zip@ludix.app",
+    "shad_singe3y@icloud.com"
   ],
   "contacted_users": [
     "bennyjo",
@@ -40,7 +41,8 @@
     "aiqadam",
     "mohammedfalahi",
     "artexis10",
-    "beto-zip"
+    "beto-zip",
+    "tiger-meadow78na0"
   ],
   "history": [
     {
@@ -175,6 +177,13 @@
       "track": "track_agentfuel",
       "repo": "beto-zip/web-scraping-firecrawl-vpn",
       "sent_date": "2026-11-08T16:45:28.349238+00:00"
+    },
+    {
+      "username": "tiger-meadow78na0",
+      "email": "shad_singe3y@icloud.com",
+      "track": "track_rugshield",
+      "repo": "Tiger-meadow78na0/how-to-launch-ethereum-arbitrage-bot-cost-awareness",
+      "sent_date": "2026-11-08T19:41:08.468311+00:00"
     }
   ]
 }
