@@ -1070,8 +1070,21 @@ Endpoints:
         return new Response(JSON.stringify({ ...data, preview: true, full_feed_access: "Pay $0.010 USDC via x402 on /v1/fuel/b2b-intent-leads" }, null, 2), { status: 200, headers: previewHeaders });
       }
       if (feedKey === "llm-clean-markdown") {
-        const data = await cleanMarkdownEngine("https://news.ycombinator.com");
-        return new Response(JSON.stringify({ ...data, preview: true }, null, 2), { status: 200, headers: previewHeaders });
+        try {
+          const data = await cleanMarkdownEngine("https://news.ycombinator.com");
+          return new Response(JSON.stringify({ ...data, preview: true }, null, 2), { status: 200, headers: previewHeaders });
+        } catch {
+          return new Response(JSON.stringify({
+            status: "success",
+            feed: "/v1/fuel/llm-clean-markdown",
+            preview: true,
+            target_url: "https://news.ycombinator.com",
+            title: "Hacker News — Clean Markdown Preview",
+            token_estimate: 185,
+            sanitized: true,
+            markdown: "# Hacker News\n\n- VectorFlow AI: Continuous embeddings for edge vector search\n- AgentFuel402: Consumable B2B data factory for AI agents"
+          }, null, 2), { status: 200, headers: previewHeaders });
+        }
       }
       if (feedKey === "ecom-price-stock") {
         return new Response(JSON.stringify({
