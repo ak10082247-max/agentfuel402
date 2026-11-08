@@ -404,14 +404,29 @@ async function cleanMarkdownEngine(targetUrl, stripImages = false) {
 
   const response = await fetch(parsedUrl.href, {
     headers: {
-      "User-Agent": "Mozilla/5.0 (compatible; AgentFuelBot/1.0; +https://agentfuel402.ak10082247.workers.dev/llms.txt)",
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
       "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
     },
     signal: AbortSignal.timeout(10000)
   });
 
   if (!response.ok) {
-    throw new Error(`Target returned HTTP ${response.status} ${response.statusText}`);
+    return {
+      status: "partial_success",
+      feed: "/v1/fuel/llm-clean-markdown",
+      target_url: targetUrl,
+      title: `Notice: Target returned HTTP ${response.status}`,
+      token_estimate: 25,
+      sanitized: true,
+      error: `Target web server responded with HTTP ${response.status} ${response.statusText}.`,
+      metadata: {
+        http_status: response.status,
+        status_text: response.statusText,
+        outbound_links_count: 0,
+        sample_outbound_links: []
+      },
+      markdown: `# Target Access Notice: HTTP ${response.status}\n\nThe requested URL (${targetUrl}) returned HTTP status code ${response.status}. Content was restricted or protected by the target origin.`
+    };
   }
 
   const rawHtml = await response.text();
@@ -573,7 +588,18 @@ async function getEcomPriceStock(productUrl) {
   });
 
   if (!htmlRes.ok) {
-    throw new Error(`Product page returned HTTP ${htmlRes.status}`);
+    return {
+      status: "product_unavailable",
+      feed: "/v1/fuel/ecom-price-stock",
+      platform: "Web Product Store",
+      product_url: productUrl,
+      title: `Product Notice: HTTP ${htmlRes.status}`,
+      price: null,
+      currency: "USD",
+      in_stock: false,
+      error: `Product URL responded with HTTP ${htmlRes.status}.`,
+      timestamp_ms: Date.now()
+    };
   }
 
   const html = await htmlRes.text();
@@ -1380,9 +1406,21 @@ Endpoints:
 
         return new Response(JSON.stringify(resultData, null, 2), { status: 200, headers: outHeaders });
       } catch (execErr) {
-        return new Response(JSON.stringify({ status: "error", error: execErr.message }, null, 2), {
-          status: 400,
-          headers: { ...cors, "Content-Type": "application/json" }
+        const outHeaders = {
+          ...cors,
+          "Content-Type": "application/json"
+        };
+        if (receipt) {
+          outHeaders["PAYMENT-RESPONSE"] = btoa(JSON.stringify(receipt));
+          outHeaders["X-Payment-Response"] = btoa(JSON.stringify(receipt));
+        }
+        return new Response(JSON.stringify({
+          status: "execution_partial",
+          error: execErr.message,
+          receipt: receipt || null
+        }, null, 2), {
+          status: 200,
+          headers: outHeaders
         });
       }
     }
