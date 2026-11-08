@@ -79,13 +79,11 @@ BASE_USDC = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
 
 # Verified Live Treasury Vaults
 BASE_WALLETS = [
-    ("0x73279fa4BadA7CAC888c62CDa4f5c8104765f6f1", "Base Merchant 1 (Primary Vault)"),
-    ("0x80E0Ae84679b7f11bE171DaADd492FBECf628cd6", "Base Merchant 2 (AgentFuel / Tollbooth)")
+    ("0x80E0Ae84679b7f11bE171DaADd492FBECf628cd6", "Base Merchant Payout (0x80E0...)")
 ]
 
 SOLANA_ATAS = [
-    ("3shUSbf9mkGabKqa2pdV7ZrstYvHozwusurLLuugf4dc", "Solana Merchant ATA 1"),
-    ("DD3A7jaXFeHcif9eYj6Vhomuxypat5Yxi8ow6wxz27yL", "Solana Merchant ATA 2 (AgentFuel Primary)")
+    ("DD3A7jaXFeHcif9eYj6Vhomuxypat5Yxi8ow6wxz27yL", "Solana Merchant ATA (Owner: 9wuMysgXwNhtQeqJgGByAiMYc4EjzZ5wUSmnjrrt3ffh)")
 ]
 
 # The "Big 3" Repositories
@@ -545,11 +543,10 @@ Consolidated Flagships: CanaryGuard 402 | RugShield 402 | AgentFuel402
 
 1. VERIFIED ON-CHAIN TREASURY (Base & Solana USDC):
 -----------------------------------------------------------------------------
-Base Merchant 1 (0x7327...):     {treasury['base'][0]['usdc']:.6f} USDC
-Base Merchant 2 (0x80E0...):     {treasury['base'][1]['usdc']:.6f} USDC
-Solana Merchant ATA 1 (3shU...): {treasury['solana'][0]['usdc']:.6f} USDC  (Verified via getTokenAccountBalance)
-Solana Merchant ATA 2 (DD3A...): {treasury['solana'][1]['usdc']:.6f} USDC  (Primary AgentFuel Receiver)
->>> TOTAL VERIFIED TREASURY:     {treasury['total_usdc']:.6f} USDC
+Base Merchant Payout (0x80E0...): {treasury['base'][0]['usdc']:.6f} USDC (0x80E0Ae84679b7f11bE171DaADd492FBECf628cd6)
+Solana Merchant Owner:            9wuMysgXwNhtQeqJgGByAiMYc4EjzZ5wUSmnjrrt3ffh
+Solana Merchant ATA (DD3A...):    {treasury['solana'][0]['usdc']:.6f} USDC (DD3A7jaXFeHcif9eYj6Vhomuxypat5Yxi8ow6wxz27yL)
+>>> TOTAL VERIFIED TREASURY:      {treasury['total_usdc']:.6f} USDC
 
 2. "BIG 3" GITHUB ECOSYSTEM REPO METRICS:
 -----------------------------------------------------------------------------
