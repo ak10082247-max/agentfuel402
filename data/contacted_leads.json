@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-08T15:01:32.133942+00:00",
+  "updated_at": "2026-11-08T15:06:17.624801+00:00",
   "contacted_emails": [
     "benny.json@gmail.com",
     "support@0xinsider.com",
@@ -15,7 +15,9 @@
     "tl3285@nyu.edu",
     "founders@trytruffle.ai",
     "hppatial@gmail.com",
-    "jh@profectify.com"
+    "jh@profectify.com",
+    "github@aiqadam.org",
+    "sanufalahi5034@gmail.com"
   ],
   "contacted_users": [
     "bennyjo",
@@ -32,7 +34,9 @@
     "garyleelty",
     "truffle-ai",
     "himanshupatial26",
-    "jannikco"
+    "jannikco",
+    "aiqadam",
+    "mohammedfalahi"
   ],
   "history": [
     {
@@ -139,6 +143,20 @@
       "track": "track_agentfuel",
       "repo": "jannikco/firecrawl-mcp",
       "sent_date": "2026-11-08T15:01:32.133942+00:00"
+    },
+    {
+      "username": "aiqadam",
+      "email": "github@aiqadam.org",
+      "track": "track_canaryguard",
+      "repo": "aiqadam/qadam-flow",
+      "sent_date": "2026-11-08T15:06:14.048152+00:00"
+    },
+    {
+      "username": "mohammedfalahi",
+      "email": "sanufalahi5034@gmail.com",
+      "track": "track_agentfuel",
+      "repo": "mohammedfalahi/ai-competitor-intelligence-engine",
+      "sent_date": "2026-11-08T15:06:17.624772+00:00"
     }
   ]
 }
