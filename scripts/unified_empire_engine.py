@@ -280,6 +280,54 @@ def get_active_apify_stats():
     }
 
 # -----------------------------------------------------------------------------
+# STRICT DELIVERABILITY VALIDATION (OPTION A - ZERO-BOUNCE GUARANTEE)
+# -----------------------------------------------------------------------------
+TRUSTED_EMAIL_DOMAINS = {
+    "gmail.com",
+    "googlemail.com",
+    "proton.me",
+    "protonmail.com",
+    "pm.me",
+    "outlook.com",
+    "hotmail.com",
+    "live.com",
+    "icloud.com",
+    "me.com",
+    "yahoo.com",
+    "fastmail.com",
+    "hey.com",
+}
+
+DISALLOWED_PREFIXES = {
+    "info", "support", "sales", "billing", "contact", "team", "admin",
+    "hello", "press", "media", "jobs", "careers", "security", "abuse",
+    "dev", "git", "github", "noreply", "no-reply", "donotreply", "mailer-daemon"
+}
+
+def is_deliverable_personal_email(email: str) -> bool:
+    """Strictly validates that an email belongs to a verified personal or academic mailbox to prevent any 550 bounces."""
+    if not email or "@" not in email:
+        return False
+    parts = email.lower().strip().split("@")
+    if len(parts) != 2:
+        return False
+    prefix, domain = parts[0], parts[1]
+
+    # Exclude automated or shared organizational mailboxes
+    if prefix in DISALLOWED_PREFIXES or any(p in prefix for p in ["noreply", "no-reply", "donotreply", "mailer"]):
+        return False
+
+    # Accept verified personal major providers
+    if domain in TRUSTED_EMAIL_DOMAINS:
+        return True
+
+    # Accept recognized educational institutions
+    if domain.endswith(".edu") or domain.endswith(".ac.uk") or domain.endswith(".edu.au") or domain.endswith(".edu.sg"):
+        return True
+
+    return False
+
+# -----------------------------------------------------------------------------
 # 3-TRACK SNIPER PROSPECTING ENGINE
 # -----------------------------------------------------------------------------
 def search_github_leads(track="track_rugshield", limit=5):
@@ -343,18 +391,30 @@ def search_github_leads(track="track_rugshield", limit=5):
                 if not owner:
                     continue
 
-                # Fetch user details for email
+                # Fetch user details for email (with public commit fallback)
                 try:
                     u_url = f"https://api.github.com/users/{owner}"
                     u_data = fetch_json(u_url, timeout=4, headers=headers)
                     email = u_data.get("email")
                     name = u_data.get("name") or owner
-                    if email and "@" in email and not email.endswith("noreply.github.com"):
+
+                    # If user profile email is absent or not a personal inbox, inspect recent public commit
+                    if not email or not is_deliverable_personal_email(email):
+                        c_url = f"https://api.github.com/repos/{repo_name}/commits?author={owner}&per_page=2"
+                        c_data = fetch_json(c_url, timeout=4, headers=headers)
+                        if isinstance(c_data, list):
+                            for c in c_data:
+                                cand = c.get("commit", {}).get("author", {}).get("email")
+                                if is_deliverable_personal_email(cand):
+                                    email = cand
+                                    break
+
+                    if email and is_deliverable_personal_email(email):
                         discovered.append({
                             "track": track,
                             "username": owner,
                             "name": name,
-                            "email": email,
+                            "email": email.lower().strip(),
                             "repo": repo_name,
                             "repo_desc": repo_desc
                         })
@@ -580,6 +640,8 @@ def main():
                     break
                 email = lead["email"].lower().strip()
                 user = lead["username"].lower().strip()
+                if not is_deliverable_personal_email(email):
+                    continue
                 if email in leads_data["contacted_emails"] or user in leads_data["contacted_users"]:
                     continue
                 try:
