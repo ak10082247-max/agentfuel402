@@ -1,6 +1,5 @@
 {
   "actorSpecification": 1,
-  "schemaVersion": 1,
   "title": "AgentFuel402 Dataset Schema",
   "description": "Real-time non-cacheable data points from B2B intent signals, clean Markdown, e-commerce pricing, and live SDK metadata.",
   "fields": {
