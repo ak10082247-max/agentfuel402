@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-08T14:37:33.561087+00:00",
+  "updated_at": "2026-11-08T15:01:32.133942+00:00",
   "contacted_emails": [
     "benny.json@gmail.com",
     "support@0xinsider.com",
@@ -9,7 +9,13 @@
     "info@ddm-it.de",
     "unclecode@kidocode.com",
     "info+oss@xbp-europe.com",
-    "tsenangthatayotlhe04@gmail.com"
+    "tsenangthatayotlhe04@gmail.com",
+    "wayneabejar@gmail.com",
+    "araxis67@gmail.com",
+    "tl3285@nyu.edu",
+    "founders@trytruffle.ai",
+    "hppatial@gmail.com",
+    "jh@profectify.com"
   ],
   "contacted_users": [
     "bennyjo",
@@ -20,7 +26,13 @@
     "dasdigitalemomentum",
     "unclecode",
     "xbp-europe",
-    "thatayotlhe04"
+    "thatayotlhe04",
+    "wayne-xfx",
+    "araxis33",
+    "garyleelty",
+    "truffle-ai",
+    "himanshupatial26",
+    "jannikco"
   ],
   "history": [
     {
@@ -85,6 +97,48 @@
       "track": "track_b",
       "repo": "Thatayotlhe04/Parallelogram",
       "sent_date": "2026-11-08T14:37:33.561066+00:00"
+    },
+    {
+      "username": "wayne-xfx",
+      "email": "wayneabejar@gmail.com",
+      "track": "track_rugshield",
+      "repo": "wayne-xfx/ClassDex",
+      "sent_date": "2026-11-08T15:01:08.194785+00:00"
+    },
+    {
+      "username": "araxis33",
+      "email": "araxis67@gmail.com",
+      "track": "track_rugshield",
+      "repo": "araxis33/aero-vote-radar",
+      "sent_date": "2026-11-08T15:01:11.194683+00:00"
+    },
+    {
+      "username": "garyleelty",
+      "email": "tl3285@nyu.edu",
+      "track": "track_canaryguard",
+      "repo": "garyleelty/cloudissue",
+      "sent_date": "2026-11-08T15:01:18.001292+00:00"
+    },
+    {
+      "username": "truffle-ai",
+      "email": "founders@trytruffle.ai",
+      "track": "track_canaryguard",
+      "repo": "truffle-ai/dexto",
+      "sent_date": "2026-11-08T15:01:22.097227+00:00"
+    },
+    {
+      "username": "himanshupatial26",
+      "email": "hppatial@gmail.com",
+      "track": "track_agentfuel",
+      "repo": "HimanshuPatial26/FireCrawl",
+      "sent_date": "2026-11-08T15:01:29.103700+00:00"
+    },
+    {
+      "username": "jannikco",
+      "email": "jh@profectify.com",
+      "track": "track_agentfuel",
+      "repo": "jannikco/firecrawl-mcp",
+      "sent_date": "2026-11-08T15:01:32.133942+00:00"
     }
   ]
 }

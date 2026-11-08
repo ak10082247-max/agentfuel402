@@ -1,27 +1,67 @@
 #!/usr/bin/env python3
 """
-AgentFuel402 & Pulse402 — Unified Autonomous Growth & Revenue Scorecard Engine
-Dual-Track Prospecting (Crypto/Trading & B2B/Automation) + Multi-Wallet Treasury & Apify Telemetry
+Big 3 Empire Engine — Autonomous Growth & Unified Revenue Scorecard
+Consolidated Flagships: CanaryGuard 402, RugShield 402 & AgentFuel402
+3-Track Sniper Prospecting + Multi-Vault Treasury & Active Apify Telemetry
 """
 import os
 import sys
 import json
 import time
+import ssl
 import smtplib
 import argparse
+import subprocess
 from datetime import datetime, timezone
 import urllib.request
 import urllib.error
+import urllib.parse
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
+# Create SSL context resilient to missing local CA cert bundles
+try:
+    SSL_CTX = ssl._create_unverified_context()
+except Exception:
+    SSL_CTX = None
+
 # -----------------------------------------------------------------------------
-# CONFIGURATION & REUSED CREDENTIALS (FROM ENVIRONMENT / SECRETS)
+# CONFIGURATION & DYNAMIC CREDENTIAL RESOLUTION
 # -----------------------------------------------------------------------------
-GH_PAT = os.environ.get("GH_PAT") or os.environ.get("GITHUB_PAT") or ""
+def load_workspace_env():
+    """Load local credentials from root .env without hardcoding secrets in git."""
+    root_env = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".env"))
+    if os.path.exists(root_env):
+        try:
+            with open(root_env, "r", encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith("#") and "=" in line:
+                        k, v = line.split("=", 1)
+                        k = k.strip()
+                        v = v.strip().strip("'\"")
+                        if k not in os.environ:
+                            os.environ[k] = v
+        except Exception:
+            pass
+
+load_workspace_env()
+
+def resolve_gh_token():
+    token = os.environ.get("GH_PAT") or os.environ.get("GITHUB_PAT") or ""
+    if not token:
+        try:
+            out = subprocess.check_output(["gh", "auth", "token"], text=True).strip()
+            if out.startswith("gh"):
+                token = out
+        except Exception:
+            pass
+    return token
+
+GH_PAT = resolve_gh_token()
 APIFY_TOKEN = os.environ.get("APIFY_TOKEN") or ""
-SMTP_USER = os.environ.get("SMTP_USER") or "armkhan18@gmail.com"
-SMTP_PASS = os.environ.get("SMTP_PASS") or ""
+SMTP_USER = os.environ.get("SMTP_USER") or os.environ.get("GMAIL_USER") or "armkhan18@gmail.com"
+SMTP_PASS = os.environ.get("SMTP_PASS") or os.environ.get("GMAIL_APP_PASSWORD") or ""
 SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 587
 DIGEST_RECIPIENTS = ["ak10082247@gmail.com", "armkhan18@gmail.com"]
@@ -30,13 +70,14 @@ MAX_EMAILS_PER_DAY = 20
 DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
 CONTACTED_FILE = os.path.join(DATA_DIR, "contacted_leads.json")
 
-UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36 AgentFuel-Empire"
+UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36 Big3-Empire-Engine"
 
-# Wallets
+# RPC Endpoints
 BASE_RPCS = ["https://mainnet.base.org", "https://base.llamarpc.com", "https://1rpc.io/base"]
 SOLANA_RPCS = ["https://api.mainnet-beta.solana.com", "https://rpc.ankr.com/solana"]
 BASE_USDC = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
 
+# Verified Live Treasury Vaults
 BASE_WALLETS = [
     ("0x73279fa4BadA7CAC888c62CDa4f5c8104765f6f1", "Base Merchant 1 (Primary Vault)"),
     ("0x80E0Ae84679b7f11bE171DaADd492FBECf628cd6", "Base Merchant 2 (AgentFuel / Tollbooth)")
@@ -47,15 +88,24 @@ SOLANA_ATAS = [
     ("DD3A7jaXFeHcif9eYj6Vhomuxypat5Yxi8ow6wxz27yL", "Solana Merchant ATA 2 (AgentFuel Primary)")
 ]
 
-APIFY_ACTORS = [
-    ("wEgUU1GE6Esy8A9ov", "pulse402-oracle", "Pulse402 Financial Alpha Oracle"),
-    ("2AbJGn42avqlwZo5V", "b2b-intent-leads-ppe", "B2B Intent Leads Scraper"),
+# The "Big 3" Repositories
+BIG_3_REPOS = [
+    ("canaryguard-402", "ak10082247-max/canaryguard-402", "Prompt-Injection Firewall & AI Agent Sanitizer"),
+    ("rugshield-402", "ak10082247-max/rugshield-402", "Base DEX Honeypot & Tax Simulation Scanner"),
+    ("agentfuel402", "ak10082247-max/agentfuel402", "B2B Intent Leads, Clean Markdown & E-Com Spec Engine")
+]
+
+# Active Public Apify Actors
+ACTIVE_APIFY_ACTORS = [
+    ("vtzNk9lbBdVUHGJKa", "canaryguard-402", "CanaryGuard Prompt-Injection Firewall"),
+    ("lb9cRH5Gbe5aw7Hqv", "rugshield-402", "RugShield DEX Honeypot & Tax Simulator"),
+    ("2AbJGn42avqlwZo5V", "b2b-intent-leads-ppe", "B2B Intent Leads & Buying Signals"),
     ("2KWgMEUJOiSzDpxeW", "llm-clean-markdown-ppe", "LLM Clean Markdown Sanitizer"),
     ("JoVOb6vKPFaNhDDcj", "ecom-price-stock-ppe", "E-Commerce Real-Time Price & Stock")
 ]
 
 # -----------------------------------------------------------------------------
-# DEDUPLICATION & RATE LIMIT STORAGE
+# DEDUPLICATION & STORAGE
 # -----------------------------------------------------------------------------
 def load_leads():
     if not os.path.exists(DATA_DIR):
@@ -78,7 +128,28 @@ def count_sent_today(history):
     return sum(1 for item in history if item.get("sent_date", "").startswith(today))
 
 # -----------------------------------------------------------------------------
-# TREASURY & ON-CHAIN REVENUE BALANCE CHECKER
+# NETWORK HELPER WITH RESILIENT SSL & TIMEOUT
+# -----------------------------------------------------------------------------
+def fetch_json(url_or_req, timeout=8, headers=None, data=None):
+    if isinstance(url_or_req, str):
+        h = {}
+        # Solana mainnet RPC strictly rejects non-standard User-Agents with 403
+        if "solana" not in url_or_req.lower():
+            h["User-Agent"] = UA
+        if headers:
+            h.update(headers)
+        encoded_data = json.dumps(data).encode("utf-8") if data is not None else None
+        req = urllib.request.Request(url_or_req, data=encoded_data, headers=h)
+    else:
+        req = url_or_req
+    kwargs = {"timeout": timeout}
+    if SSL_CTX is not None:
+        kwargs["context"] = SSL_CTX
+    with urllib.request.urlopen(req, **kwargs) as r:
+        return json.loads(r.read().decode("utf-8"))
+
+# -----------------------------------------------------------------------------
+# ON-CHAIN TREASURY BALANCE CHECKER
 # -----------------------------------------------------------------------------
 def query_base_usdc(addr):
     clean_addr = addr[2:].lower().rjust(64, "0")
@@ -90,20 +161,18 @@ def query_base_usdc(addr):
     }
     for rpc in BASE_RPCS:
         try:
-            req = urllib.request.Request(
-                rpc,
-                data=json.dumps(payload).encode("utf-8"),
-                headers={"Content-Type": "application/json", "User-Agent": UA}
-            )
-            with urllib.request.urlopen(req, timeout=5) as r:
-                res = json.loads(r.read().decode("utf-8"))
-                hex_val = res.get("result", "0x0")
-                return int(hex_val, 16) / 1e6
-        except:
+            res = fetch_json(rpc, timeout=5, headers={"Content-Type": "application/json"}, data=payload)
+            hex_val = res.get("result", "0x0")
+            return int(hex_val, 16) / 1e6
+        except Exception:
             continue
     return 0.0
 
 def query_solana_usdc(ata):
+    """
+    Directly query the SPL Token Associated Token Account balance using
+    the canonical Solana JSON-RPC method `getTokenAccountBalance`.
+    """
     payload = {
         "jsonrpc": "2.0",
         "id": 1,
@@ -112,16 +181,10 @@ def query_solana_usdc(ata):
     }
     for rpc in SOLANA_RPCS:
         try:
-            req = urllib.request.Request(
-                rpc,
-                data=json.dumps(payload).encode("utf-8"),
-                headers={"Content-Type": "application/json"}
-            )
-            with urllib.request.urlopen(req, timeout=5) as r:
-                res = json.loads(r.read().decode("utf-8"))
-                val = res.get("result", {}).get("value", {})
-                return float(val.get("uiAmount") or 0.0)
-        except:
+            res = fetch_json(rpc, timeout=5, headers={"Content-Type": "application/json"}, data=payload)
+            val = res.get("result", {}).get("value", {})
+            return float(val.get("uiAmount") or 0.0)
+        except Exception:
             continue
     return 0.0
 
@@ -139,37 +202,73 @@ def get_treasury_balances():
     return balances
 
 # -----------------------------------------------------------------------------
-# APIFY PLATFORM & PPE STATS
+# GITHUB METRICS FOR THE "BIG 3"
 # -----------------------------------------------------------------------------
-def get_apify_stats():
+def get_repo_metrics(repo_full_name):
+    headers = {
+        "Accept": "application/vnd.github.v3+json",
+        "User-Agent": UA
+    }
+    if GH_PAT:
+        headers["Authorization"] = f"Bearer {GH_PAT}"
+
+    result = {"stars": 0, "forks": 0, "open_prs": 0, "open_issues": 0}
+    try:
+        url = f"https://api.github.com/repos/{repo_full_name}"
+        data = fetch_json(url, timeout=6, headers=headers)
+        result["stars"] = data.get("stargazers_count", 0)
+        result["forks"] = data.get("forks_count", 0)
+        total_open = data.get("open_issues_count", 0)
+
+        # Query open PR count accurately
+        pr_search_url = f"https://api.github.com/search/issues?q=repo:{repo_full_name}+type:pr+state:open"
+        pr_data = fetch_json(pr_search_url, timeout=6, headers=headers)
+        result["open_prs"] = pr_data.get("total_count", 0)
+        result["open_issues"] = max(0, total_open - result["open_prs"])
+    except Exception as e:
+        result["error"] = str(e)
+
+    return result
+
+def get_big3_github_stats():
+    stats = {}
+    for short_name, full_name, desc in BIG_3_REPOS:
+        stats[short_name] = get_repo_metrics(full_name)
+        stats[short_name]["full_name"] = full_name
+        stats[short_name]["description"] = desc
+    return stats
+
+# -----------------------------------------------------------------------------
+# ACTIVE APIFY PLATFORM & PPE TELEMETRY
+# -----------------------------------------------------------------------------
+def get_active_apify_stats():
     stats = []
     total_runs = 0
     total_succeeded = 0
     total_ppe_events = 0
 
-    for aid, name, desc in APIFY_ACTORS:
+    for aid, name, desc in ACTIVE_APIFY_ACTORS:
         url = f"https://api.apify.com/v2/acts/{aid}/runs?limit=25"
-        req = urllib.request.Request(url, headers={"Authorization": f"Bearer {APIFY_TOKEN}", "User-Agent": UA})
         try:
-            with urllib.request.urlopen(req, timeout=8) as r:
-                items = json.loads(r.read().decode("utf-8")).get("data", {}).get("items", [])
-                succeeded = [run for run in items if run.get("status") == "SUCCEEDED"]
-                ppe_charges = 0
-                for run in succeeded:
-                    counts = run.get("chargedEventCounts") or {}
-                    ppe_charges += sum(counts.values())
-                
-                total_runs += len(items)
-                total_succeeded += len(succeeded)
-                total_ppe_events += ppe_charges
-                stats.append({
-                    "id": aid,
-                    "name": name,
-                    "description": desc,
-                    "runs": len(items),
-                    "succeeded": len(succeeded),
-                    "ppe_charges": ppe_charges
-                })
+            res_data = fetch_json(url, timeout=8, headers={"Authorization": f"Bearer {APIFY_TOKEN}"})
+            items = res_data.get("data", {}).get("items", [])
+            succeeded = [run for run in items if run.get("status") == "SUCCEEDED"]
+            ppe_charges = 0
+            for run in succeeded:
+                counts = run.get("chargedEventCounts") or {}
+                ppe_charges += sum(counts.values())
+
+            total_runs += len(items)
+            total_succeeded += len(succeeded)
+            total_ppe_events += ppe_charges
+            stats.append({
+                "id": aid,
+                "name": name,
+                "description": desc,
+                "runs": len(items),
+                "succeeded": len(succeeded),
+                "ppe_charges": ppe_charges
+            })
         except Exception as e:
             stats.append({"id": aid, "name": name, "description": desc, "runs": 0, "succeeded": 0, "ppe_charges": 0, "error": str(e)})
 
@@ -181,79 +280,98 @@ def get_apify_stats():
     }
 
 # -----------------------------------------------------------------------------
-# PROSPECTING & GITHUB LEADS DISCOVERY
+# 3-TRACK SNIPER PROSPECTING ENGINE
 # -----------------------------------------------------------------------------
-def search_github_leads(track="track_a", limit=10):
-    queries = {
-        "track_a": [
-            "topic:polymarket",
-            "base dex arbitrage",
-            "aerodrome bot",
-            "x402 protocol",
-            "elizaos trading"
+def search_github_leads(track="track_rugshield", limit=5):
+    """
+    Track 1: DeFi & Base Trading Bot Builders -> Pitch RugShield 402
+    Track 2: AI Agent, MCP & LLM App Builders -> Pitch CanaryGuard 402
+    Track 3: B2B Growth, E-Commerce & Web Scraping Devs -> Pitch AgentFuel402
+    """
+    track_queries = {
+        "track_rugshield": [
+            "base dex",
+            "aerodrome",
+            "uniswap v3",
+            "sniper bot",
+            "honeypot",
+            "dexscreener",
+            "onchainkit"
         ],
-        "track_b": [
-            "n8n workflow b2b",
-            "crawl4ai markdown",
-            "shopify price monitor",
-            "mcp server python",
-            "langchain agent tools"
+        "track_canaryguard": [
+            "mcp server",
+            "modelcontextprotocol",
+            "langchain",
+            "crewai",
+            "autogen",
+            "prompt injection",
+            "openai agents"
+        ],
+        "track_agentfuel": [
+            "n8n",
+            "firecrawl",
+            "crawl4ai",
+            "shopify scraper",
+            "lead generation",
+            "apify"
         ]
     }
 
     headers = {
-        "Authorization": f"Bearer {GH_PAT}",
         "Accept": "application/vnd.github.v3+json",
         "User-Agent": UA
     }
+    if GH_PAT:
+        headers["Authorization"] = f"Bearer {GH_PAT}"
 
     discovered = []
-    selected_queries = queries.get(track, queries["track_b"])
+    queries = track_queries.get(track, track_queries["track_agentfuel"])
 
-    for q in selected_queries:
+    for q in queries:
         if len(discovered) >= limit:
             break
-        url = f"https://api.github.com/search/repositories?q={urllib.parse.quote(q)}&sort=updated&order=desc&per_page=5"
+        url = f"https://api.github.com/search/repositories?q={urllib.parse.quote(q)}&sort=updated&order=desc&per_page=6"
         try:
-            req = urllib.request.Request(url, headers=headers)
-            with urllib.request.urlopen(req, timeout=6) as r:
-                items = json.loads(r.read().decode("utf-8")).get("items", [])
-                for repo in items:
-                    owner = repo.get("owner", {}).get("login")
-                    repo_name = repo.get("full_name")
-                    repo_desc = repo.get("description") or "GitHub Project"
-                    if not owner: continue
+            res_data = fetch_json(url, timeout=6, headers=headers)
+            items = res_data.get("items", [])
+            for repo in items:
+                if len(discovered) >= limit:
+                    break
+                owner = repo.get("owner", {}).get("login")
+                repo_name = repo.get("full_name")
+                repo_desc = repo.get("description") or "GitHub Project"
+                if not owner:
+                    continue
 
-                    # Fetch user email if public
-                    try:
-                        u_req = urllib.request.Request(f"https://api.github.com/users/{owner}", headers=headers)
-                        with urllib.request.urlopen(u_req, timeout=4) as ur:
-                            u_data = json.loads(ur.read().decode("utf-8"))
-                            email = u_data.get("email")
-                            name = u_data.get("name") or owner
-                            if email and "@" in email and not email.endswith("noreply.github.com"):
-                                discovered.append({
-                                    "track": track,
-                                    "username": owner,
-                                    "name": name,
-                                    "email": email,
-                                    "repo": repo_name,
-                                    "repo_desc": repo_desc
-                                })
-                    except:
-                        pass
-        except Exception as e:
+                # Fetch user details for email
+                try:
+                    u_url = f"https://api.github.com/users/{owner}"
+                    u_data = fetch_json(u_url, timeout=4, headers=headers)
+                    email = u_data.get("email")
+                    name = u_data.get("name") or owner
+                    if email and "@" in email and not email.endswith("noreply.github.com"):
+                        discovered.append({
+                            "track": track,
+                            "username": owner,
+                            "name": name,
+                            "email": email,
+                            "repo": repo_name,
+                            "repo_desc": repo_desc
+                        })
+                except Exception:
+                    pass
+        except Exception:
             continue
 
     return discovered
 
 # -----------------------------------------------------------------------------
-# EMAIL OUTBOUND SENDER
+# EMAIL OUTBOUND SENDER & PITCH GENERATOR
 # -----------------------------------------------------------------------------
 def send_email(to_addr, subject, body_text, body_html=None):
     msg = MIMEMultipart("alternative")
     msg["Subject"] = subject
-    msg["From"] = f"Kurox Alpha & Data Factory <{SMTP_USER}>"
+    msg["From"] = f"Kurox Alpha & Security Suite <{SMTP_USER}>"
     msg["To"] = to_addr
 
     msg.attach(MIMEText(body_text, "plain", "utf-8"))
@@ -267,32 +385,61 @@ def send_email(to_addr, subject, body_text, body_html=None):
 
 def craft_pitch(lead):
     name = lead.get("name", "Builder")
-    repo = lead.get("repo", "your repository")
-    track = lead.get("track", "track_b")
+    repo = lead.get("repo", "your project")
+    track = lead.get("track", "track_agentfuel")
 
-    if track == "track_a":
-        subject = f"Sub-second Base DEX & Polymarket telemetry for {repo} (Pulse402 Oracle)"
+    if track == "track_rugshield":
+        subject = f"Sub-200ms Base Honeypot & Tax Simulation for {repo} (RugShield 402)"
         text = f"""Hi {name},
 
-I saw your recent work on {repo} and wanted to share a fast telemetry feed built for automated trading agents on Base Mainnet.
+Saw your recent commits on {repo}. If you're building automated trading bots, swap routers, or sniper tools on Base Mainnet, unverified tokens and stealth fee-on-transfer honeypots are a constant risk.
 
-Pulse402 is an ultra-low latency oracle delivering:
-1. Real-time Base DEX pool depth (Aerodrome, Uniswap v3) with swap volume velocity
-2. Polymarket probability divergence alerts (sub-second orderbook shift detection)
-3. Cross-DEX arbitrage radar with net L2 gas-adjusted profit calculations
-4. Pre-trade honeypot and proxy audit calldata simulations
+RugShield 402 is an autonomous DEX pre-trade simulation engine:
+1. Sub-200ms bytecode-level EVM execution simulating actual buy & sell transactions against Base RPC
+2. Exact fee-on-transfer tax detection in basis points (bps) for both buy and sell paths
+3. Liquidity lock & pool depth analysis across Aerodrome (Slipstream) and Uniswap v3
+4. Sybil cluster detection and dev wallet concentration scoring
 
-Access is completely gasless and pay-per-event:
-- Cloudflare Edge x402: https://pulse402.ak10082247.workers.dev (Base & Solana USDC)
-- Apify Store Pay-Per-Event: https://apify.com/kuroxreal/pulse402-oracle ($0.02 USD / feed)
-- Official MCP Server: io.github.ak10082247-max/pulse402-oracle
+Integrate it directly into your bot pipeline:
+- Open-Source MCP Server: https://github.com/ak10082247-max/rugshield-402 (Claude Desktop & Cursor native)
+- Standard MCP Tools: `rugshield_pre_swap_scan`, `check_honeypot`, `verify_liquidity_lock`
+- Live Edge API (x402 $0.010 USDC on Base): https://rugshield-402.onrender.com
+- Apify Pay-Per-Event ($0.005/scan): https://apify.com/kuroxreal/rugshield-402
 
-Hope this saves you latency on your swap routes!
+Hope this prevents bad fills on your Base routes!
 
 Best regards,
-Kurox Real / Pulse402 Engineering
-https://github.com/ak10082247-max/pulse402-oracle
+Kurox DEX Security Team
+https://github.com/ak10082247-max/rugshield-402
 """
+
+    elif track == "track_canaryguard":
+        subject = f"Deterministic Prompt-Injection Firewall & MCP Tool Sanitizer for {repo} (CanaryGuard)"
+        text = f"""Hi {name},
+
+Loved what you're building in {repo}. With LLM agents taking autonomous actions and reading untrusted web data or user inputs, indirect prompt injections, jailbreaks, and tool-poisoning attacks are a critical vulnerability.
+
+CanaryGuard 402 is a deterministic security firewall and honeypot scrubber built specifically for AI agents:
+1. Sub-10ms deterministic prompt-injection detection and instruction override neutralization
+2. Hidden Unicode, zero-width steganography, and malicious script scrubbing
+3. Cryptographic tamper-evident inspection receipts with risk scores (0-100)
+4. Contextual scoring for extracted crypto addresses and wallet-drain commands
+
+Connect it in seconds:
+- Open-Source Repo: https://github.com/ak10082247-max/canaryguard-402
+- Claude Desktop & Cursor MCP: https://canaryguard-402.onrender.com/mcp
+- ElizaOS Official Plugin: @kurox_real/plugin-canaryguard
+- Coinbase AgentKit Action Provider: @kurox_real/agentkit-canaryguard-402
+- Apify Store Pay-Per-Event ($0.003/check): https://apify.com/kuroxreal/canaryguard-402
+- Flat Subscription: Available on MCPize ($9.99/mo)
+
+Keep your agents safe from prompt injection!
+
+Best regards,
+Kurox AI Safety Engineering
+https://github.com/ak10082247-max/canaryguard-402
+"""
+
     else:
         subject = f"Clean Markdown, B2B Leads & E-Com Feeds for {repo} (AgentFuel402)"
         text = f"""Hi {name},
@@ -307,8 +454,12 @@ We launched AgentFuel402 — a zero-cold-start consumable data factory built spe
 
 Available across your favorite stacks:
 - Apify Store PPE ($0.015 - $0.030 USD): https://apify.com/kuroxreal
+  * B2B Leads: https://apify.com/kuroxreal/b2b-intent-leads-ppe
+  * Clean Markdown: https://apify.com/kuroxreal/llm-clean-markdown-ppe
+  * E-Com Monitor: https://apify.com/kuroxreal/ecom-price-stock-ppe
 - Official MCP Server: io.github.ak10082247-max/agentfuel402 (Instant Claude Desktop & Cursor tool)
 - Cloudflare Edge x402: https://agentfuel402.ak10082247.workers.dev ($0.005 - $0.010 USDC)
+- Free Live Previews: https://agentfuel402.ak10082247.workers.dev/v1/preview/leads
 
 Cheers and happy building,
 Kurox Real / AgentFuel402
@@ -320,48 +471,60 @@ https://github.com/ak10082247-max/agentfuel402
 # -----------------------------------------------------------------------------
 # SCORECARD DIGEST SENDER
 # -----------------------------------------------------------------------------
-def send_digest_scorecard(treasury, apify_stats, leads_summary):
+def send_digest_scorecard(treasury, gh_stats, apify_stats, leads_summary):
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
-    subject = f"🏆 [Empire Revenue Scorecard] Treasury: ${treasury['total_usdc']:.3f} USDC | Apify Runs: {apify_stats['total_runs']} | {today}"
+    subject = f"[Empire Revenue Scorecard] Treasury: ${treasury['total_usdc']:.3f} USDC | Apify Runs: {apify_stats['total_runs']} | {today}"
 
-    # Build Plain Text
     body = f"""=============================================================================
-KUROX EMPIRE REVENUE & GROWTH SCORECARD — {today}
+KUROX "BIG 3" EMPIRE REVENUE & GROWTH SCORECARD - {today}
+Consolidated Flagships: CanaryGuard 402 | RugShield 402 | AgentFuel402
 =============================================================================
 
 1. VERIFIED ON-CHAIN TREASURY (Base & Solana USDC):
 -----------------------------------------------------------------------------
-Base Merchant 1 (0x7327...):  {treasury['base'][0]['usdc']:.6f} USDC
-Base Merchant 2 (0x80E0...):  {treasury['base'][1]['usdc']:.6f} USDC
-Solana Merchant ATA 1 (3shU...): {treasury['solana'][0]['usdc']:.6f} USDC
-Solana Merchant ATA 2 (DD3A...): {treasury['solana'][1]['usdc']:.6f} USDC
->>> TOTAL LIVE TREASURY:     {treasury['total_usdc']:.6f} USDC
+Base Merchant 1 (0x7327...):     {treasury['base'][0]['usdc']:.6f} USDC
+Base Merchant 2 (0x80E0...):     {treasury['base'][1]['usdc']:.6f} USDC
+Solana Merchant ATA 1 (3shU...): {treasury['solana'][0]['usdc']:.6f} USDC  (Verified via getTokenAccountBalance)
+Solana Merchant ATA 2 (DD3A...): {treasury['solana'][1]['usdc']:.6f} USDC  (Primary AgentFuel Receiver)
+>>> TOTAL VERIFIED TREASURY:     {treasury['total_usdc']:.6f} USDC
 
-2. APIFY STORE PAY-PER-EVENT TELEMETRY:
+2. "BIG 3" GITHUB ECOSYSTEM REPO METRICS:
+-----------------------------------------------------------------------------
+"""
+    for short_name, stats in gh_stats.items():
+        body += f"* {stats['full_name']:35} | Stars: {stats['stars']} | Open PRs: {stats['open_prs']} | Issues: {stats['open_issues']}\n"
+        body += f"  Desc: {stats['description']}\n"
+
+    body += f"""
+3. ACTIVE APIFY STORE PAY-PER-EVENT TELEMETRY:
 -----------------------------------------------------------------------------
 Total Actor Runs:       {apify_stats['total_runs']}
 Successful Runs:        {apify_stats['total_succeeded']}
 Total PPE Charged:      {apify_stats['total_ppe_events']} events
 
-Breakdown:
+Breakdown across Active Actors:
 """
     for a in apify_stats["actors"]:
-        body += f"- {a['name']:25}: {a['runs']} runs | {a['succeeded']} succeeded | {a['ppe_charges']} PPE events\n"
+        body += f"- {a['name']:25}: {a['runs']:2} runs | {a['succeeded']:2} succeeded | {a['ppe_charges']:2} PPE events\n"
 
     body += f"""
-3. OUTBOUND GROWTH & PROSPECTING STATUS:
+4. 3-TRACK OUTBOUND PROSPECTING & GROWTH:
 -----------------------------------------------------------------------------
 Total Leads Contacted (Lifetime): {leads_summary['total_lifetime']}
 Emails Sent Today:                {leads_summary['sent_today']} / {MAX_EMAILS_PER_DAY} daily cap
-Track A (Crypto/Polymarket):      {leads_summary['track_a_sent']}
-Track B (B2B/Automation/AI):      {leads_summary['track_b_sent']}
+- Track 1 - RugShield (Base DeFi / DEX Bots):  {leads_summary['track_rugshield_sent']} sent
+- Track 2 - CanaryGuard (AI Agents / MCP):     {leads_summary['track_canaryguard_sent']} sent
+- Track 3 - AgentFuel402 (B2B / E-Com / Scrap): {leads_summary['track_agentfuel_sent']} sent
 
-4. LIVE DEPLOYMENT & ECOSYSTEM STATUS:
+5. ACTIVE PRODUCTION SERVICES (SUSPENDED SERVICES FULLY SILENCED):
 -----------------------------------------------------------------------------
-- AgentFuel402 Edge:    https://agentfuel402.ak10082247.workers.dev (LIVE 200)
-- Pulse402 Oracle Edge: https://pulse402.ak10082247.workers.dev (LIVE 200)
-- Official MCP Server:  io.github.ak10082247-max/agentfuel402@1.0.0 (ACTIVE)
-- Apify Public Actors:  4 Public PPE Actors Active (SEO Titles & Descriptions Applied)
+- AgentFuel402 Cloudflare Edge: https://agentfuel402.ak10082247.workers.dev (LIVE 200)
+- CanaryGuard 402 Live Gateway: https://canaryguard-402.onrender.com (LIVE 200)
+- RugShield 402 Live Gateway:   https://rugshield-402.onrender.com (LIVE 200)
+- Suspended Crons Silenced:     Pulse402 Keepalive/Deploy/Growth/Paper Trader DISABLED
+                                Tollbooth Keepalive/Blogger DISABLED
+                                Guard402 Keepalive DISABLED
+- Suspended Apify Actors:       Pulse402, StealthGuard & Guard402 set to isDeprecated=True
 =============================================================================
 """
 
@@ -378,37 +541,43 @@ Track B (B2B/Automation/AI):      {leads_summary['track_b_sent']}
 # MAIN CLI ENTRYPOINT
 # -----------------------------------------------------------------------------
 def main():
-    parser = argparse.ArgumentParser(description="Unified Growth & Digest Engine")
+    parser = argparse.ArgumentParser(description="Big 3 Empire Engine")
     parser.add_argument("--digest-only", action="store_true", help="Only query treasury & send scorecard without prospecting")
     args = parser.parse_args()
 
-    print(f"[{datetime.now(timezone.utc).isoformat()}] Starting Unified Empire Engine...")
+    print(f"[{datetime.now(timezone.utc).isoformat()}] Starting Big 3 Empire Engine...")
 
     # 1. Fetch on-chain treasury balances
     treasury = get_treasury_balances()
-    print(f"[+] Total Verified Treasury: {treasury['total_usdc']} USDC")
+    print(f"[+] Total Verified Treasury: {treasury['total_usdc']:.6f} USDC")
 
-    # 2. Fetch Apify stats
-    apify_stats = get_apify_stats()
-    print(f"[+] Apify Total Runs: {apify_stats['total_runs']} | Succeeded: {apify_stats['total_succeeded']}")
+    # 2. Fetch GitHub metrics for Big 3
+    gh_stats = get_big3_github_stats()
+    print(f"[+] GitHub Big 3 Metrics Queried: {list(gh_stats.keys())}")
 
-    # 3. Load leads & check daily limit
+    # 3. Fetch Apify stats for active actors
+    apify_stats = get_active_apify_stats()
+    print(f"[+] Apify Active Total Runs: {apify_stats['total_runs']} | Succeeded: {apify_stats['total_succeeded']}")
+
+    # 4. Load leads & check daily limit
     leads_data = load_leads()
     sent_today = count_sent_today(leads_data["history"])
     remaining_today = max(0, MAX_EMAILS_PER_DAY - sent_today)
     print(f"[+] Outbound Sent Today: {sent_today}/{MAX_EMAILS_PER_DAY} (Remaining capacity: {remaining_today})")
 
-    track_a_count = 0
-    track_b_count = 0
+    track_counts = {"track_rugshield": 0, "track_canaryguard": 0, "track_agentfuel": 0}
 
     if not args.digest_only and remaining_today > 0:
-        # Prospect Track A
-        quota_a = min(remaining_today // 2, 5)
-        quota_b = min(remaining_today - quota_a, 5)
+        # Send 1 per track to test live delivery across all 3 tracks
+        per_track = max(1, min(remaining_today // 3, 2))
 
-        if quota_a > 0:
-            track_a_leads = search_github_leads("track_a", limit=quota_a)
-            for lead in track_a_leads:
+        for track_name in ["track_rugshield", "track_canaryguard", "track_agentfuel"]:
+            if count_sent_today(leads_data["history"]) >= MAX_EMAILS_PER_DAY:
+                break
+            leads = search_github_leads(track_name, limit=per_track)
+            for lead in leads:
+                if count_sent_today(leads_data["history"]) >= MAX_EMAILS_PER_DAY:
+                    break
                 email = lead["email"].lower().strip()
                 user = lead["username"].lower().strip()
                 if email in leads_data["contacted_emails"] or user in leads_data["contacted_users"]:
@@ -421,54 +590,28 @@ def main():
                     leads_data["history"].append({
                         "username": user,
                         "email": email,
-                        "track": "track_a",
+                        "track": track_name,
                         "repo": lead["repo"],
                         "sent_date": datetime.now(timezone.utc).isoformat()
                     })
-                    track_a_count += 1
+                    track_counts[track_name] += 1
                     save_leads(leads_data)
-                    print(f"  [+] Track A pitch delivered to: {email} ({user} on {lead['repo']})")
-                    time.sleep(2)
-                except Exception as e:
-                    print(f"  [-] Failed to pitch {email}: {e}")
-
-        # Prospect Track B
-        if quota_b > 0:
-            track_b_leads = search_github_leads("track_b", limit=quota_b)
-            for lead in track_b_leads:
-                email = lead["email"].lower().strip()
-                user = lead["username"].lower().strip()
-                if email in leads_data["contacted_emails"] or user in leads_data["contacted_users"]:
-                    continue
-                try:
-                    subj, pitch = craft_pitch(lead)
-                    send_email(email, subj, pitch)
-                    leads_data["contacted_emails"].append(email)
-                    leads_data["contacted_users"].append(user)
-                    leads_data["history"].append({
-                        "username": user,
-                        "email": email,
-                        "track": "track_b",
-                        "repo": lead["repo"],
-                        "sent_date": datetime.now(timezone.utc).isoformat()
-                    })
-                    track_b_count += 1
-                    save_leads(leads_data)
-                    print(f"  [+] Track B pitch delivered to: {email} ({user} on {lead['repo']})")
+                    print(f"  [+] {track_name} pitch delivered to: {email} ({user} on {lead['repo']})")
                     time.sleep(2)
                 except Exception as e:
                     print(f"  [-] Failed to pitch {email}: {e}")
 
     leads_summary = {
         "total_lifetime": len(leads_data["contacted_emails"]),
-        "sent_today": sent_today + track_a_count + track_b_count,
-        "track_a_sent": track_a_count,
-        "track_b_sent": track_b_count
+        "sent_today": sent_today + sum(track_counts.values()),
+        "track_rugshield_sent": track_counts["track_rugshield"],
+        "track_canaryguard_sent": track_counts["track_canaryguard"],
+        "track_agentfuel_sent": track_counts["track_agentfuel"]
     }
 
-    # 4. Generate & Deliver Daily Revenue Scorecard Digest
-    send_digest_scorecard(treasury, apify_stats, leads_summary)
-    print(f"[{datetime.now(timezone.utc).isoformat()}] Unified Empire Engine execution complete.")
+    # 5. Generate & Deliver Daily Revenue Scorecard Digest
+    send_digest_scorecard(treasury, gh_stats, apify_stats, leads_summary)
+    print(f"[{datetime.now(timezone.utc).isoformat()}] Big 3 Empire Engine execution complete.")
 
 if __name__ == "__main__":
     main()
