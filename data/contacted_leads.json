@@ -1,0 +1,81 @@
+{
+  "updated_at": "2026-11-08T14:35:06.164299+00:00",
+  "contacted_emails": [
+    "benny.json@gmail.com",
+    "support@0xinsider.com",
+    "info@solvela.ai",
+    "paulf280@gmail.com",
+    "manny.ruesch@gmail.com",
+    "info@ddm-it.de",
+    "unclecode@kidocode.com",
+    "info+oss@xbp-europe.com"
+  ],
+  "contacted_users": [
+    "bennyjo",
+    "0xinsider",
+    "solvela-ai",
+    "paulf280-ui",
+    "manny-ruesch",
+    "dasdigitalemomentum",
+    "unclecode",
+    "xbp-europe"
+  ],
+  "history": [
+    {
+      "username": "bennyjo",
+      "email": "benny.json@gmail.com",
+      "track": "track_a",
+      "repo": "bennyjo/phil",
+      "sent_date": "2026-11-08T14:34:31.271691+00:00"
+    },
+    {
+      "username": "0xinsider",
+      "email": "support@0xinsider.com",
+      "track": "track_a",
+      "repo": "0xinsider/picks",
+      "sent_date": "2026-11-08T14:34:34.387226+00:00"
+    },
+    {
+      "username": "solvela-ai",
+      "email": "info@solvela.ai",
+      "track": "track_a",
+      "repo": "solvela-ai/solvela",
+      "sent_date": "2026-11-08T14:34:37.569342+00:00"
+    },
+    {
+      "username": "paulf280-ui",
+      "email": "paulf280@gmail.com",
+      "track": "track_a",
+      "repo": "paulf280-ui/solana-safe-sniper-mcp-template",
+      "sent_date": "2026-11-08T14:34:40.599229+00:00"
+    },
+    {
+      "username": "manny-ruesch",
+      "email": "manny.ruesch@gmail.com",
+      "track": "track_b",
+      "repo": "manny-ruesch/n8n-python-ai-automation-vault",
+      "sent_date": "2026-11-08T14:34:56.656998+00:00"
+    },
+    {
+      "username": "dasdigitalemomentum",
+      "email": "info@ddm-it.de",
+      "track": "track_b",
+      "repo": "DasDigitaleMomentum/searxNcrawl",
+      "sent_date": "2026-11-08T14:35:00.170165+00:00"
+    },
+    {
+      "username": "unclecode",
+      "email": "unclecode@kidocode.com",
+      "track": "track_b",
+      "repo": "unclecode/crawl4ai",
+      "sent_date": "2026-11-08T14:35:03.073964+00:00"
+    },
+    {
+      "username": "xbp-europe",
+      "email": "info+oss@xbp-europe.com",
+      "track": "track_b",
+      "repo": "XBP-Europe/sagemath-mcp",
+      "sent_date": "2026-11-08T14:35:06.164299+00:00"
+    }
+  ]
+}

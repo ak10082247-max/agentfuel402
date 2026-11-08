@@ -1,0 +1,36 @@
+name: Unified Empire Growth & Daily Digest Engine
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'  # Runs every 6 hours
+  workflow_dispatch:
+
+jobs:
+  growth_and_digest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_PAT || github.token }}
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run Unified Empire Engine
+        env:
+          GH_PAT: ${{ secrets.GH_PAT }}
+          APIFY_TOKEN: ${{ secrets.APIFY_TOKEN }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+        run: |
+          python scripts/unified_empire_engine.py
+
+      - name: Persist Contacted Leads State
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/contacted_leads.json
+          git diff --staged --quiet || (git commit -m "chore: persist updated contacted leads state [skip ci]" && git push origin main)
