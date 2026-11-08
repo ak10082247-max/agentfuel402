@@ -101,7 +101,8 @@ ACTIVE_APIFY_ACTORS = [
     ("lb9cRH5Gbe5aw7Hqv", "rugshield-402", "RugShield DEX Honeypot & Tax Simulator"),
     ("2AbJGn42avqlwZo5V", "b2b-intent-leads-ppe", "B2B Intent Leads & Buying Signals"),
     ("2KWgMEUJOiSzDpxeW", "llm-clean-markdown-ppe", "LLM Clean Markdown Sanitizer"),
-    ("JoVOb6vKPFaNhDDcj", "ecom-price-stock-ppe", "E-Commerce Real-Time Price & Stock")
+    ("JoVOb6vKPFaNhDDcj", "ecom-price-stock-ppe", "E-Commerce Real-Time Price & Stock"),
+    ("uOQ4jLOToRTwe10G1", "reverse-engineer-anything", "Reverse Engineer Anything (REA)")
 ]
 
 # -----------------------------------------------------------------------------
@@ -501,7 +502,7 @@ https://github.com/ak10082247-max/canaryguard-402
 """
 
     else:
-        subject = f"Clean Markdown, B2B Leads & E-Com Feeds for {repo} (AgentFuel402)"
+        subject = f"Clean Markdown, B2B Leads, E-Com & REA for {repo} (AgentFuel402)"
         text = f"""Hi {name},
 
 Loved what you're building in {repo}. If you're running web scraping, AI agents, or Clay/n8n workflows, you've probably run into bot blocks (Cloudflare 403s/419s) and high token costs.
@@ -510,10 +511,12 @@ We launched AgentFuel402 — a zero-cold-start consumable data factory built spe
 1. LLM Clean Markdown: Strips noisy ads, scripts, and navigation; enforces strict SSRF and prompt-injection defense
 2. B2B Intent Leads: Live tech product launches, founder discussions, hiring alerts, and tech stacks with Intent Scores (30–100)
 3. E-Commerce Price & Stock: Live Shopify & Schema.org variant, price, discount delta, and inventory tracking
-4. Zero-Charge Resilience: We never charge on 404s or dead links under our Verify -> Fetch -> Settle guarantee
+4. Reverse Engineer Anything (REA): Discovers Next.js hydration APIs, hidden REST/GraphQL routes, and auto-generates OpenAPI 3.1 specs + client code without scraping
+5. Zero-Charge Resilience: We never charge on 404s or dead links under our Verify -> Fetch -> Settle guarantee
 
 Available across your favorite stacks:
-- Apify Store PPE ($0.015 - $0.030 USD): https://apify.com/kuroxreal
+- Apify Store PPE ($0.015 - $0.050 USD): https://apify.com/kuroxreal
+  * Reverse Engineer Anything: https://apify.com/kuroxreal/reverse-engineer-anything
   * B2B Leads: https://apify.com/kuroxreal/b2b-intent-leads-ppe
   * Clean Markdown: https://apify.com/kuroxreal/llm-clean-markdown-ppe
   * E-Com Monitor: https://apify.com/kuroxreal/ecom-price-stock-ppe
