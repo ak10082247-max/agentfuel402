@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-08T19:41:08.468311+00:00",
+  "updated_at": "2026-11-09T05:39:21.955272+00:00",
   "contacted_emails": [
     "benny.json@gmail.com",
     "support@0xinsider.com",
@@ -20,7 +20,13 @@
     "sanufalahi5034@gmail.com",
     "founder@substratesystems.io",
     "beto.zip@ludix.app",
-    "shad_singe3y@icloud.com"
+    "shad_singe3y@icloud.com",
+    "bunts-wall-9q@icloud.com",
+    "6.pound_fodders@icloud.com",
+    "cbosch101@gmail.com",
+    "pavel.usanli@gmail.com",
+    "richter83@gmail.com",
+    "limcunyang@gmail.com"
   ],
   "contacted_users": [
     "bennyjo",
@@ -42,7 +48,13 @@
     "mohammedfalahi",
     "artexis10",
     "beto-zip",
-    "tiger-meadow78na0"
+    "tiger-meadow78na0",
+    "quartzsprint0dbm3nh",
+    "gentlelufdig32826",
+    "booyaka101",
+    "kalpak44",
+    "richter83-star",
+    "djlim81"
   ],
   "history": [
     {
@@ -184,6 +196,48 @@
       "track": "track_rugshield",
       "repo": "Tiger-meadow78na0/how-to-launch-ethereum-arbitrage-bot-cost-awareness",
       "sent_date": "2026-11-08T19:41:08.468311+00:00"
+    },
+    {
+      "username": "quartzsprint0dbm3nh",
+      "email": "bunts-wall-9q@icloud.com",
+      "track": "track_rugshield",
+      "repo": "quartzsprint0dbm3nh/how-to-create-uniswap-arbitrage-bot-swap-routes",
+      "sent_date": "2026-11-09T05:38:58.588282+00:00"
+    },
+    {
+      "username": "gentlelufdig32826",
+      "email": "6.pound_fodders@icloud.com",
+      "track": "track_rugshield",
+      "repo": "Gentlelufdig32826/how-to-configure-arbitrage-bot-execution-parameters",
+      "sent_date": "2026-11-09T05:39:01.760336+00:00"
+    },
+    {
+      "username": "booyaka101",
+      "email": "cbosch101@gmail.com",
+      "track": "track_canaryguard",
+      "repo": "Booyaka101/mcp-vet",
+      "sent_date": "2026-11-09T05:39:07.870081+00:00"
+    },
+    {
+      "username": "kalpak44",
+      "email": "pavel.usanli@gmail.com",
+      "track": "track_canaryguard",
+      "repo": "kalpak44/mac-calendar-mcp",
+      "sent_date": "2026-11-09T05:39:11.731277+00:00"
+    },
+    {
+      "username": "richter83-star",
+      "email": "richter83@gmail.com",
+      "track": "track_agentfuel",
+      "repo": "richter83-star/verifiable-lead-triage-n8n",
+      "sent_date": "2026-11-09T05:39:18.646552+00:00"
+    },
+    {
+      "username": "djlim81",
+      "email": "limcunyang@gmail.com",
+      "track": "track_agentfuel",
+      "repo": "djlim81/n8n-ai-customer-support-automation",
+      "sent_date": "2026-11-09T05:39:21.955247+00:00"
     }
   ]
 }
