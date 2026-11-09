@@ -66,7 +66,7 @@ SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 587
 DIGEST_RECIPIENTS = ["ak10082247@gmail.com", "armkhan18@gmail.com"]
 
-MAX_EMAILS_PER_DAY = 20
+MAX_EMAILS_PER_DAY = 35
 DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
 CONTACTED_FILE = os.path.join(DATA_DIR, "contacted_leads.json")
 
@@ -628,8 +628,8 @@ def main():
     track_counts = {"track_rugshield": 0, "track_canaryguard": 0, "track_agentfuel": 0}
 
     if not args.digest_only and remaining_today > 0:
-        # Send 1 per track to test live delivery across all 3 tracks
-        per_track = max(1, min(remaining_today // 3, 2))
+        # Send up to 3 per track (9 per cycle) to ensure balanced Big 3 outreach
+        per_track = max(1, min(remaining_today // 3, 3))
 
         for track_name in ["track_rugshield", "track_canaryguard", "track_agentfuel"]:
             if count_sent_today(leads_data["history"]) >= MAX_EMAILS_PER_DAY:
