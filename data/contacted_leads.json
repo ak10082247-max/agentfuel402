@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-09T05:39:21.955272+00:00",
+  "updated_at": "2026-11-09T15:47:26.607494+00:00",
   "contacted_emails": [
     "benny.json@gmail.com",
     "support@0xinsider.com",
@@ -26,7 +26,16 @@
     "cbosch101@gmail.com",
     "pavel.usanli@gmail.com",
     "richter83@gmail.com",
-    "limcunyang@gmail.com"
+    "limcunyang@gmail.com",
+    "doctors-ensigns.6l@icloud.com",
+    "4_papyrus.ostrich@icloud.com",
+    "tax_bracing_5p@icloud.com",
+    "neelbhavsar124@gmail.com",
+    "kanavj@gmail.com",
+    "karthikdixithofficial1@gmail.com",
+    "efregedef@gmail.com",
+    "nguyenhuuhoangan2504@gmail.com",
+    "anatolii.ttusko@gmail.com"
   ],
   "contacted_users": [
     "bennyjo",
@@ -54,7 +63,16 @@
     "booyaka101",
     "kalpak44",
     "richter83-star",
-    "djlim81"
+    "djlim81",
+    "tundracruise5rg1xq",
+    "nunafe326504",
+    "brook-focus930321",
+    "neeelbhavsar",
+    "zz-plant",
+    "karthik-dixith",
+    "efregedef-svg",
+    "nhhandevops",
+    "anatolii33"
   ],
   "history": [
     {
@@ -238,6 +256,69 @@
       "track": "track_agentfuel",
       "repo": "djlim81/n8n-ai-customer-support-automation",
       "sent_date": "2026-11-09T05:39:21.955247+00:00"
+    },
+    {
+      "username": "tundracruise5rg1xq",
+      "email": "doctors-ensigns.6l@icloud.com",
+      "track": "track_rugshield",
+      "repo": "tundracruise5rg1xq/how-to-launch-aave-arbitrage-bot-loan-execution",
+      "sent_date": "2026-11-09T15:46:50.241980+00:00"
+    },
+    {
+      "username": "nunafe326504",
+      "email": "4_papyrus.ostrich@icloud.com",
+      "track": "track_rugshield",
+      "repo": "Nunafe326504/how-to-launch-ethereum-arbitrage-bot-wallet-setup",
+      "sent_date": "2026-11-09T15:46:53.141031+00:00"
+    },
+    {
+      "username": "brook-focus930321",
+      "email": "tax_bracing_5p@icloud.com",
+      "track": "track_rugshield",
+      "repo": "brook-focus930321/how-to-configure-arbitrage-bot-deployment-steps",
+      "sent_date": "2026-11-09T15:46:55.761812+00:00"
+    },
+    {
+      "username": "neeelbhavsar",
+      "email": "neelbhavsar124@gmail.com",
+      "track": "track_canaryguard",
+      "repo": "neeelbhavsar/mcp-skills-hub",
+      "sent_date": "2026-11-09T15:47:10.236090+00:00"
+    },
+    {
+      "username": "zz-plant",
+      "email": "kanavj@gmail.com",
+      "track": "track_canaryguard",
+      "repo": "zz-plant/ambit",
+      "sent_date": "2026-11-09T15:47:12.934103+00:00"
+    },
+    {
+      "username": "karthik-dixith",
+      "email": "karthikdixithofficial1@gmail.com",
+      "track": "track_canaryguard",
+      "repo": "karthik-dixith/langgraph-research-agent",
+      "sent_date": "2026-11-09T15:47:15.661639+00:00"
+    },
+    {
+      "username": "efregedef-svg",
+      "email": "efregedef@gmail.com",
+      "track": "track_agentfuel",
+      "repo": "efregedef-svg/n8n-company-research-from-email",
+      "sent_date": "2026-11-09T15:47:21.173164+00:00"
+    },
+    {
+      "username": "nhhandevops",
+      "email": "nguyenhuuhoangan2504@gmail.com",
+      "track": "track_agentfuel",
+      "repo": "nhhandevops/n8n-prod-kit",
+      "sent_date": "2026-11-09T15:47:23.807849+00:00"
+    },
+    {
+      "username": "anatolii33",
+      "email": "anatolii.ttusko@gmail.com",
+      "track": "track_agentfuel",
+      "repo": "Anatolii33/ai-lead-qualification-n8n",
+      "sent_date": "2026-11-09T15:47:26.607475+00:00"
     }
   ]
 }
