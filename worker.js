@@ -161,7 +161,15 @@ function corsHeaders(req) {
 }
 
 // Helper: Build x402 V2 Challenge
-function build402Challenge(req, routePath, details) {
+const MCP_TOOL_ROUTES = {
+  fuel_b2b_leads: "/v1/fuel/b2b-intent-leads",
+  fuel_clean_markdown: "/v1/fuel/llm-clean-markdown",
+  fuel_ecom_price_stock: "/v1/fuel/ecom-price-stock",
+  fuel_sdk_spec: "/v1/fuel/sdk-live-spec",
+  fuel_reverse_engineer: "/v1/fuel/reverse-engineer"
+};
+
+function buildChallengePayload(req, routePath, details) {
   const cfg = ROUTE_CONFIGS[routePath] || {
     amountMicro: 10000,
     priceDisplay: "$0.010 USDC",
@@ -205,6 +213,7 @@ function build402Challenge(req, routePath, details) {
 
   const challengeObj = {
     x402Version: 2,
+    error: details || "Payment required to access this resource",
     resource: {
       url: resourceUrl,
       description: cfg.description,
@@ -243,6 +252,11 @@ function build402Challenge(req, routePath, details) {
     ...(details ? { details } : {})
   };
 
+  return { cfg, challengeObj };
+}
+
+function build402Challenge(req, routePath, details) {
+  const { cfg, challengeObj } = buildChallengePayload(req, routePath, details);
   const b64Invoice = btoa(JSON.stringify(challengeObj));
 
   const headers = {
@@ -1156,20 +1170,24 @@ async function preparePayAIRequirements(req, routePath, rawPaymentHeader) {
   const cfg = ROUTE_CONFIGS[routePath];
   if (!cfg) throw new Error("Route not configured for payment settlement.");
 
-  let payloadStr = rawPaymentHeader.trim();
-  if (!payloadStr.startsWith("{")) {
-    try {
-      payloadStr = atob(payloadStr);
-    } catch {
-      throw new Error("Payment header must be valid Base64-encoded UTF-8 JSON.");
-    }
-  }
-
   let parsed;
-  try {
-    parsed = JSON.parse(payloadStr);
-  } catch {
-    throw new Error("Malformed payment payload: invalid JSON.");
+  if (typeof rawPaymentHeader === "object" && rawPaymentHeader !== null) {
+    parsed = rawPaymentHeader;
+  } else {
+    let payloadStr = String(rawPaymentHeader || "").trim();
+    if (!payloadStr.startsWith("{")) {
+      try {
+        payloadStr = atob(payloadStr);
+      } catch {
+        throw new Error("Payment header must be valid Base64-encoded UTF-8 JSON.");
+      }
+    }
+
+    try {
+      parsed = JSON.parse(payloadStr);
+    } catch {
+      throw new Error("Malformed payment payload: invalid JSON.");
+    }
   }
 
   const url = new URL(req.url);
@@ -1678,67 +1696,70 @@ Endpoints:
       if (method === "tools/call") {
         const toolName = params?.name;
         const toolArgs = params?.arguments || {};
+        const toolRoute = MCP_TOOL_ROUTES[toolName];
 
-        // Free Trial Quota: Allow 3 free calls per IP for test probers
-        const used = mcpFreeTrialMap.get(clientIp) || 0;
-        let isFreeTrial = false;
-        if (used < 3) {
-          mcpFreeTrialMap.set(clientIp, used + 1);
-          isFreeTrial = true;
+        if (!toolRoute) {
+          return new Response(JSON.stringify({ jsonrpc: "2.0", id, error: { code: -32601, message: `Tool '${toolName}' not found` } }), { status: 200, headers: { ...cors, "Content-Type": "application/json" } });
         }
 
         const sessionToken = req.headers.get("X-Fuel-Session");
-        const hasValidSession = sessionToken && activePasses.has(sessionToken) && activePasses.get(sessionToken).callsRemaining > 0;
-        if (hasValidSession) {
-          activePasses.get(sessionToken).callsRemaining -= 1;
-        }
-
+        const hasValidSession = Boolean(sessionToken && activePasses.has(sessionToken) && activePasses.get(sessionToken).callsRemaining > 0);
         const paymentHdr = req.headers.get("PAYMENT-SIGNATURE") || req.headers.get("X-PAYMENT") || params?._meta?.["x402/payment"];
 
-        if (!isFreeTrial && !hasValidSession && !paymentHdr) {
-          return new Response(JSON.stringify({
-            jsonrpc: "2.0",
-            id,
-            error: {
-              code: 402,
-              message: "Payment Required: MCP free trial exhausted (3/3 calls used). Attach PAYMENT-SIGNATURE or X-Fuel-Session to continue.",
-              data: {
-                x402: {
-                  price: "$0.005 - $0.010 USDC",
-                  acceptedChains: ["Base Mainnet", "Solana Mainnet"],
-                  merchantBase: MERCHANT_BASE,
-                  merchantSolana: MERCHANT_SOLANA_ATA
-                }
-              }
-            }
-          }), { status: 200, headers: { ...cors, "Content-Type": "application/json" } });
+        let isFreeTrial = false;
+        const used = mcpFreeTrialMap.get(clientIp) || 0;
+        if (!hasValidSession && !paymentHdr && used < 3) {
+          isFreeTrial = true;
         }
 
-        try {
-          let toolResult;
-          if (toolName === "fuel_b2b_leads") {
-            toolResult = await fetchB2BLeads(toolArgs.limit || 5, toolArgs.category || "all");
-          } else if (toolName === "fuel_clean_markdown") {
-            toolResult = await cleanMarkdownEngine(toolArgs.url, toolArgs.strip_images);
-          } else if (toolName === "fuel_ecom_price_stock") {
-            toolResult = await getEcomPriceStock(toolArgs.url);
-          } else if (toolName === "fuel_sdk_spec") {
-            toolResult = await getSdkLiveSpec(toolArgs.package || "fastapi", toolArgs.ecosystem || "pypi");
-          } else if (toolName === "fuel_reverse_engineer") {
-            toolResult = await reverseEngineerEngine(toolArgs.url);
-          } else {
-            return new Response(JSON.stringify({ jsonrpc: "2.0", id, error: { code: -32601, message: `Tool '${toolName}' not found` } }), { status: 200, headers: cors });
-          }
-
+        if (!isFreeTrial && !hasValidSession && !paymentHdr) {
+          const { challengeObj } = buildChallengePayload(req, toolRoute, "MCP free trial exhausted (3/3 calls used). Attach PAYMENT-SIGNATURE or params._meta['x402/payment'] to continue.");
           return new Response(JSON.stringify({
             jsonrpc: "2.0",
             id,
             result: {
-              content: [{ type: "text", text: JSON.stringify(toolResult, null, 2) }],
-              isError: false,
-              _meta: { freeTrialUsed: isFreeTrial ? used + 1 : 0, freeTrialRemaining: Math.max(0, 3 - (used + 1)) }
+              content: [{ type: "text", text: JSON.stringify(challengeObj) }],
+              isError: true
             }
           }), { status: 200, headers: { ...cors, "Content-Type": "application/json" } });
+        }
+
+        // Step 1: Verify payment authorization BEFORE tool execution or trial quota mutation
+        let paymentPrep = null;
+        if (!hasValidSession && paymentHdr) {
+          try {
+            paymentPrep = await validateAndVerifyPayAI(req, toolRoute, paymentHdr);
+          } catch (verifyErr) {
+            const { challengeObj } = buildChallengePayload(req, toolRoute, `Payment validation rejected: ${verifyErr.message}`);
+            return new Response(JSON.stringify({
+              jsonrpc: "2.0",
+              id,
+              result: {
+                content: [{ type: "text", text: JSON.stringify(challengeObj) }],
+                isError: true
+              }
+            }), { status: 200, headers: { ...cors, "Content-Type": "application/json" } });
+          }
+        }
+
+        // Step 2: Execute tool cleanly (never settle if target fails)
+        let toolResult;
+        try {
+          if (toolName === "fuel_b2b_leads") {
+            toolResult = await fetchB2BLeads(toolArgs.limit || 5, toolArgs.category || "all");
+          } else if (toolName === "fuel_clean_markdown") {
+            if (!toolArgs.url) throw new UpstreamTargetError("Missing required 'url' parameter.", 400);
+            toolResult = await cleanMarkdownEngine(toolArgs.url, toolArgs.strip_images);
+          } else if (toolName === "fuel_ecom_price_stock") {
+            if (!toolArgs.url) throw new UpstreamTargetError("Missing required 'url' parameter.", 400);
+            toolResult = await getEcomPriceStock(toolArgs.url);
+          } else if (toolName === "fuel_sdk_spec") {
+            if (!toolArgs.package) throw new UpstreamTargetError("Missing required 'package' parameter.", 400);
+            toolResult = await getSdkLiveSpec(toolArgs.package, toolArgs.ecosystem || "pypi");
+          } else if (toolName === "fuel_reverse_engineer") {
+            if (!toolArgs.url) throw new UpstreamTargetError("Missing required 'url' parameter.", 400);
+            toolResult = await reverseEngineerEngine(toolArgs.url);
+          }
         } catch (callErr) {
           return new Response(JSON.stringify({
             jsonrpc: "2.0",
@@ -1747,8 +1768,43 @@ Endpoints:
               content: [{ type: "text", text: JSON.stringify({ error: callErr.message }) }],
               isError: true
             }
-          }), { status: 200, headers: cors });
+          }), { status: 200, headers: { ...cors, "Content-Type": "application/json" } });
         }
+
+        // Step 3: Settle verified payment or deduct pass/trial AFTER successful execution
+        let meta = {};
+        if (paymentPrep) {
+          try {
+            const receipt = await settlePayAI(paymentPrep);
+            meta["x402/payment-response"] = receipt;
+          } catch (settleErr) {
+            const { challengeObj } = buildChallengePayload(req, toolRoute, `Settlement failed: ${settleErr.message}`);
+            return new Response(JSON.stringify({
+              jsonrpc: "2.0",
+              id,
+              result: {
+                content: [{ type: "text", text: JSON.stringify(challengeObj) }],
+                isError: true
+              }
+            }), { status: 200, headers: { ...cors, "Content-Type": "application/json" } });
+          }
+        } else if (hasValidSession) {
+          activePasses.get(sessionToken).callsRemaining -= 1;
+          meta.sessionCallsRemaining = activePasses.get(sessionToken).callsRemaining;
+        } else if (isFreeTrial) {
+          mcpFreeTrialMap.set(clientIp, used + 1);
+          meta = { freeTrialUsed: used + 1, freeTrialRemaining: Math.max(0, 3 - (used + 1)) };
+        }
+
+        return new Response(JSON.stringify({
+          jsonrpc: "2.0",
+          id,
+          result: {
+            content: [{ type: "text", text: JSON.stringify(toolResult, null, 2) }],
+            isError: false,
+            _meta: meta
+          }
+        }), { status: 200, headers: { ...cors, "Content-Type": "application/json" } });
       }
 
       return new Response(JSON.stringify({ jsonrpc: "2.0", id, error: { code: -32601, message: "Method not found" } }), { status: 200, headers: cors });
