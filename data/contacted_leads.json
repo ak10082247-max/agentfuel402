@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-10T14:29:29.671133+00:00",
+  "updated_at": "2026-11-10T21:21:19.811634+00:00",
   "contacted_emails": [
     "benny.json@gmail.com",
     "support@0xinsider.com",
@@ -59,7 +59,16 @@
     "diego.costa.tech@gmail.com",
     "zymaneta@gmail.com",
     "reachfaizal08@gmail.com",
-    "isiraglobal@gmail.com"
+    "isiraglobal@gmail.com",
+    "wuzilin1996.10@gmail.com",
+    "bhardwajavinash836@gmail.com",
+    "jahanzaib.remotehub@gmail.com",
+    "dmytro.paduchak@gmail.com",
+    "vegavelox@gmail.com",
+    "hello@livetennisapi.com",
+    "osykasergey8@gmail.com",
+    "ttrungthanh90@gmail.com",
+    "abdalwhabq7@gmail.com"
   ],
   "contacted_users": [
     "bennyjo",
@@ -120,7 +129,16 @@
     "diego-costa-tech",
     "zymaneta-eng",
     "faizal08",
-    "isiraglobal"
+    "isiraglobal",
+    "wuzilin-web3",
+    "avikr11",
+    "jahanzaib-codes",
+    "dmytropaduchak",
+    "vegavelox",
+    "livetennisapi",
+    "osykasergey8-code",
+    "tthanh2k6",
+    "abdalwhabq7-create"
   ],
   "history": [
     {
@@ -535,6 +553,69 @@
       "track": "track_agentfuel",
       "repo": "isiraglobal/Reachy",
       "sent_date": "2026-11-10T14:29:29.671108+00:00"
+    },
+    {
+      "username": "wuzilin-web3",
+      "email": "wuzilin1996.10@gmail.com",
+      "track": "track_rugshield",
+      "repo": "wuzilin-web3/base-swap-indexer",
+      "sent_date": "2026-11-10T21:20:27.227619+00:00"
+    },
+    {
+      "username": "avikr11",
+      "email": "bhardwajavinash836@gmail.com",
+      "track": "track_rugshield",
+      "repo": "Avikr11/novaswap",
+      "sent_date": "2026-11-10T21:20:32.122839+00:00"
+    },
+    {
+      "username": "jahanzaib-codes",
+      "email": "jahanzaib.remotehub@gmail.com",
+      "track": "track_rugshield",
+      "repo": "jahanzaib-codes/solana-pumpfun-sniper-bot",
+      "sent_date": "2026-11-10T21:20:36.995497+00:00"
+    },
+    {
+      "username": "dmytropaduchak",
+      "email": "dmytro.paduchak@gmail.com",
+      "track": "track_canaryguard",
+      "repo": "dmytropaduchak/brainiac-plugin-elizaos",
+      "sent_date": "2026-11-10T21:20:48.939365+00:00"
+    },
+    {
+      "username": "vegavelox",
+      "email": "vegavelox@gmail.com",
+      "track": "track_canaryguard",
+      "repo": "vegavelox/plugin-velox-alpha",
+      "sent_date": "2026-11-10T21:20:53.875559+00:00"
+    },
+    {
+      "username": "livetennisapi",
+      "email": "hello@livetennisapi.com",
+      "track": "track_canaryguard",
+      "repo": "livetennisapi/elizaos-plugin-livetennis",
+      "sent_date": "2026-11-10T21:20:58.761765+00:00"
+    },
+    {
+      "username": "osykasergey8-code",
+      "email": "osykasergey8@gmail.com",
+      "track": "track_agentfuel",
+      "repo": "osykasergey8-code/shopify-price-monitor",
+      "sent_date": "2026-11-10T21:21:10.147015+00:00"
+    },
+    {
+      "username": "tthanh2k6",
+      "email": "ttrungthanh90@gmail.com",
+      "track": "track_agentfuel",
+      "repo": "Tthanh2k6/apify-ecommerce-price-and-stock-monitor",
+      "sent_date": "2026-11-10T21:21:14.953199+00:00"
+    },
+    {
+      "username": "abdalwhabq7-create",
+      "email": "abdalwhabq7@gmail.com",
+      "track": "track_agentfuel",
+      "repo": "abdalwhabq7-create/apify-actor-examples",
+      "sent_date": "2026-11-10T21:21:19.811609+00:00"
     }
   ]
 }
