@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-09T15:47:26.607494+00:00",
+  "updated_at": "2026-11-10T01:23:13.558987+00:00",
   "contacted_emails": [
     "benny.json@gmail.com",
     "support@0xinsider.com",
@@ -35,7 +35,16 @@
     "karthikdixithofficial1@gmail.com",
     "efregedef@gmail.com",
     "nguyenhuuhoangan2504@gmail.com",
-    "anatolii.ttusko@gmail.com"
+    "anatolii.ttusko@gmail.com",
+    "warden_jicama5f@icloud.com",
+    "deserts.curry.9e@icloud.com",
+    "sipper.spoofs_9d@icloud.com",
+    "paulalexeev10@gmail.com",
+    "a3333333@gmail.com",
+    "steve.metaknight@gmail.com",
+    "juanfelipeceliska@gmail.com",
+    "matheusatec@gmail.com",
+    "gestordescomplicaa@gmail.com"
   ],
   "contacted_users": [
     "bennyjo",
@@ -72,7 +81,16 @@
     "karthik-dixith",
     "efregedef-svg",
     "nhhandevops",
-    "anatolii33"
+    "anatolii33",
+    "tiger-summitbl8da",
+    "tundraharborup7czmp",
+    "otter-leap833791",
+    "levapveeskela",
+    "webmakaka",
+    "stefhooy",
+    "juanfe28",
+    "matheusatec",
+    "gestordescomplicaa-web"
   ],
   "history": [
     {
@@ -319,6 +337,69 @@
       "track": "track_agentfuel",
       "repo": "Anatolii33/ai-lead-qualification-n8n",
       "sent_date": "2026-11-09T15:47:26.607475+00:00"
+    },
+    {
+      "username": "tiger-summitbl8da",
+      "email": "warden_jicama5f@icloud.com",
+      "track": "track_rugshield",
+      "repo": "tiger-summitbl8da/how-to-create-ethereum-arbitrage-bot-cost-awareness",
+      "sent_date": "2026-11-10T01:22:36.124440+00:00"
+    },
+    {
+      "username": "tundraharborup7czmp",
+      "email": "deserts.curry.9e@icloud.com",
+      "track": "track_rugshield",
+      "repo": "tundraharborup7czmp/how-to-create-arbitrage-bot-deployment-steps",
+      "sent_date": "2026-11-10T01:22:39.021062+00:00"
+    },
+    {
+      "username": "otter-leap833791",
+      "email": "sipper.spoofs_9d@icloud.com",
+      "track": "track_rugshield",
+      "repo": "otter-leap833791/how-to-create-arbitrage-bot-execution-parameters",
+      "sent_date": "2026-11-10T01:22:42.006671+00:00"
+    },
+    {
+      "username": "levapveeskela",
+      "email": "paulalexeev10@gmail.com",
+      "track": "track_canaryguard",
+      "repo": "LevapVeeskela/lv24-vigil",
+      "sent_date": "2026-11-10T01:22:55.311218+00:00"
+    },
+    {
+      "username": "webmakaka",
+      "email": "a3333333@gmail.com",
+      "track": "track_canaryguard",
+      "repo": "webmakaka/Learning-Langchain",
+      "sent_date": "2026-11-10T01:22:58.072486+00:00"
+    },
+    {
+      "username": "stefhooy",
+      "email": "steve.metaknight@gmail.com",
+      "track": "track_canaryguard",
+      "repo": "stefhooy/full_stack_project",
+      "sent_date": "2026-11-10T01:23:00.894087+00:00"
+    },
+    {
+      "username": "juanfe28",
+      "email": "juanfelipeceliska@gmail.com",
+      "track": "track_agentfuel",
+      "repo": "JuanFe28/documind-pqrs-b2b",
+      "sent_date": "2026-11-10T01:23:06.951656+00:00"
+    },
+    {
+      "username": "matheusatec",
+      "email": "matheusatec@gmail.com",
+      "track": "track_agentfuel",
+      "repo": "matheusatec/automacao-comunicados-n8n",
+      "sent_date": "2026-11-10T01:23:10.770292+00:00"
+    },
+    {
+      "username": "gestordescomplicaa-web",
+      "email": "gestordescomplicaa@gmail.com",
+      "track": "track_agentfuel",
+      "repo": "gestordescomplicaa-web/zervis",
+      "sent_date": "2026-11-10T01:23:13.558966+00:00"
     }
   ]
 }
