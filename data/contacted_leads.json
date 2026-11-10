@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-10T01:23:13.558987+00:00",
+  "updated_at": "2026-11-10T14:29:29.671133+00:00",
   "contacted_emails": [
     "benny.json@gmail.com",
     "support@0xinsider.com",
@@ -44,7 +44,22 @@
     "steve.metaknight@gmail.com",
     "juanfelipeceliska@gmail.com",
     "matheusatec@gmail.com",
-    "gestordescomplicaa@gmail.com"
+    "gestordescomplicaa@gmail.com",
+    "deni.dudaev@hotmail.com",
+    "rdin35051@gmail.com",
+    "kenny@ampleplatform.com",
+    "info@gblin.digital",
+    "axel.belfort@gmail.com",
+    "gustavolucenaoliveira@gmail.com",
+    "baslymohamedhedi@gmail.com",
+    "summersmile1984@gmail.com",
+    "hzy1210085279@gmail.com",
+    "derek@colley.cc",
+    "contact@contentwriter.co",
+    "diego.costa.tech@gmail.com",
+    "zymaneta@gmail.com",
+    "reachfaizal08@gmail.com",
+    "isiraglobal@gmail.com"
   ],
   "contacted_users": [
     "bennyjo",
@@ -90,7 +105,22 @@
     "stefhooy",
     "juanfe28",
     "matheusatec",
-    "gestordescomplicaa-web"
+    "gestordescomplicaa-web",
+    "0xdeni",
+    "rdin777",
+    "kenjohnscreates",
+    "gblinproject",
+    "br0ski777",
+    "thegords0115",
+    "balha147",
+    "summersmile1984",
+    "treetreedi",
+    "dcolley",
+    "contentwriterco",
+    "diego-costa-tech",
+    "zymaneta-eng",
+    "faizal08",
+    "isiraglobal"
   ],
   "history": [
     {
@@ -400,6 +430,111 @@
       "track": "track_agentfuel",
       "repo": "gestordescomplicaa-web/zervis",
       "sent_date": "2026-11-10T01:23:13.558966+00:00"
+    },
+    {
+      "username": "0xdeni",
+      "email": "deni.dudaev@hotmail.com",
+      "track": "track_rugshield",
+      "repo": "0xdeni/depthwatch",
+      "sent_date": "2026-11-10T14:27:55.882894+00:00"
+    },
+    {
+      "username": "rdin777",
+      "email": "rdin35051@gmail.com",
+      "track": "track_rugshield",
+      "repo": "rdin777/base_bot",
+      "sent_date": "2026-11-10T14:28:01.259110+00:00"
+    },
+    {
+      "username": "kenjohnscreates",
+      "email": "kenny@ampleplatform.com",
+      "track": "track_rugshield",
+      "repo": "kenjohnscreates/TreasureFlow",
+      "sent_date": "2026-11-10T14:28:06.628777+00:00"
+    },
+    {
+      "username": "gblinproject",
+      "email": "info@gblin.digital",
+      "track": "track_rugshield",
+      "repo": "gblinproject/base-heartbeat-bo",
+      "sent_date": "2026-11-10T14:28:11.835881+00:00"
+    },
+    {
+      "username": "br0ski777",
+      "email": "axel.belfort@gmail.com",
+      "track": "track_rugshield",
+      "repo": "Br0ski777/base-defi-x402",
+      "sent_date": "2026-11-10T14:28:16.892055+00:00"
+    },
+    {
+      "username": "thegords0115",
+      "email": "gustavolucenaoliveira@gmail.com",
+      "track": "track_canaryguard",
+      "repo": "TheGords0115/nexo-assist",
+      "sent_date": "2026-11-10T14:28:28.823205+00:00"
+    },
+    {
+      "username": "balha147",
+      "email": "baslymohamedhedi@gmail.com",
+      "track": "track_canaryguard",
+      "repo": "Balha147/order-agentique",
+      "sent_date": "2026-11-10T14:28:34.038594+00:00"
+    },
+    {
+      "username": "summersmile1984",
+      "email": "summersmile1984@gmail.com",
+      "track": "track_canaryguard",
+      "repo": "summersmile1984/mastra-two-layer-preflight",
+      "sent_date": "2026-11-10T14:28:39.321017+00:00"
+    },
+    {
+      "username": "treetreedi",
+      "email": "hzy1210085279@gmail.com",
+      "track": "track_canaryguard",
+      "repo": "TreeTreeDi/yume",
+      "sent_date": "2026-11-10T14:28:45.663768+00:00"
+    },
+    {
+      "username": "dcolley",
+      "email": "derek@colley.cc",
+      "track": "track_canaryguard",
+      "repo": "dcolley/tourbillon",
+      "sent_date": "2026-11-10T14:28:50.976505+00:00"
+    },
+    {
+      "username": "contentwriterco",
+      "email": "contact@contentwriter.co",
+      "track": "track_agentfuel",
+      "repo": "ContentWriterco/Compabase-API",
+      "sent_date": "2026-11-10T14:29:07.179928+00:00"
+    },
+    {
+      "username": "diego-costa-tech",
+      "email": "diego.costa.tech@gmail.com",
+      "track": "track_agentfuel",
+      "repo": "Diego-Costa-Tech/lead-enrichment-mcp-guides",
+      "sent_date": "2026-11-10T14:29:14.030805+00:00"
+    },
+    {
+      "username": "zymaneta-eng",
+      "email": "zymaneta@gmail.com",
+      "track": "track_agentfuel",
+      "repo": "zymaneta-eng/b2b-company-enrichment-pipeline",
+      "sent_date": "2026-11-10T14:29:19.248821+00:00"
+    },
+    {
+      "username": "faizal08",
+      "email": "reachfaizal08@gmail.com",
+      "track": "track_agentfuel",
+      "repo": "faizal08/b2b_lead_enricher",
+      "sent_date": "2026-11-10T14:29:24.449708+00:00"
+    },
+    {
+      "username": "isiraglobal",
+      "email": "isiraglobal@gmail.com",
+      "track": "track_agentfuel",
+      "repo": "isiraglobal/Reachy",
+      "sent_date": "2026-11-10T14:29:29.671108+00:00"
     }
   ]
 }
