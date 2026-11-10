@@ -144,8 +144,7 @@ const ROUTE_CONFIGS = {
   }
 };
 
-// Global in-memory IP rate limiter for MCP free trial (3 calls per IP)
-const mcpFreeTrialMap = new Map();
+// In-memory store for multi-call Fuel Pass tokens
 const activePasses = new Map();
 
 // Helper: Common CORS headers
@@ -253,6 +252,18 @@ function buildChallengePayload(req, routePath, details) {
   };
 
   return { cfg, challengeObj };
+}
+
+function mcpPaymentRequiredResponse(cors, id, req, toolRoute, reason) {
+  const { challengeObj } = buildChallengePayload(req, toolRoute, reason);
+  return new Response(JSON.stringify({
+    jsonrpc: "2.0",
+    id,
+    result: {
+      content: [{ type: "text", text: JSON.stringify(challengeObj) }],
+      isError: true
+    }
+  }), { status: 200, headers: { ...cors, "Content-Type": "application/json" } });
 }
 
 function build402Challenge(req, routePath, details) {
@@ -1706,39 +1717,23 @@ Endpoints:
         const hasValidSession = Boolean(sessionToken && activePasses.has(sessionToken) && activePasses.get(sessionToken).callsRemaining > 0);
         const paymentHdr = req.headers.get("PAYMENT-SIGNATURE") || req.headers.get("X-PAYMENT") || params?._meta?.["x402/payment"];
 
-        let isFreeTrial = false;
-        const used = mcpFreeTrialMap.get(clientIp) || 0;
-        if (!hasValidSession && !paymentHdr && used < 3) {
-          isFreeTrial = true;
-        }
-
-        if (!isFreeTrial && !hasValidSession && !paymentHdr) {
-          const { challengeObj } = buildChallengePayload(req, toolRoute, "MCP free trial exhausted (3/3 calls used). Attach PAYMENT-SIGNATURE or params._meta['x402/payment'] to continue.");
-          return new Response(JSON.stringify({
-            jsonrpc: "2.0",
+        if (!hasValidSession && !paymentHdr) {
+          return mcpPaymentRequiredResponse(
+            cors,
             id,
-            result: {
-              content: [{ type: "text", text: JSON.stringify(challengeObj) }],
-              isError: true
-            }
-          }), { status: 200, headers: { ...cors, "Content-Type": "application/json" } });
+            req,
+            toolRoute,
+            "Payment required: attach x402 payment in params._meta['x402/payment'] or PAYMENT-SIGNATURE header (or use free REST /v1/preview/* routes)."
+          );
         }
 
-        // Step 1: Verify payment authorization BEFORE tool execution or trial quota mutation
+        // Step 1: Verify payment authorization BEFORE tool execution
         let paymentPrep = null;
         if (!hasValidSession && paymentHdr) {
           try {
             paymentPrep = await validateAndVerifyPayAI(req, toolRoute, paymentHdr);
           } catch (verifyErr) {
-            const { challengeObj } = buildChallengePayload(req, toolRoute, `Payment validation rejected: ${verifyErr.message}`);
-            return new Response(JSON.stringify({
-              jsonrpc: "2.0",
-              id,
-              result: {
-                content: [{ type: "text", text: JSON.stringify(challengeObj) }],
-                isError: true
-              }
-            }), { status: 200, headers: { ...cors, "Content-Type": "application/json" } });
+            return mcpPaymentRequiredResponse(cors, id, req, toolRoute, `Payment validation rejected: ${verifyErr.message}`);
           }
         }
 
@@ -1771,29 +1766,18 @@ Endpoints:
           }), { status: 200, headers: { ...cors, "Content-Type": "application/json" } });
         }
 
-        // Step 3: Settle verified payment or deduct pass/trial AFTER successful execution
+        // Step 3: Settle verified payment or deduct pass AFTER successful execution
         let meta = {};
         if (paymentPrep) {
           try {
             const receipt = await settlePayAI(paymentPrep);
             meta["x402/payment-response"] = receipt;
           } catch (settleErr) {
-            const { challengeObj } = buildChallengePayload(req, toolRoute, `Settlement failed: ${settleErr.message}`);
-            return new Response(JSON.stringify({
-              jsonrpc: "2.0",
-              id,
-              result: {
-                content: [{ type: "text", text: JSON.stringify(challengeObj) }],
-                isError: true
-              }
-            }), { status: 200, headers: { ...cors, "Content-Type": "application/json" } });
+            return mcpPaymentRequiredResponse(cors, id, req, toolRoute, `Settlement failed: ${settleErr.message}`);
           }
         } else if (hasValidSession) {
           activePasses.get(sessionToken).callsRemaining -= 1;
           meta.sessionCallsRemaining = activePasses.get(sessionToken).callsRemaining;
-        } else if (isFreeTrial) {
-          mcpFreeTrialMap.set(clientIp, used + 1);
-          meta = { freeTrialUsed: used + 1, freeTrialRemaining: Math.max(0, 3 - (used + 1)) };
         }
 
         return new Response(JSON.stringify({
