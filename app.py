@@ -10,6 +10,8 @@ import urllib.parse
 from typing import Optional
 from fastapi import FastAPI, Query, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse, Response
+import mcp_server
 from pydantic import BaseModel
 import httpx
 from bs4 import BeautifulSoup
@@ -57,6 +59,39 @@ def health():
         "version": "1.0.0",
         "timestamp_ms": int(time.time() * 1000)
     }
+
+@app.get("/mcp")
+def mcp_info():
+    return {
+        "name": "agentfuel402",
+        "version": "1.0.0",
+        "protocolVersion": "2024-11-05",
+        "transport": "streamable-http",
+        "tools": [t["name"] for t in mcp_server.MCP_TOOLS],
+    }
+
+@app.post("/mcp")
+async def mcp_endpoint(request: Request):
+    try:
+        payload = await request.json()
+    except Exception:
+        return JSONResponse(
+            {"jsonrpc": "2.0", "id": None, "error": {"code": -32700, "message": "Parse error"}},
+            status_code=400,
+        )
+    if isinstance(payload, list):
+        responses = []
+        for item in payload:
+            resp = await mcp_server.handle_mcp_jsonrpc(item)
+            if resp is not None:
+                responses.append(resp)
+        if not responses:
+            return Response(status_code=202)
+        return JSONResponse(responses)
+    resp = await mcp_server.handle_mcp_jsonrpc(payload)
+    if resp is None:
+        return Response(status_code=202)
+    return JSONResponse(resp)
 
 @app.get("/v1/fuel/b2b-intent-leads")
 @app.post("/v1/fuel/b2b-intent-leads")

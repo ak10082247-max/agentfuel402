@@ -1,9 +1,13 @@
+import asyncio
 import os
 import sys
 import runpy
 
 def run():
-    if os.environ.get("APIFY_IS_AT_HOME") or os.environ.get("APIFY_ACTOR_ID") or os.environ.get("APIFY_META_ORIGIN"):
+    if "--mcp-stdio" in sys.argv or os.environ.get("MCP_TRANSPORT", "").lower() == "stdio":
+        import mcp_server
+        asyncio.run(mcp_server.run_stdio())
+    elif os.environ.get("APIFY_IS_AT_HOME") or os.environ.get("APIFY_ACTOR_ID") or os.environ.get("APIFY_META_ORIGIN"):
         print("[AgentFuel402] Detected Apify Actor environment. Launching apify_main.py...")
         runpy.run_path("apify_main.py", run_name="__main__")
     else:
