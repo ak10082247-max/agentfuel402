@@ -5,6 +5,7 @@ Consolidated Flagships: CanaryGuard 402, RugShield 402 & AgentFuel402
 3-Track Sniper Prospecting + Multi-Vault Treasury & Active Apify Telemetry
 """
 import os
+import re
 import sys
 import json
 import time
@@ -89,7 +90,7 @@ SOLANA_ATAS = [
 # The "Big 3" Repositories
 BIG_3_REPOS = [
     ("canaryguard-402", "ak10082247-max/canaryguard-402", "Prompt-Injection Firewall & AI Agent Sanitizer"),
-    ("rugshield-402", "ak10082247-max/rugshield-402", "Base DEX Honeypot & Tax Simulation Scanner"),
+    ("rugshield-402", "ak10082247-max/rugshield-402", "Base & Solana DEX Honeypot & Pre-Trade Simulation Scanner"),
     ("agentfuel402", "ak10082247-max/agentfuel402", "B2B Intent Leads, Clean Markdown & E-Com Spec Engine")
 ]
 
@@ -303,8 +304,15 @@ DISALLOWED_PREFIXES = {
     "dev", "git", "github", "noreply", "no-reply", "donotreply", "mailer-daemon"
 }
 
+ICLOUD_RELAY_PATTERN = re.compile(r"(?:^[0-9]+[._-]|[._-][0-9a-z]{2}$|\d[a-z]$)")
+SPAM_REPO_PATTERN = re.compile(
+    r"(?:how-to-(?:create|launch|configure|understand|build|run|deploy|set-up)-|"
+    r"arbitrage-bot-(?:execution|deployment|cost-awareness|swap-routes|wallet-setup|loan-execution))",
+    re.IGNORECASE,
+)
+
 def is_deliverable_personal_email(email: str) -> bool:
-    """Strictly validates that an email belongs to a verified personal or academic mailbox to prevent any 550 bounces."""
+    """Strictly validates that an email belongs to a verified personal or academic mailbox and excludes disposable relays."""
     if not email or "@" not in email:
         return False
     parts = email.lower().strip().split("@")
@@ -314,6 +322,10 @@ def is_deliverable_personal_email(email: str) -> bool:
 
     # Exclude automated or shared organizational mailboxes
     if prefix in DISALLOWED_PREFIXES or any(p in prefix for p in ["noreply", "no-reply", "donotreply", "mailer"]):
+        return False
+
+    # Exclude Apple Hide-My-Email relay aliases heavily used by automated GitHub spam bots
+    if domain == "icloud.com" and ICLOUD_RELAY_PATTERN.search(prefix):
         return False
 
     # Accept verified personal major providers
@@ -326,24 +338,39 @@ def is_deliverable_personal_email(email: str) -> bool:
 
     return False
 
+def is_spam_repo(owner: str, repo_name: str, repo_desc: str) -> bool:
+    """Filters out own repos and SEO/malware bot-farm repositories."""
+    if not owner or not repo_name:
+        return True
+    if owner.lower() in {"ak10082247-max"}:
+        return True
+    if SPAM_REPO_PATTERN.search(repo_name):
+        return True
+    desc_l = (repo_desc or "").lower()
+    if "video-based guide to" in desc_l or "solidity arbitrage executor" in desc_l:
+        return True
+    return False
+
 # -----------------------------------------------------------------------------
 # 3-TRACK SNIPER PROSPECTING ENGINE
 # -----------------------------------------------------------------------------
-def search_github_leads(track="track_rugshield", limit=5):
+def search_github_leads(track="track_rugshield", limit=5, exclude_emails=None, exclude_users=None):
     """
-    Track 1: DeFi & Base Trading Bot Builders -> Pitch RugShield 402
+    Track 1: DeFi, Solana & Base Trading Bot Builders -> Pitch RugShield 402
     Track 2: AI Agent, MCP & LLM App Builders -> Pitch CanaryGuard 402
     Track 3: B2B Growth, E-Commerce & Web Scraping Devs -> Pitch AgentFuel402
     """
+    exclude_emails = set(exclude_emails or ())
+    exclude_users = set(exclude_users or ())
     track_queries = {
         "track_rugshield": [
-            "base dex",
-            "aerodrome",
-            "uniswap v3",
-            "sniper bot",
-            "honeypot",
-            "dexscreener",
-            "onchainkit"
+            "jupiter solana swap NOT arbitrage-bot",
+            "raydium pumpfun bot NOT arbitrage-bot",
+            "coinbase agentkit NOT arbitrage-bot",
+            "aerodrome base defi NOT arbitrage-bot",
+            "solana swap sniper stars:>=2 NOT how-to",
+            "dexscreener api bot stars:>=1 NOT how-to",
+            "viem swap base NOT arbitrage-bot"
         ],
         "track_canaryguard": [
             "mcp server",
@@ -377,7 +404,7 @@ def search_github_leads(track="track_rugshield", limit=5):
     for q in queries:
         if len(discovered) >= limit:
             break
-        url = f"https://api.github.com/search/repositories?q={urllib.parse.quote(q)}&sort=updated&order=desc&per_page=6"
+        url = f"https://api.github.com/search/repositories?q={urllib.parse.quote(q)}&sort=updated&order=desc&per_page=10"
         try:
             res_data = fetch_json(url, timeout=6, headers=headers)
             items = res_data.get("items", [])
@@ -387,7 +414,9 @@ def search_github_leads(track="track_rugshield", limit=5):
                 owner = repo.get("owner", {}).get("login")
                 repo_name = repo.get("full_name")
                 repo_desc = repo.get("description") or "GitHub Project"
-                if not owner:
+                if is_spam_repo(owner, repo_name, repo_desc):
+                    continue
+                if owner.lower().strip() in exclude_users:
                     continue
 
                 # Fetch user details for email (with public commit fallback)
@@ -409,11 +438,17 @@ def search_github_leads(track="track_rugshield", limit=5):
                                     break
 
                     if email and is_deliverable_personal_email(email):
+                        norm_email = email.lower().strip()
+                        norm_user = owner.lower().strip()
+                        if norm_email in exclude_emails or norm_user in exclude_users:
+                            continue
+                        exclude_emails.add(norm_email)
+                        exclude_users.add(norm_user)
                         discovered.append({
                             "track": track,
                             "username": owner,
                             "name": name,
-                            "email": email.lower().strip(),
+                            "email": norm_email,
                             "repo": repo_name,
                             "repo_desc": repo_desc
                         })
@@ -448,24 +483,24 @@ def craft_pitch(lead):
     track = lead.get("track", "track_agentfuel")
 
     if track == "track_rugshield":
-        subject = f"Sub-200ms Base Honeypot & Tax Simulation for {repo} (RugShield 402)"
+        subject = f"Dual-Chain Base & Solana Honeypot + Pre-Trade Scan for {repo} (RugShield 402)"
         text = f"""Hi {name},
 
-Saw your recent commits on {repo}. If you're building automated trading bots, swap routers, or sniper tools on Base Mainnet, unverified tokens and stealth fee-on-transfer honeypots are a constant risk.
+Saw your recent commits on {repo}. If you're building automated trading bots, swap routers, or sniper tools on Solana or Base Mainnet, unverified tokens, freeze/mint authorities, and stealth fee-on-transfer honeypots are a constant risk.
 
-RugShield 402 is an autonomous DEX pre-trade simulation engine:
-1. Sub-200ms bytecode-level EVM execution simulating actual buy & sell transactions against Base RPC
-2. Exact fee-on-transfer tax detection in basis points (bps) for both buy and sell paths
-3. Liquidity lock & pool depth analysis across Aerodrome (Slipstream) and Uniswap v3
-4. Sybil cluster detection and dev wallet concentration scoring
+RugShield 402 is an autonomous dual-chain DEX pre-trade simulation & safety engine:
+1. Base EVM Execution Simulation: Sub-200ms bytecode simulation testing actual buy & sell paths, exact fee-on-transfer taxes (bps), and revert traps
+2. Solana SPL Risk Scanning: Mint/freeze authority verification, liquidity pool depth, and Raydium/Orca/Pump.fun safety checks
+3. Liquidity Lock & Pool Depth Analysis: Aerodrome (Slipstream), Uniswap v3, Raydium & Orca pair verification
+4. Sybil Cluster & Dev Concentration Scoring before your bot executes a swap
 
-Integrate it directly into your bot pipeline:
+Integrate directly into your pipeline (Base & Solana x402 USDC supported):
 - Open-Source MCP Server: https://github.com/ak10082247-max/rugshield-402 (Claude Desktop & Cursor native)
 - Standard MCP Tools: `rugshield_pre_swap_scan`, `check_honeypot`, `verify_liquidity_lock`
-- Live Edge API (x402 $0.010 USDC on Base): https://rugshield-402.onrender.com
+- Live Edge API (x402 $0.010 USDC on Base & Solana): https://rugshield-402.onrender.com
 - Apify Pay-Per-Event ($0.005/scan): https://apify.com/kuroxreal/rugshield-402
 
-Hope this prevents bad fills on your Base routes!
+Hope this helps your bot avoid bad fills across Solana and Base!
 
 Best regards,
 Kurox DEX Security Team
@@ -572,7 +607,7 @@ Breakdown across Active Actors:
 -----------------------------------------------------------------------------
 Total Leads Contacted (Lifetime): {leads_summary['total_lifetime']}
 Emails Sent Today:                {leads_summary['sent_today']} / {MAX_EMAILS_PER_DAY} daily cap
-- Track 1 - RugShield (Base DeFi / DEX Bots):  {leads_summary['track_rugshield_sent']} sent
+- Track 1 - RugShield (Base/Solana DEX Bots): {leads_summary['track_rugshield_sent']} sent
 - Track 2 - CanaryGuard (AI Agents / MCP):     {leads_summary['track_canaryguard_sent']} sent
 - Track 3 - AgentFuel402 (B2B / E-Com / Scrap): {leads_summary['track_agentfuel_sent']} sent
 
@@ -630,11 +665,18 @@ def main():
     if not args.digest_only and remaining_today > 0:
         # Send up to 3 per track (9 per cycle) to ensure balanced Big 3 outreach
         per_track = max(1, min(remaining_today // 3, 3))
+        known_emails = {e.lower().strip() for e in leads_data["contacted_emails"]}
+        known_users = {u.lower().strip() for u in leads_data["contacted_users"]}
 
         for track_name in ["track_rugshield", "track_canaryguard", "track_agentfuel"]:
             if count_sent_today(leads_data["history"]) >= MAX_EMAILS_PER_DAY:
                 break
-            leads = search_github_leads(track_name, limit=per_track)
+            leads = search_github_leads(
+                track_name,
+                limit=per_track,
+                exclude_emails=known_emails,
+                exclude_users=known_users,
+            )
             for lead in leads:
                 if count_sent_today(leads_data["history"]) >= MAX_EMAILS_PER_DAY:
                     break
@@ -642,11 +684,13 @@ def main():
                 user = lead["username"].lower().strip()
                 if not is_deliverable_personal_email(email):
                     continue
-                if email in leads_data["contacted_emails"] or user in leads_data["contacted_users"]:
+                if email in known_emails or user in known_users:
                     continue
                 try:
                     subj, pitch = craft_pitch(lead)
                     send_email(email, subj, pitch)
+                    known_emails.add(email)
+                    known_users.add(user)
                     leads_data["contacted_emails"].append(email)
                     leads_data["contacted_users"].append(user)
                     leads_data["history"].append({
