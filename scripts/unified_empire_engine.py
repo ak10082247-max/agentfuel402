@@ -9,6 +9,7 @@ import re
 import sys
 import json
 import time
+import random
 import ssl
 import smtplib
 import argparse
@@ -299,11 +300,25 @@ TRUSTED_EMAIL_DOMAINS = {
 }
 
 DISALLOWED_PREFIXES = {
-    "info", "support", "sales", "billing", "contact", "team", "admin",
-    "hello", "press", "media", "jobs", "careers", "security", "abuse",
-    "dev", "git", "github", "noreply", "no-reply", "donotreply", "mailer-daemon"
+    "support", "billing", "admin", "press", "media", "jobs", "careers",
+    "security", "abuse", "postmaster", "hostmaster", "webmaster", "bounce",
+    "git", "noreply", "no-reply", "donotreply", "mailer-daemon"
 }
 
+BLOCKED_EMAIL_DOMAINS = {
+    "users.noreply.github.com",
+    "noreply.github.com",
+    "github.com",
+    "localhost",
+    "localdomain",
+    "example.com",
+    "example.org",
+    "example.net",
+    "test.com",
+}
+
+EMAIL_PREFIX_PATTERN = re.compile(r"^[a-z0-9][a-z0-9._%+\-]{0,63}$")
+EMAIL_DOMAIN_PATTERN = re.compile(r"^[a-z0-9](?:[a-z0-9\-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9\-]{0,61}[a-z0-9])?)+$")
 ICLOUD_RELAY_PATTERN = re.compile(r"(?:^[0-9]+[._-]|[._-][0-9a-z]{2}$|\d[a-z]$)")
 SPAM_REPO_PATTERN = re.compile(
     r"(?:how-to-(?:create|launch|configure|understand|build|run|deploy|set-up)-|"
@@ -311,38 +326,75 @@ SPAM_REPO_PATTERN = re.compile(
     re.IGNORECASE,
 )
 
+_MX_CACHE = {}
+
+def has_valid_mx_record(domain: str) -> bool:
+    """Verifies via DNS-over-HTTPS that custom startup/company domains accept inbound email (non-null MX)."""
+    domain = domain.lower().strip().rstrip(".")
+    if domain in _MX_CACHE:
+        return _MX_CACHE[domain]
+
+    doh_endpoints = [
+        f"https://cloudflare-dns.com/dns-query?name={urllib.parse.quote(domain)}&type=MX",
+        f"https://dns.google/resolve?name={urllib.parse.quote(domain)}&type=MX",
+    ]
+    valid = False
+    for url in doh_endpoints:
+        try:
+            res = fetch_json(url, timeout=4, headers={"Accept": "application/dns-json"})
+            if res.get("Status") != 0:
+                valid = False
+                break
+            answers = res.get("Answer") or []
+            mx_records = [a for a in answers if a.get("type") == 15 and str(a.get("data", "")).strip() not in {"", "0 ."}]
+            if mx_records:
+                valid = True
+                break
+        except Exception:
+            continue
+
+    _MX_CACHE[domain] = valid
+    return valid
+
 def is_deliverable_personal_email(email: str) -> bool:
-    """Strictly validates that an email belongs to a verified personal or academic mailbox and excludes disposable relays."""
+    """Validates email syntax, blocks relays/noreply traps, and verifies custom startup domains via live MX lookup."""
     if not email or "@" not in email:
         return False
-    parts = email.lower().strip().split("@")
+    cleaned = email.lower().strip()
+    parts = cleaned.split("@")
     if len(parts) != 2:
         return False
     prefix, domain = parts[0], parts[1]
 
-    # Exclude automated or shared organizational mailboxes
-    if prefix in DISALLOWED_PREFIXES or any(p in prefix for p in ["noreply", "no-reply", "donotreply", "mailer"]):
+    if not EMAIL_PREFIX_PATTERN.match(prefix) or not EMAIL_DOMAIN_PATTERN.match(domain):
+        return False
+    if domain in BLOCKED_EMAIL_DOMAINS or domain.endswith((".noreply.github.com", ".local", ".internal", ".test", ".invalid", ".arpa")):
+        return False
+
+    # Exclude automated, bounce-trap, or generic helpdesk mailboxes
+    if prefix in DISALLOWED_PREFIXES or any(p in prefix for p in ["noreply", "no-reply", "donotreply", "mailer", "dependabot", "[bot]"]):
         return False
 
     # Exclude Apple Hide-My-Email relay aliases heavily used by automated GitHub spam bots
     if domain == "icloud.com" and ICLOUD_RELAY_PATTERN.search(prefix):
         return False
 
-    # Accept verified personal major providers
+    # Fast path for verified consumer & academic domains
     if domain in TRUSTED_EMAIL_DOMAINS:
         return True
-
-    # Accept recognized educational institutions
     if domain.endswith(".edu") or domain.endswith(".ac.uk") or domain.endswith(".edu.au") or domain.endswith(".edu.sg"):
         return True
 
-    return False
+    # Allow real startup / company / agency domains when DNS confirms active MX records
+    return has_valid_mx_record(domain)
 
 def is_spam_repo(owner: str, repo_name: str, repo_desc: str) -> bool:
-    """Filters out own repos and SEO/malware bot-farm repositories."""
+    """Filters out own repos, GitHub profile README repos, and SEO/malware bot-farm repositories."""
     if not owner or not repo_name:
         return True
     if owner.lower() in {"ak10082247-max"}:
+        return True
+    if repo_name.lower() in {f"{owner.lower()}/{owner.lower()}", f"{owner.lower()}/{owner.lower()}.github.io"}:
         return True
     if SPAM_REPO_PATTERN.search(repo_name):
         return True
@@ -370,7 +422,12 @@ def search_github_leads(track="track_rugshield", limit=5, exclude_emails=None, e
             "aerodrome base defi NOT arbitrage-bot",
             "solana swap sniper stars:>=2 NOT how-to",
             "dexscreener api bot stars:>=1 NOT how-to",
-            "viem swap base NOT arbitrage-bot"
+            "viem swap base NOT arbitrage-bot",
+            "hyperliquid trading bot NOT how-to",
+            "polymarket trading bot NOT how-to",
+            "jito mev solana NOT how-to",
+            "pumpfun sdk NOT how-to",
+            "erc4337 agent wallet NOT how-to"
         ],
         "track_canaryguard": [
             "mcp server",
@@ -379,7 +436,12 @@ def search_github_leads(track="track_rugshield", limit=5, exclude_emails=None, e
             "crewai",
             "autogen",
             "prompt injection",
-            "openai agents"
+            "openai agents",
+            "elizaos plugin",
+            "langgraph agent",
+            "pydantic ai",
+            "mastra agent",
+            "dify workflow"
         ],
         "track_agentfuel": [
             "n8n",
@@ -387,7 +449,13 @@ def search_github_leads(track="track_rugshield", limit=5, exclude_emails=None, e
             "crawl4ai",
             "shopify scraper",
             "lead generation",
-            "apify"
+            "apify",
+            "clay enrichment",
+            "playwright scraper",
+            "shopify price monitor",
+            "b2b enrichment",
+            "web scraper api",
+            "mcp server"
         ]
     }
 
@@ -399,63 +467,70 @@ def search_github_leads(track="track_rugshield", limit=5, exclude_emails=None, e
         headers["Authorization"] = f"Bearer {GH_PAT}"
 
     discovered = []
-    queries = track_queries.get(track, track_queries["track_agentfuel"])
+    queries = list(track_queries.get(track, track_queries["track_agentfuel"]))
+    random.shuffle(queries)
 
     for q in queries:
         if len(discovered) >= limit:
             break
-        url = f"https://api.github.com/search/repositories?q={urllib.parse.quote(q)}&sort=updated&order=desc&per_page=10"
-        try:
-            res_data = fetch_json(url, timeout=6, headers=headers)
-            items = res_data.get("items", [])
-            for repo in items:
-                if len(discovered) >= limit:
+        for page in (1, 2):
+            if len(discovered) >= limit:
+                break
+            url = f"https://api.github.com/search/repositories?q={urllib.parse.quote(q)}&sort=updated&order=desc&per_page=10&page={page}"
+            try:
+                res_data = fetch_json(url, timeout=6, headers=headers)
+                items = res_data.get("items", [])
+                if not items:
                     break
-                owner = repo.get("owner", {}).get("login")
-                repo_name = repo.get("full_name")
-                repo_desc = repo.get("description") or "GitHub Project"
-                if is_spam_repo(owner, repo_name, repo_desc):
-                    continue
-                if owner.lower().strip() in exclude_users:
-                    continue
+                for repo in items:
+                    if len(discovered) >= limit:
+                        break
+                    owner = repo.get("owner", {}).get("login")
+                    repo_name = repo.get("full_name")
+                    repo_desc = repo.get("description") or "GitHub Project"
+                    if is_spam_repo(owner, repo_name, repo_desc):
+                        continue
+                    if owner.lower().strip() in exclude_users:
+                        continue
 
-                # Fetch user details for email (with public commit fallback)
-                try:
-                    u_url = f"https://api.github.com/users/{owner}"
-                    u_data = fetch_json(u_url, timeout=4, headers=headers)
-                    email = u_data.get("email")
-                    name = u_data.get("name") or owner
+                    # Fetch user details for email (with public commit fallback)
+                    try:
+                        u_url = f"https://api.github.com/users/{owner}"
+                        u_data = fetch_json(u_url, timeout=4, headers=headers)
+                        email = u_data.get("email")
+                        name = u_data.get("name") or owner
 
-                    # If user profile email is absent or not a personal inbox, inspect recent public commit
-                    if not email or not is_deliverable_personal_email(email):
-                        c_url = f"https://api.github.com/repos/{repo_name}/commits?author={owner}&per_page=2"
-                        c_data = fetch_json(c_url, timeout=4, headers=headers)
-                        if isinstance(c_data, list):
-                            for c in c_data:
-                                cand = c.get("commit", {}).get("author", {}).get("email")
-                                if is_deliverable_personal_email(cand):
-                                    email = cand
-                                    break
+                        # If user profile email is absent or undeliverable, inspect recent public commits
+                        if not email or not is_deliverable_personal_email(email):
+                            c_url = f"https://api.github.com/repos/{repo_name}/commits?author={owner}&per_page=3"
+                            c_data = fetch_json(c_url, timeout=4, headers=headers)
+                            if isinstance(c_data, list):
+                                for c in c_data:
+                                    cand = c.get("commit", {}).get("author", {}).get("email")
+                                    if is_deliverable_personal_email(cand):
+                                        email = cand
+                                        break
 
-                    if email and is_deliverable_personal_email(email):
-                        norm_email = email.lower().strip()
-                        norm_user = owner.lower().strip()
-                        if norm_email in exclude_emails or norm_user in exclude_users:
-                            continue
-                        exclude_emails.add(norm_email)
-                        exclude_users.add(norm_user)
-                        discovered.append({
-                            "track": track,
-                            "username": owner,
-                            "name": name,
-                            "email": norm_email,
-                            "repo": repo_name,
-                            "repo_desc": repo_desc
-                        })
-                except Exception:
-                    pass
-        except Exception:
-            continue
+                        if email and is_deliverable_personal_email(email):
+                            norm_email = email.lower().strip()
+                            norm_user = owner.lower().strip()
+                            if norm_email in exclude_emails or norm_user in exclude_users:
+                                continue
+                            exclude_emails.add(norm_email)
+                            exclude_users.add(norm_user)
+                            discovered.append({
+                                "track": track,
+                                "username": owner,
+                                "name": name,
+                                "email": norm_email,
+                                "repo": repo_name,
+                                "repo_desc": repo_desc
+                            })
+                    except Exception:
+                        pass
+                time.sleep(0.4)
+            except Exception:
+                break
 
     return discovered
 
@@ -663,8 +738,8 @@ def main():
     track_counts = {"track_rugshield": 0, "track_canaryguard": 0, "track_agentfuel": 0}
 
     if not args.digest_only and remaining_today > 0:
-        # Send up to 3 per track (9 per cycle) to ensure balanced Big 3 outreach
-        per_track = max(1, min(remaining_today // 3, 3))
+        # Send up to 5 per track (15 per cycle) so dropped GitHub cron slots don't starve the 35/day target
+        per_track = max(1, min(remaining_today // 3, 5))
         known_emails = {e.lower().strip() for e in leads_data["contacted_emails"]}
         known_users = {u.lower().strip() for u in leads_data["contacted_users"]}
 
@@ -703,7 +778,7 @@ def main():
                     track_counts[track_name] += 1
                     save_leads(leads_data)
                     print(f"  [+] {track_name} pitch delivered to: {email} ({user} on {lead['repo']})")
-                    time.sleep(2)
+                    time.sleep(4)
                 except Exception as e:
                     print(f"  [-] Failed to pitch {email}: {e}")
 

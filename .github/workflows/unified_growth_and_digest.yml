@@ -2,7 +2,7 @@ name: Unified Empire Growth & Daily Digest Engine
 
 on:
   schedule:
-    - cron: '0 */6 * * *'  # Runs every 6 hours
+    - cron: '19 */3 * * *'  # Runs every 3 hours at off-peak minute :19 to avoid top-of-hour queue drops
   workflow_dispatch:
 
 jobs:
