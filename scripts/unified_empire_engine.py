@@ -569,11 +569,11 @@ RugShield 402 is an autonomous dual-chain DEX pre-trade simulation & safety engi
 3. Liquidity Lock & Pool Depth Analysis: Aerodrome (Slipstream), Uniswap v3, Raydium & Orca pair verification
 4. Sybil Cluster & Dev Concentration Scoring before your bot executes a swap
 
-Integrate directly into your pipeline (Base & Solana x402 USDC supported):
-- Open-Source MCP Server: https://github.com/ak10082247-max/rugshield-402 (Claude Desktop & Cursor native)
-- Standard MCP Tools: `rugshield_pre_swap_scan`, `check_honeypot`, `verify_liquidity_lock`
-- Live Edge API (x402 $0.010 USDC on Base & Solana): https://rugshield-402.onrender.com
-- Apify Pay-Per-Event ($0.005/scan): https://apify.com/kuroxreal/rugshield-402
+Integrate directly in seconds (free preview -> credit card via Apify -> or Base/Solana x402 USDC):
+- Free Live Pre-Trade Check (`POST /v1/scan/preview`): https://rugshield-402.onrender.com/v1/scan/preview
+- 1-Click Fiat Run on Apify Store ($0.005/scan, free credits available): https://apify.com/kuroxreal/rugshield-402
+- Open-Source MCP Server (Claude Desktop & Cursor): https://rugshield-402.onrender.com/mcp (tools: `rugshield_pre_swap_scan`, `check_honeypot`, `analyze_liquidity`)
+- Dual-Chain x402 API ($0.010 USDC on Base & Solana): https://rugshield-402.onrender.com/v1/scan
 
 Hope this helps your bot avoid bad fills across Solana and Base!
 
@@ -594,13 +594,12 @@ CanaryGuard 402 is a deterministic security firewall and honeypot scrubber built
 3. Cryptographic tamper-evident inspection receipts with risk scores (0-100)
 4. Contextual scoring for extracted crypto addresses and wallet-drain commands
 
-Connect it in seconds:
+Connect it in seconds (free test endpoint -> credit card via Apify -> or Base/Solana x402 USDC):
+- Free Live Sandbox (`POST /v1/sanitize/preview`): https://canaryguard-402.onrender.com/v1/sanitize/preview
+- 1-Click Fiat Run on Apify Store ($0.003/check, free credits available): https://apify.com/kuroxreal/canaryguard-402
+- Claude Desktop & Cursor Remote MCP: https://canaryguard-402.onrender.com/mcp
+- npm SDKs: `@kurox_real/plugin-canaryguard`, `@kurox_real/agentkit-canaryguard-402`, `@kurox_real/canaryguard-client`
 - Open-Source Repo: https://github.com/ak10082247-max/canaryguard-402
-- Claude Desktop & Cursor MCP: https://canaryguard-402.onrender.com/mcp
-- ElizaOS Official Plugin: @kurox_real/plugin-canaryguard
-- Coinbase AgentKit Action Provider: @kurox_real/agentkit-canaryguard-402
-- Apify Store Pay-Per-Event ($0.003/check): https://apify.com/kuroxreal/canaryguard-402
-- Flat Subscription: Available on MCPize ($9.99/mo)
 
 Keep your agents safe from prompt injection!
 
@@ -622,15 +621,17 @@ We launched AgentFuel402 — a zero-cold-start consumable data factory built spe
 4. Reverse Engineer Anything (REA): Discovers Next.js hydration APIs, hidden REST/GraphQL routes, and auto-generates OpenAPI 3.1 specs + client code without scraping
 5. Zero-Charge Resilience: We never charge on 404s or dead links under our Verify -> Fetch -> Settle guarantee
 
-Available across your favorite stacks:
-- Apify Store PPE ($0.015 - $0.050 USD): https://apify.com/kuroxreal
+Try it right now with zero wallet setup or via Apify / x402:
+- Free Instant Previews (no key/wallet):
+  * B2B Leads: https://agentfuel402.ak10082247.workers.dev/v1/preview/b2b-intent-leads
+  * Clean Markdown: https://agentfuel402.ak10082247.workers.dev/v1/preview/llm-clean-markdown
+- 1-Click Credit Card / Free Monthly Credits via Apify Store ($0.015 - $0.050 USD):
   * Reverse Engineer Anything: https://apify.com/kuroxreal/reverse-engineer-anything
-  * B2B Leads: https://apify.com/kuroxreal/b2b-intent-leads-ppe
+  * B2B Intent Leads: https://apify.com/kuroxreal/b2b-intent-leads-ppe
   * Clean Markdown: https://apify.com/kuroxreal/llm-clean-markdown-ppe
-  * E-Com Monitor: https://apify.com/kuroxreal/ecom-price-stock-ppe
-- Official MCP Server: io.github.ak10082247-max/agentfuel402 (Instant Claude Desktop & Cursor tool)
-- Cloudflare Edge x402: https://agentfuel402.ak10082247.workers.dev ($0.005 - $0.010 USDC)
-- Free Live Previews: https://agentfuel402.ak10082247.workers.dev/v1/preview/leads
+  * E-Com Price & Stock: https://apify.com/kuroxreal/ecom-price-stock-ppe
+- Remote MCP Endpoint (Claude Desktop & Cursor): https://agentfuel402.ak10082247.workers.dev/mcp (Registry: `io.github.ak10082247-max/agentfuel402`)
+- Agency Pass ($5.00 USDC = 1,000 calls, zero per-call signing) or Pay-per-Call x402 ($0.005-$0.020 on Base & Solana): https://agentfuel402.ak10082247.workers.dev
 
 Cheers and happy building,
 Kurox Real / AgentFuel402

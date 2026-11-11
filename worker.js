@@ -1539,7 +1539,7 @@ Endpoints:
         "X-Fuel-Preview": "true"
       };
 
-      if (feedKey === "b2b-intent-leads") {
+      if (feedKey === "b2b-intent-leads" || feedKey === "leads") {
         const data = await fetchB2BLeads(2);
         return new Response(JSON.stringify({ ...data, preview: true, full_feed_access: "Pay $0.010 USDC via x402 on /v1/fuel/b2b-intent-leads" }, null, 2), { status: 200, headers: previewHeaders });
       }
