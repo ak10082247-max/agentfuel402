@@ -417,16 +417,16 @@ def search_github_leads(track="track_rugshield", limit=5, exclude_emails=None, e
     track_queries = {
         "track_rugshield": [
             "jupiter solana swap NOT arbitrage-bot",
-            "raydium pumpfun bot NOT arbitrage-bot",
+            "solana agent kit NOT arbitrage-bot",
             "coinbase agentkit NOT arbitrage-bot",
             "aerodrome base defi NOT arbitrage-bot",
-            "solana swap sniper stars:>=2 NOT how-to",
+            "x402 solana agent NOT how-to",
             "dexscreener api bot stars:>=1 NOT how-to",
             "viem swap base NOT arbitrage-bot",
-            "hyperliquid trading bot NOT how-to",
-            "polymarket trading bot NOT how-to",
-            "jito mev solana NOT how-to",
-            "pumpfun sdk NOT how-to",
+            "solana web3 sdk NOT how-to",
+            "uniswap v4 hook NOT how-to",
+            "base onchain agent NOT how-to",
+            "mcp solana server NOT how-to",
             "erc4337 agent wallet NOT how-to"
         ],
         "track_canaryguard": [
