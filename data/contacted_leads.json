@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-10T21:21:19.811634+00:00",
+  "updated_at": "2026-11-11T06:37:13.800520+00:00",
   "contacted_emails": [
     "benny.json@gmail.com",
     "support@0xinsider.com",
@@ -68,7 +68,22 @@
     "hello@livetennisapi.com",
     "osykasergey8@gmail.com",
     "ttrungthanh90@gmail.com",
-    "abdalwhabq7@gmail.com"
+    "abdalwhabq7@gmail.com",
+    "fomotsar@gmail.com",
+    "jaymnyon@gmail.com",
+    "yankeetoken@gmail.com",
+    "vadhanbrothers@gmail.com",
+    "exchange.degen@gmail.com",
+    "contact@supreplabs.com",
+    "jnjami40@gmail.com",
+    "akadwi96@gmail.com",
+    "ashekhawat32@gmail.com",
+    "jiyasheikh2760@gmail.com",
+    "info@bigibyte.com",
+    "sarrar.mohcin@gmail.com",
+    "ganeshjondhale1985@gmail.com",
+    "emk4652@imnovaonline.com",
+    "satthuvt1011@gmail.com"
   ],
   "contacted_users": [
     "bennyjo",
@@ -138,7 +153,22 @@
     "livetennisapi",
     "osykasergey8-code",
     "tthanh2k6",
-    "abdalwhabq7-create"
+    "abdalwhabq7-create",
+    "fomotsar-commits",
+    "alitiora-initiative",
+    "swapsolanatokens",
+    "akshay-vadhan",
+    "defaultperson",
+    "supreplabs",
+    "jami40",
+    "akanksha-1708",
+    "iamlegendchamp",
+    "jiyasheikh06",
+    "bigibyte",
+    "sarrarmohcin",
+    "odwx01",
+    "emk4652",
+    "vanthienvt"
   ],
   "history": [
     {
@@ -616,6 +646,111 @@
       "track": "track_agentfuel",
       "repo": "abdalwhabq7-create/apify-actor-examples",
       "sent_date": "2026-11-10T21:21:19.811609+00:00"
+    },
+    {
+      "username": "fomotsar-commits",
+      "email": "fomotsar@gmail.com",
+      "track": "track_rugshield",
+      "repo": "fomotsar-commits/tegridy-farms",
+      "sent_date": "2026-11-11T06:35:45.122540+00:00"
+    },
+    {
+      "username": "alitiora-initiative",
+      "email": "jaymnyon@gmail.com",
+      "track": "track_rugshield",
+      "repo": "Alitiora-Initiative/WELP-UP",
+      "sent_date": "2026-11-11T06:35:49.931034+00:00"
+    },
+    {
+      "username": "swapsolanatokens",
+      "email": "yankeetoken@gmail.com",
+      "track": "track_rugshield",
+      "repo": "SwapSolanaTokens/swapsolanatokens.com",
+      "sent_date": "2026-11-11T06:35:54.909719+00:00"
+    },
+    {
+      "username": "akshay-vadhan",
+      "email": "vadhanbrothers@gmail.com",
+      "track": "track_rugshield",
+      "repo": "akshay-vadhan/solana_wallet_tracker",
+      "sent_date": "2026-11-11T06:35:59.964300+00:00"
+    },
+    {
+      "username": "defaultperson",
+      "email": "exchange.degen@gmail.com",
+      "track": "track_rugshield",
+      "repo": "DefaultPerson/solana-dex-parser-go",
+      "sent_date": "2026-11-11T06:36:04.748101+00:00"
+    },
+    {
+      "username": "supreplabs",
+      "email": "contact@supreplabs.com",
+      "track": "track_canaryguard",
+      "repo": "supreplabs/langchain-finic",
+      "sent_date": "2026-11-11T06:36:15.964478+00:00"
+    },
+    {
+      "username": "jami40",
+      "email": "jnjami40@gmail.com",
+      "track": "track_canaryguard",
+      "repo": "Jami40/LangChain_Orchastation",
+      "sent_date": "2026-11-11T06:36:21.352104+00:00"
+    },
+    {
+      "username": "akanksha-1708",
+      "email": "akadwi96@gmail.com",
+      "track": "track_canaryguard",
+      "repo": "Akanksha-1708/Genai-mini-projects",
+      "sent_date": "2026-11-11T06:36:27.355586+00:00"
+    },
+    {
+      "username": "iamlegendchamp",
+      "email": "ashekhawat32@gmail.com",
+      "track": "track_canaryguard",
+      "repo": "IamLegendChamp/governed-um-policy-rag",
+      "sent_date": "2026-11-11T06:36:32.781326+00:00"
+    },
+    {
+      "username": "jiyasheikh06",
+      "email": "jiyasheikh2760@gmail.com",
+      "track": "track_canaryguard",
+      "repo": "JiyaSheikh06/langchain-text-splitters",
+      "sent_date": "2026-11-11T06:36:38.291091+00:00"
+    },
+    {
+      "username": "bigibyte",
+      "email": "info@bigibyte.com",
+      "track": "track_agentfuel",
+      "repo": "Bigibyte/track-products-prices-apis",
+      "sent_date": "2026-11-11T06:36:53.754516+00:00"
+    },
+    {
+      "username": "sarrarmohcin",
+      "email": "sarrar.mohcin@gmail.com",
+      "track": "track_agentfuel",
+      "repo": "sarrarmohcin/Shopify-price-monitor",
+      "sent_date": "2026-11-11T06:36:59.022139+00:00"
+    },
+    {
+      "username": "odwx01",
+      "email": "ganeshjondhale1985@gmail.com",
+      "track": "track_agentfuel",
+      "repo": "odwx01/competitor-price-monitoring",
+      "sent_date": "2026-11-11T06:37:04.076424+00:00"
+    },
+    {
+      "username": "emk4652",
+      "email": "emk4652@imnovaonline.com",
+      "track": "track_agentfuel",
+      "repo": "emk4652/ecommerce-price-stock-monitor",
+      "sent_date": "2026-11-11T06:37:08.956339+00:00"
+    },
+    {
+      "username": "vanthienvt",
+      "email": "satthuvt1011@gmail.com",
+      "track": "track_agentfuel",
+      "repo": "vanthienvt/apify-ecommerce-price-stock-monitor",
+      "sent_date": "2026-11-11T06:37:13.800499+00:00"
     }
   ]
 }
