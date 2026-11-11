@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-11T15:50:27.643455+00:00",
+  "updated_at": "2026-11-11T17:13:49.261337+00:00",
   "contacted_emails": [
     "benny.json@gmail.com",
     "support@0xinsider.com",
@@ -98,7 +98,10 @@
     "morvanvivien@gmail.com",
     "xuanphuoc900@gmail.com",
     "youssefarhan24@gmail.com",
-    "mr.shahbaznns@gmail.com"
+    "mr.shahbaznns@gmail.com",
+    "mortdeusdev@gmail.com",
+    "adyasinha442@gmail.com",
+    "jake@soenneker.com"
   ],
   "contacted_users": [
     "bennyjo",
@@ -198,7 +201,10 @@
     "morvanvivien",
     "conchimxanh-ai",
     "automationbyexperts",
-    "mrshahbazdev"
+    "mrshahbazdev",
+    "mortdeus",
+    "adyasinha1",
+    "soenneker"
   ],
   "history": [
     {
@@ -886,6 +892,27 @@
       "track": "track_agentfuel",
       "repo": "mrshahbazdev/shopify-product-scraper",
       "sent_date": "2026-11-11T15:50:27.643437+00:00"
+    },
+    {
+      "username": "mortdeus",
+      "email": "mortdeusdev@gmail.com",
+      "track": "track_rugshield",
+      "repo": "mortdeus/solana-copy-sniper-mev-trading-bot",
+      "sent_date": "2026-11-11T17:13:37.193545+00:00"
+    },
+    {
+      "username": "adyasinha1",
+      "email": "adyasinha442@gmail.com",
+      "track": "track_canaryguard",
+      "repo": "AdyaSinha1/synapsepay",
+      "sent_date": "2026-11-11T17:13:42.950043+00:00"
+    },
+    {
+      "username": "soenneker",
+      "email": "jake@soenneker.com",
+      "track": "track_agentfuel",
+      "repo": "soenneker/soenneker.clay.httpclients",
+      "sent_date": "2026-11-11T17:13:49.261316+00:00"
     }
   ]
 }
