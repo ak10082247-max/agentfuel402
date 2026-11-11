@@ -1,6 +1,7 @@
 {
   "name": "agentfuel402",
   "version": "1.0.0",
+  "license": "MIT",
   "description": "B2B, E-Commerce & Developer Consumable Data Factory (Apify PPE + Dual-Chain x402 + MCP)",
   "main": "worker.js",
   "type": "module",

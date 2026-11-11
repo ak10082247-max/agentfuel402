@@ -53,6 +53,13 @@ AgentFuel402 is registered in the official Model Context Protocol Registry as **
 }
 ```
 
+### Run Locally from Source (`stdio` or Docker HTTP MCP)
+```bash
+pip install -r requirements.txt
+python entrypoint.py --mcp-stdio
+```
+Or configure `claude_desktop_config.json` with `"command": "python", "args": ["entrypoint.py", "--mcp-stdio"]`, or run via [`Dockerfile`](Dockerfile) on port `8080` (`POST /mcp`).
+
 ### Supported MCP Tools
 - `fuel_b2b_leads`: `{ "limit": 10, "category": "all" }`
 - `fuel_clean_markdown`: `{ "url": "https://news.ycombinator.com", "strip_images": false }`
