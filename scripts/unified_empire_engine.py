@@ -576,6 +576,7 @@ Integrate directly in seconds (free preview -> credit card via Apify -> or Base/
 - Dual-Chain x402 API ($0.010 USDC on Base & Solana): https://rugshield-402.onrender.com/v1/scan
 
 Hope this helps your bot avoid bad fills across Solana and Base!
+Need a custom pre-trade security integration or token audit? Reply directly to this email (async email/text delivery only — no calls or meetings required).
 
 Best regards,
 Kurox DEX Security Team
@@ -602,6 +603,7 @@ Connect it in seconds (free test endpoint -> credit card via Apify -> or Base/So
 - Open-Source Repo: https://github.com/ak10082247-max/canaryguard-402
 
 Keep your agents safe from prompt injection!
+Need a custom MCP security firewall or prompt-audit setup? Reply directly to this email (async email/text delivery only — no calls or meetings required).
 
 Best regards,
 Kurox AI Safety Engineering
@@ -632,6 +634,8 @@ Try it right now with zero wallet setup or via Apify / x402:
   * E-Com Price & Stock: https://apify.com/kuroxreal/ecom-price-stock-ppe
 - Remote MCP Endpoint (Claude Desktop & Cursor): https://agentfuel402.ak10082247.workers.dev/mcp (Registry: `io.github.ak10082247-max/agentfuel402`)
 - Agency Pass ($5.00 USDC = 1,000 calls, zero per-call signing) or Pay-per-Call x402 ($0.005-$0.020 on Base & Solana): https://agentfuel402.ak10082247.workers.dev
+
+Need a bespoke B2B dataset, site reverse-engineering, or custom Apify actor ($49-$250 via Apify or Base/Solana USDC)? Reply to this email directly — async email/text delivery only, zero calls required.
 
 Cheers and happy building,
 Kurox Real / AgentFuel402
