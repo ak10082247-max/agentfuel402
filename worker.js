@@ -1359,52 +1359,95 @@ export default {
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AgentFuel402 — Consumable Data Factory for Autonomous AI Agents</title>
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #090a0f; color: #f8fafc; padding: 2rem; line-height: 1.6; max-width: 900px; margin: 0 auto; }
-    h1 { color: #38bdf8; font-size: 2.2rem; margin-bottom: 0.5rem; }
-    .badge { display: inline-block; background: #1e293b; color: #38bdf8; border: 1px solid #334155; padding: 0.2rem 0.6rem; border-radius: 4px; font-size: 0.8rem; margin-right: 0.5rem; }
-    .card { background: #131722; border: 1px solid #232a3b; border-radius: 8px; padding: 1.2rem; margin: 1rem 0; }
-    code { background: #000; padding: 0.2rem 0.4rem; border-radius: 4px; color: #f43f5e; font-size: 0.9rem; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #090a0f; color: #f8fafc; padding: 2rem 1rem 4rem; line-height: 1.6; max-width: 980px; margin: 0 auto; }
+    h1 { color: #38bdf8; font-size: 2.2rem; margin-bottom: 0.4rem; }
+    .badge { display: inline-block; background: #1e293b; color: #38bdf8; border: 1px solid #334155; padding: 0.25rem 0.65rem; border-radius: 999px; font-size: 0.78rem; margin: 0.2rem 0.4rem 0.2rem 0; }
+    .cta-bar { display: flex; flex-wrap: wrap; gap: 0.65rem; margin: 1.25rem 0; }
+    .btn { display: inline-block; padding: 0.6rem 1.05rem; border-radius: 8px; font-weight: 700; font-size: 0.88rem; cursor: pointer; text-decoration: none; border: 1px solid #334155; background: #1e293b; color: #f8fafc; }
+    .btn-green { background: #059669; border-color: #10b981; color: #fff; }
+    .btn-blue { background: #2563eb; border-color: #60a5fa; color: #fff; }
+    .card { background: #131722; border: 1px solid #232a3b; border-radius: 10px; padding: 1.25rem; margin: 1.1rem 0; }
+    code { background: #000; padding: 0.2rem 0.4rem; border-radius: 4px; color: #34d399; font-size: 0.85rem; }
+    pre { background: #05070c; border: 1px solid #232a3b; border-radius: 8px; padding: 0.85rem; overflow-x: auto; font-size: 0.8rem; color: #38bdf8; max-height: 240px; }
     a { color: #38bdf8; text-decoration: none; }
-    table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+    table { width: 100%; border-collapse: collapse; margin-top: 0.85rem; font-size: 0.9rem; }
     th, td { border: 1px solid #232a3b; padding: 0.6rem; text-align: left; }
     th { background: #1e293b; color: #cbd5e1; }
   </style>
 </head>
 <body>
   <h1>⚡ AgentFuel402</h1>
-  <p><strong>B2B, E-Commerce & Developer Consumable Data Factory for Autonomous AI Agents</strong></p>
+  <p><strong>B2B, E-Commerce &amp; Developer Consumable Data Factory on Cloudflare Edge (0ms Cold Start)</strong></p>
   <div>
-    <span class="badge">Cloudflare Edge (0ms Cold Start)</span>
-    <span class="badge">x402 V2 Dual-Chain (Base + Solana)</span>
-    <span class="badge">Apify Store Pay-Per-Event</span>
-    <span class="badge">MCP JSON-RPC 2.0</span>
+    <span class="badge">Cloudflare Edge</span>
+    <span class="badge">x402 V2 (Base + Solana USDC)</span>
+    <span class="badge">Apify Store (Credit Card)</span>
+    <span class="badge">Glama Rated B MCP (5 Tools)</span>
+  </div>
+
+  <div class="cta-bar">
+    <a class="btn btn-green" href="https://apify.com/kuroxreal" target="_blank" rel="noopener">💳 Run by Credit Card on Apify (Free Monthly Credits)</a>
+    <a class="btn btn-blue" href="#agency-pass">🎟️ $5.00 USDC Agency Pass (1,000 Calls)</a>
+    <a class="btn" href="https://glama.ai/mcp/servers/ak10082247-max/agentfuel402" target="_blank" rel="noopener">🧩 Glama MCP Listing</a>
+    <a class="btn" href="https://ak10082247-max.github.io/" target="_blank" rel="noopener">🛡️ Big 3 Directory</a>
+    <a class="btn" href="mailto:armkhan18@gmail.com?subject=AgentFuel402%20Custom%20Feed%20or%20Audit">📧 Email-Only Custom Work ($49-$250)</a>
   </div>
 
   <div class="card">
-    <h3>Available Data Feeds (Non-Cacheable, Always Fresh)</h3>
+    <h3>⚡ Free Instant Edge Previews (No Wallet or API Key Needed)</h3>
+    <p style="color:#94a3b8;font-size:0.9rem;">Test live production output before integrating Apify or x402:</p>
+    <div class="cta-bar" style="margin:0.75rem 0;">
+      <button class="btn btn-green" onclick="tryPreview('/v1/preview/leads')">Try B2B Intent Leads Preview</button>
+      <button class="btn" onclick="tryPreview('/v1/preview/ecom-price-stock')">Try E-Com Price/Stock Preview</button>
+      <button class="btn" onclick="tryPreview('/v1/preview/sdk-live-spec')">Try SDK Live Spec Preview</button>
+    </div>
+    <pre id="previewOut">Click any free preview button above to inspect live AgentFuel402 JSON output...</pre>
+  </div>
+
+  <div class="card">
+    <h3>Available Data Feeds &amp; Direct Credit-Card / x402 Access</h3>
     <table>
-      <tr><th>Endpoint</th><th>Price (x402)</th><th>Apify PPE</th><th>Description</th></tr>
-      <tr><td><code>/v1/fuel/b2b-intent-leads</code></td><td>$0.010 USDC</td><td>$0.030 USD</td><td>Live B2B intent signals: Show HN, ProductHunt, tech stacks, domains.</td></tr>
-      <tr><td><code>/v1/fuel/llm-clean-markdown</code></td><td>$0.005 USDC</td><td>$0.015 USD</td><td>Clean Markdown extractor with SSRF & prompt-injection defense.</td></tr>
-      <tr><td><code>/v1/fuel/ecom-price-stock</code></td><td>$0.005 USDC</td><td>$0.015 USD</td><td>Shopify & Schema.org live prices, stock status, variants.</td></tr>
-      <tr><td><code>/v1/fuel/sdk-live-spec</code></td><td>$0.005 USDC</td><td>$0.010 USD</td><td>Live PyPI & npm metadata, latest version & breaking warnings.</td></tr>
-      <tr><td><code>/v1/fuel/reverse-engineer</code></td><td>$0.020 USDC</td><td>$0.050 USD</td><td>Reverse Engineer Anything (REA): Hidden APIs, hydration state, OpenAPI 3.1 & zero-scrape bypass code.</td></tr>
+      <tr><th>Endpoint</th><th>x402 Price</th><th>Credit Card (Apify)</th><th>Description</th></tr>
+      <tr><td><code>GET /v1/fuel/b2b-intent-leads</code></td><td>$0.010 USDC</td><td><a href="https://apify.com/kuroxreal/b2b-intent-leads-ppe" target="_blank" rel="noopener">Apify Actor ($0.030)</a></td><td>Live B2B buying intent signals, founder launches &amp; tech stacks.</td></tr>
+      <tr><td><code>GET /v1/fuel/llm-clean-markdown</code></td><td>$0.005 USDC</td><td><a href="https://apify.com/kuroxreal/llm-clean-markdown-ppe" target="_blank" rel="noopener">Apify Actor ($0.015)</a></td><td>Prompt-injection-safe RAG Markdown extractor.</td></tr>
+      <tr><td><code>GET /v1/fuel/ecom-price-stock</code></td><td>$0.005 USDC</td><td><a href="https://apify.com/kuroxreal/ecom-price-stock-ppe" target="_blank" rel="noopener">Apify Actor ($0.015)</a></td><td>Real-time Shopify &amp; Schema.org prices, stock &amp; variants.</td></tr>
+      <tr><td><code>GET /v1/fuel/sdk-live-spec</code></td><td>$0.005 USDC</td><td><a href="/v1/preview/sdk-live-spec">Free Preview</a></td><td>Live PyPI &amp; npm release metadata and breaking warnings.</td></tr>
+      <tr><td><code>POST /v1/fuel/reverse-engineer</code></td><td>$0.020 USDC</td><td><a href="https://apify.com/kuroxreal/reverse-engineer-anything" target="_blank" rel="noopener">Apify Actor ($0.050)</a></td><td>Reverse Engineer Anything (REA): hidden JSON/hydration APIs &amp; OpenAPI 3.1.</td></tr>
     </table>
   </div>
 
+  <div class="card" id="agency-pass">
+    <h3>🎟️ $5.00 USDC Agency Pass (1,000 Calls = $0.005/call) &amp; Async Custom Builds</h3>
+    <p>Mint a 1,000-call prepaid <code>X-API-Key</code> in a single gasless x402 transaction via <code>POST /v1/pass/prepay</code> (Base <code>0x80E0Ae84679b7f11bE171DaADd492FBECf628cd6</code> or Solana ATA <code>DD3A7jaXFeHcif9eYj6Vhomuxypat5Yxi8ow6wxz27yL</code>).</p>
+    <p>Need bespoke B2B lead exports, custom site reverse-engineering, or Apify actors (<strong>$49–$250 one-time</strong>)? Email <a href="mailto:armkhan18@gmail.com?subject=AgentFuel402%20Custom%20Build">armkhan18@gmail.com</a> directly — <strong>async email/text delivery only, zero calls required</strong>.</p>
+  </div>
+
   <div class="card">
-    <h3>Protocol Manifests & Integrations</h3>
+    <h3>Protocol Manifests &amp; Remote MCP</h3>
     <ul>
-      <li><a href="/openapi.json">OpenAPI 3.1.0 Specification</a></li>
-      <li><a href="/skill.md">Agent Skill Instructions (skill.md)</a></li>
-      <li><a href="/llms.txt">LLM Knowledge Document (llms.txt)</a></li>
-      <li><a href="/.well-known/x402.json">x402 Universal Discovery (.well-known/x402.json)</a></li>
-      <li><a href="/.well-known/agent-card.json">A2A Capability Card (.well-known/agent-card.json)</a></li>
-      <li><strong>MCP Remote Server:</strong> <code>https://agentfuel402.ak10082247.workers.dev/mcp</code></li>
+      <li><a href="/openapi.json">OpenAPI 3.1.0 Specification</a> &bull; <a href="/skill.md">skill.md</a> &bull; <a href="/llms.txt">llms.txt</a></li>
+      <li><a href="/.well-known/x402.json">.well-known/x402.json</a> &bull; <a href="/.well-known/agent-card.json">.well-known/agent-card.json</a></li>
+      <li><strong>MCP Remote Server:</strong> <code>https://agentfuel402.ak10082247.workers.dev/mcp</code> (Registry: <code>io.github.ak10082247-max/agentfuel402</code>)</li>
+      <li><strong>Big 3 Security Siblings:</strong> <a href="https://canaryguard-402.onrender.com">CanaryGuard 402</a> &bull; <a href="https://rugshield-402.onrender.com">RugShield 402</a></li>
     </ul>
   </div>
+
+  <script>
+    async function tryPreview(ep) {
+      const out = document.getElementById("previewOut");
+      out.textContent = "Fetching " + ep + " ...";
+      try {
+        const res = await fetch(ep);
+        const data = await res.json();
+        out.textContent = JSON.stringify(data, null, 2);
+      } catch (err) {
+        out.textContent = "Preview error: " + err.message;
+      }
+    }
+  </script>
 </body>
 </html>`, {
         status: 200,
