@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-11T06:37:13.800520+00:00",
+  "updated_at": "2026-11-11T15:50:27.643455+00:00",
   "contacted_emails": [
     "benny.json@gmail.com",
     "support@0xinsider.com",
@@ -83,7 +83,22 @@
     "sarrar.mohcin@gmail.com",
     "ganeshjondhale1985@gmail.com",
     "emk4652@imnovaonline.com",
-    "satthuvt1011@gmail.com"
+    "satthuvt1011@gmail.com",
+    "kamilmolendys@gmail.com",
+    "soulpassai@gmail.com",
+    "anshul6272@gmail.com",
+    "iila26920@gmail.com",
+    "yuvrajsinghrock1221@gmail.com",
+    "jhburrus3@gmail.com",
+    "ruv@ruv.net",
+    "nick@maximobranding.com",
+    "chandranimaheswari13@gmail.com",
+    "serge.lopes.94@free.fr",
+    "contact@piloterr.com",
+    "morvanvivien@gmail.com",
+    "xuanphuoc900@gmail.com",
+    "youssefarhan24@gmail.com",
+    "mr.shahbaznns@gmail.com"
   ],
   "contacted_users": [
     "bennyjo",
@@ -168,7 +183,22 @@
     "sarrarmohcin",
     "odwx01",
     "emk4652",
-    "vanthienvt"
+    "vanthienvt",
+    "ilkamo",
+    "soulpass-ai",
+    "anshul1729-in",
+    "ilyael1as",
+    "yuvrajnode",
+    "jackburrus",
+    "ruvnet",
+    "purplehaze2320",
+    "maheswarichandrani",
+    "n3oray",
+    "piloterr",
+    "morvanvivien",
+    "conchimxanh-ai",
+    "automationbyexperts",
+    "mrshahbazdev"
   ],
   "history": [
     {
@@ -751,6 +781,111 @@
       "track": "track_agentfuel",
       "repo": "vanthienvt/apify-ecommerce-price-stock-monitor",
       "sent_date": "2026-11-11T06:37:13.800499+00:00"
+    },
+    {
+      "username": "ilkamo",
+      "email": "kamilmolendys@gmail.com",
+      "track": "track_rugshield",
+      "repo": "ilkamo/jupiter-go",
+      "sent_date": "2026-11-11T15:48:59.985055+00:00"
+    },
+    {
+      "username": "soulpass-ai",
+      "email": "soulpassai@gmail.com",
+      "track": "track_rugshield",
+      "repo": "SoulPass-AI/soulpass-cli-skill",
+      "sent_date": "2026-11-11T15:49:05.073923+00:00"
+    },
+    {
+      "username": "anshul1729-in",
+      "email": "anshul6272@gmail.com",
+      "track": "track_rugshield",
+      "repo": "anshul1729-in/cendex",
+      "sent_date": "2026-11-11T15:49:10.343566+00:00"
+    },
+    {
+      "username": "ilyael1as",
+      "email": "iila26920@gmail.com",
+      "track": "track_rugshield",
+      "repo": "IlyaEl1as/SOL-Telegram-bot",
+      "sent_date": "2026-11-11T15:49:15.588093+00:00"
+    },
+    {
+      "username": "yuvrajnode",
+      "email": "yuvrajsinghrock1221@gmail.com",
+      "track": "track_rugshield",
+      "repo": "yuvrajnode/telegram-bonkbot",
+      "sent_date": "2026-11-11T15:49:20.860734+00:00"
+    },
+    {
+      "username": "jackburrus",
+      "email": "jhburrus3@gmail.com",
+      "track": "track_canaryguard",
+      "repo": "jackburrus/topology-index",
+      "sent_date": "2026-11-11T15:49:33.987532+00:00"
+    },
+    {
+      "username": "ruvnet",
+      "email": "ruv@ruv.net",
+      "track": "track_canaryguard",
+      "repo": "ruvnet/autogenous",
+      "sent_date": "2026-11-11T15:49:39.142794+00:00"
+    },
+    {
+      "username": "purplehaze2320",
+      "email": "nick@maximobranding.com",
+      "track": "track_canaryguard",
+      "repo": "PurpleHaze2320/ai-agent-pulse",
+      "sent_date": "2026-11-11T15:49:44.209408+00:00"
+    },
+    {
+      "username": "maheswarichandrani",
+      "email": "chandranimaheswari13@gmail.com",
+      "track": "track_canaryguard",
+      "repo": "Maheswarichandrani/autogenix",
+      "sent_date": "2026-11-11T15:49:49.452037+00:00"
+    },
+    {
+      "username": "n3oray",
+      "email": "serge.lopes.94@free.fr",
+      "track": "track_canaryguard",
+      "repo": "N3oRay/proton-autogen",
+      "sent_date": "2026-11-11T15:49:54.564307+00:00"
+    },
+    {
+      "username": "piloterr",
+      "email": "contact@piloterr.com",
+      "track": "track_agentfuel",
+      "repo": "piloterr/shopify-scraper",
+      "sent_date": "2026-11-11T15:50:06.882960+00:00"
+    },
+    {
+      "username": "morvanvivien",
+      "email": "morvanvivien@gmail.com",
+      "track": "track_agentfuel",
+      "repo": "morvanvivien/shopify-woocommerce-products-scraper",
+      "sent_date": "2026-11-11T15:50:12.080604+00:00"
+    },
+    {
+      "username": "conchimxanh-ai",
+      "email": "xuanphuoc900@gmail.com",
+      "track": "track_agentfuel",
+      "repo": "ConChimXanh-AI/b2b-leads-bug-bounty-shopify-datasets",
+      "sent_date": "2026-11-11T15:50:17.282412+00:00"
+    },
+    {
+      "username": "automationbyexperts",
+      "email": "youssefarhan24@gmail.com",
+      "track": "track_agentfuel",
+      "repo": "automationbyexperts/apis-scraping-comercio-electronico",
+      "sent_date": "2026-11-11T15:50:22.485535+00:00"
+    },
+    {
+      "username": "mrshahbazdev",
+      "email": "mr.shahbaznns@gmail.com",
+      "track": "track_agentfuel",
+      "repo": "mrshahbazdev/shopify-product-scraper",
+      "sent_date": "2026-11-11T15:50:27.643437+00:00"
     }
   ]
 }
