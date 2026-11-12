@@ -535,10 +535,14 @@ async def main():
         actor_id = os.environ.get("APIFY_ACTOR_ID", "")
         mode = ACTOR_ID_TO_MODE.get(actor_id) or actor_input.get("mode") or os.environ.get("ACTOR_MODE") or "b2b-intent-leads"
         raw_url = (actor_input.get("url") or actor_input.get("product_url") or actor_input.get("target_url") or "").strip()
-        if not raw_url:
-            if "ecom" in mode.lower():
+        if "ecom" in mode.lower():
+            pref = (actor_input.get("product_url") or "").strip()
+            if pref:
+                raw_url = pref
+            elif not raw_url or raw_url.rstrip("/") == "https://news.ycombinator.com":
                 raw_url = "https://books.toscrape.com/catalogue/a-light-in-the-attic_1000/index.html"
-            elif "markdown" in mode.lower() or "reverse" in mode.lower():
+        elif not raw_url:
+            if "markdown" in mode.lower() or "reverse" in mode.lower():
                 raw_url = "https://example.com"
             else:
                 raw_url = "https://news.ycombinator.com"
