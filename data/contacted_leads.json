@@ -1,5 +1,15 @@
 {
   "updated_at": "2026-11-12T20:00:17.705805+00:00",
+  "suppressed_emails": [
+    "paulalexeev10@gmail.com",
+    "serge.lopes.94@free.fr",
+    "privacy@jw3.ai",
+    "support@jw3.ai",
+    "contact@aerodrome.finance",
+    "security@aerodrome.finance",
+    "contact@equalizer.exchange",
+    "info+oss@xbp-europe.com"
+  ],
   "contacted_emails": [
     "benny.json@gmail.com",
     "support@0xinsider.com",

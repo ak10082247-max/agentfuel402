@@ -168,6 +168,70 @@ const MCP_TOOL_ROUTES = {
   fuel_reverse_engineer: "/v1/fuel/reverse-engineer"
 };
 
+const ROUTE_BAZAAR_EXAMPLES = {
+  "/v1/fuel/b2b-intent-leads": {
+    input: { category: "ai", limit: 5 },
+    output: {
+      status: "success",
+      feed: "/v1/fuel/b2b-intent-leads",
+      timestamp_ms: 1794516545000,
+      count: 1,
+      leads: [{ source: "Show HN", title: "VectorFlow AI", domain: "vectorflow.example", category: "ai", score: 42 }]
+    }
+  },
+  "/v1/fuel/llm-clean-markdown": {
+    input: { url: "https://news.ycombinator.com", strip_images: true },
+    output: {
+      status: "success",
+      url: "https://news.ycombinator.com",
+      title: "Hacker News",
+      markdown: "# Hacker News\n\nClean LLM-ready content",
+      token_estimate: 120,
+      metadata: { sanitized: true },
+      sanitized: true
+    }
+  },
+  "/v1/fuel/ecom-price-stock": {
+    input: { url: "https://example.com/products/sample-widget" },
+    output: {
+      status: "success",
+      product_url: "https://example.com/products/sample-widget",
+      title: "Sample Widget",
+      price: 39.99,
+      currency: "USD",
+      in_stock: true,
+      discount_delta: 10.0,
+      sku: "SKU-001"
+    }
+  },
+  "/v1/fuel/sdk-live-spec": {
+    input: { package: "fastapi", ecosystem: "pypi" },
+    output: {
+      status: "success",
+      package: "fastapi",
+      ecosystem: "pypi",
+      latest_version: "0.115.0",
+      release_date: "2026-10-01T00:00:00Z",
+      license: "MIT",
+      breaking_changes: []
+    }
+  },
+  "/v1/fuel/reverse-engineer": {
+    input: { url: "https://example.com" },
+    output: {
+      status: "success",
+      target_url: "https://example.com",
+      origin: "https://example.com",
+      frameworks_detected: ["Next.js"],
+      discovered_endpoints: ["/api/v1/items"],
+      hydration_state: { buildId: "prod" },
+      json_ld_schemas: [],
+      openapi_spec: { openapi: "3.1.0" },
+      bypass_code: { curl: "curl -s https://example.com/api/v1/items" }
+    }
+  }
+};
+
 function buildChallengePayload(req, routePath, details) {
   const cfg = ROUTE_CONFIGS[routePath] || {
     amountMicro: 10000,
@@ -179,34 +243,104 @@ function buildChallengePayload(req, routePath, details) {
 
   const url = new URL(req.url);
   const resourceUrl = `${url.origin}${routePath}`;
+  const isPost = req.method === "POST";
+  const examplePair = ROUTE_BAZAAR_EXAMPLES[routePath] || {
+    input: {},
+    output: { status: "success" }
+  };
+  const inputProps = (cfg.inputSchema && cfg.inputSchema.properties) || {};
+  const inputReq = (cfg.inputSchema && cfg.inputSchema.required) || [];
+  const outputProps = (cfg.outputSchema && cfg.outputSchema.properties) || {
+    status: { type: "string" }
+  };
+
+  const getQueryParamProps = Object.fromEntries(
+    Object.entries(inputProps).map(([k, spec]) => [
+      k,
+      {
+        type: "string",
+        ...(spec && spec.description ? { description: spec.description } : {}),
+        ...(spec && spec.format ? { format: spec.format } : {})
+      }
+    ])
+  );
+
+  const bazaarInputInfo = isPost
+    ? {
+        type: "http",
+        method: "POST",
+        bodyType: "json",
+        body: examplePair.input
+      }
+    : {
+        type: "http",
+        method: "GET",
+        queryParams: Object.fromEntries(
+          Object.entries(examplePair.input).map(([k, v]) => [k, String(v)])
+        )
+      };
+
+  const bazaarInputSchema = isPost
+    ? {
+        type: "object",
+        properties: {
+          type: { type: "string", const: "http" },
+          method: { type: "string", enum: ["POST", "GET"] },
+          bodyType: { type: "string", enum: ["json"] },
+          body: {
+            type: "object",
+            properties: inputProps,
+            required: inputReq,
+            additionalProperties: true
+          }
+        },
+        required: ["type", "method", "bodyType", "body"],
+        additionalProperties: false
+      }
+    : {
+        type: "object",
+        properties: {
+          type: { type: "string", const: "http" },
+          method: { type: "string", enum: ["GET"] },
+          queryParams: {
+            type: "object",
+            properties: getQueryParamProps,
+            required: inputReq,
+            additionalProperties: true
+          }
+        },
+        required: ["type", "method", "queryParams"],
+        additionalProperties: false
+      };
 
   const bazaarExtension = {
     info: {
-      input: {
-        type: "http",
-        method: req.method === "POST" ? "POST" : "GET",
-        bodyType: "json",
-        body: cfg.inputSchema.properties || {}
-      },
+      input: bazaarInputInfo,
       output: {
         type: "json",
-        example: { status: "success", timestamp_ms: Date.now() }
+        example: examplePair.output
       }
     },
     schema: {
       $schema: "https://json-schema.org/draft/2020-12/schema",
       type: "object",
       properties: {
-        input: {
-          type: "object",
-          properties: cfg.inputSchema.properties || {},
-          required: cfg.inputSchema.required || []
-        },
+        input: bazaarInputSchema,
         output: {
           type: "object",
-          properties: cfg.outputSchema.properties || {}
+          properties: {
+            type: { type: "string" },
+            example: {
+              type: "object",
+              properties: outputProps,
+              required: ["status"],
+              additionalProperties: true
+            }
+          },
+          required: ["type"]
         }
-      }
+      },
+      required: ["input"]
     }
   };
 

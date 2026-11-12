@@ -68,7 +68,7 @@ SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 587
 DIGEST_RECIPIENTS = ["ak10082247@gmail.com", "armkhan18@gmail.com"]
 
-MAX_EMAILS_PER_DAY = 35
+MAX_EMAILS_PER_DAY = 15
 DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
 CONTACTED_FILE = os.path.join(DATA_DIR, "contacted_leads.json")
 
@@ -249,15 +249,27 @@ def get_active_apify_stats():
     total_ppe_events = 0
 
     for aid, name, desc in ACTIVE_APIFY_ACTORS:
-        url = f"https://api.apify.com/v2/acts/{aid}/runs?limit=25"
+        url = f"https://api.apify.com/v2/acts/{aid}/runs?limit=25&desc=true"
         try:
             res_data = fetch_json(url, timeout=8, headers={"Authorization": f"Bearer {APIFY_TOKEN}"})
             items = res_data.get("data", {}).get("items", [])
             succeeded = [run for run in items if run.get("status") == "SUCCEEDED"]
             ppe_charges = 0
+            detail_checks = 0
             for run in succeeded:
-                counts = run.get("chargedEventCounts") or {}
-                ppe_charges += sum(counts.values())
+                counts = run.get("chargedEventCounts")
+                if counts is None and run.get("id") and detail_checks < 15:
+                    detail_checks += 1
+                    try:
+                        run_detail = fetch_json(
+                            f"https://api.apify.com/v2/actor-runs/{run['id']}",
+                            timeout=6,
+                            headers={"Authorization": f"Bearer {APIFY_TOKEN}"}
+                        )
+                        counts = run_detail.get("data", {}).get("chargedEventCounts") or {}
+                    except Exception:
+                        counts = {}
+                ppe_charges += sum((counts or {}).values())
 
             total_runs += len(items)
             total_succeeded += len(succeeded)
@@ -319,7 +331,7 @@ BLOCKED_EMAIL_DOMAINS = {
 
 EMAIL_PREFIX_PATTERN = re.compile(r"^[a-z0-9][a-z0-9._%+\-]{0,63}$")
 EMAIL_DOMAIN_PATTERN = re.compile(r"^[a-z0-9](?:[a-z0-9\-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9\-]{0,61}[a-z0-9])?)+$")
-ICLOUD_RELAY_PATTERN = re.compile(r"(?:^[0-9]+[._-]|[._-][0-9a-z]{2}$|\d[a-z]$)")
+ICLOUD_RELAY_PATTERN = re.compile(r"(?:^[0-9]+[._-]|[._-][0-9a-z]{2}$|\d[a-z]$|(?:_|-|\.)[a-z]+\d[a-z]?$|^(?:[a-z0-9]+[-_.]){2,}[a-z0-9]{1,3}$)")
 SPAM_REPO_PATTERN = re.compile(
     r"(?:how-to-(?:create|launch|configure|understand|build|run|deploy|set-up)-|"
     r"arbitrage-bot-(?:execution|deployment|cost-awareness|swap-routes|wallet-setup|loan-execution))",
@@ -375,20 +387,34 @@ def is_deliverable_personal_email(email: str) -> bool:
     if prefix in DISALLOWED_PREFIXES or any(p in prefix for p in ["noreply", "no-reply", "donotreply", "mailer", "dependabot", "[bot]"]):
         return False
 
-    # Exclude Apple Hide-My-Email relay aliases heavily used by automated GitHub spam bots
+    # Exclude Apple Hide-My-Email relay aliases & consumer bot/academic bounce domains
     if domain == "icloud.com" and ICLOUD_RELAY_PATTERN.search(prefix):
         return False
+    if domain.endswith("privaterelay.appleid.com"):
+        return False
+    if domain in {"qq.com", "163.com", "126.com", "yeah.net", "sina.com", "sohu.com", "foxmail.com"}:
+        return False
+    if domain == "edu" or domain.endswith(".edu") or ".edu." in domain or ".ac." in domain:
+        return False
 
-    # Fast path for verified consumer & academic domains
+    # Fast path for verified consumer domains
     if domain in TRUSTED_EMAIL_DOMAINS:
-        return True
-    if domain.endswith(".edu") or domain.endswith(".ac.uk") or domain.endswith(".edu.au") or domain.endswith(".edu.sg"):
         return True
 
     # Allow real startup / company / agency domains when DNS confirms active MX records
     return has_valid_mx_record(domain)
 
 def is_spam_repo(owner: str, repo_name: str, repo_desc: str) -> bool:
+    blob = f"{owner or ''} {repo_name or ''} {repo_desc or ''}".lower()
+    low_intent_tokens = (
+        "homework", "assignment", "coursework", "capstone", "bootcamp", "university",
+        "college", "student", "semester", "cs50", "100-days", "tutorial",
+        "practice", "learning", "my-first", "todo-app", "hello-world", "leetcode",
+        "portfolio", "clone-app", "final-project", "mini-project", "mini_project",
+        "class-project", "test-repo", "demo-app", "sample-app", "workshop"
+    )
+    if any(tok in blob for tok in low_intent_tokens):
+        return True
     """Filters out own repos, GitHub profile README repos, and SEO/malware bot-farm repositories."""
     if not owner or not repo_name:
         return True
@@ -421,7 +447,7 @@ def search_github_leads(track="track_rugshield", limit=5, exclude_emails=None, e
             "coinbase agentkit NOT arbitrage-bot",
             "aerodrome base defi NOT arbitrage-bot",
             "x402 solana agent NOT how-to",
-            "dexscreener api bot stars:>=1 NOT how-to",
+            "dexscreener api bot stars:>=3 NOT how-to",
             "viem swap base NOT arbitrage-bot",
             "solana web3 sdk NOT how-to",
             "uniswap v4 hook NOT how-to",
@@ -538,10 +564,26 @@ def search_github_leads(track="track_rugshield", limit=5, exclude_emails=None, e
 # EMAIL OUTBOUND SENDER & PITCH GENERATOR
 # -----------------------------------------------------------------------------
 def send_email(to_addr, subject, body_text, body_html=None):
+    is_outreach = bool(to_addr and SMTP_USER and to_addr.lower().strip() != SMTP_USER.lower().strip())
+    if is_outreach:
+        opt_out_line = (
+            f"\n\n---\nNo more emails? Reply with 'unsubscribe' or email {SMTP_USER}?subject=unsubscribe to opt out immediately."
+        )
+        if body_text and "unsubscribe" not in body_text.lower():
+            body_text = body_text.rstrip() + opt_out_line
+        if body_html and "unsubscribe" not in body_html.lower():
+            body_html = body_html.rstrip() + (
+                f'<p style="color:#64748b;font-size:12px;margin-top:24px;">No more emails? '
+                f'<a href="mailto:{SMTP_USER}?subject=unsubscribe">Click here or reply unsubscribe</a> to opt out.</p>'
+            )
+
     msg = MIMEMultipart("alternative")
     msg["Subject"] = subject
     msg["From"] = f"Kurox Alpha & Security Suite <{SMTP_USER}>"
     msg["To"] = to_addr
+    if is_outreach and SMTP_USER:
+        msg["List-Unsubscribe"] = f"<mailto:{SMTP_USER}?subject=unsubscribe>"
+        msg["List-Unsubscribe-Post"] = "List-Unsubscribe=One-Click"
 
     msg.attach(MIMEText(body_text, "plain", "utf-8"))
     if body_html:
@@ -745,7 +787,10 @@ def main():
     if not args.digest_only and remaining_today > 0:
         # Send up to 5 per track (15 per cycle) so dropped GitHub cron slots don't starve the 35/day target
         per_track = max(1, min(remaining_today // 3, 5))
-        known_emails = {e.lower().strip() for e in leads_data["contacted_emails"]}
+        known_emails = (
+            {e.lower().strip() for e in leads_data.get("contacted_emails", [])}
+            | {e.lower().strip() for e in leads_data.get("suppressed_emails", [])}
+        )
         known_users = {u.lower().strip() for u in leads_data["contacted_users"]}
 
         for track_name in ["track_rugshield", "track_canaryguard", "track_agentfuel"]:
