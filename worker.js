@@ -219,7 +219,6 @@ function buildChallengePayload(req, routePath, details) {
       mimeType: "application/json"
     },
     extensions: {
-      discoverable: true,
       bazaar: bazaarExtension
     },
     accepts: [
@@ -238,8 +237,8 @@ function buildChallengePayload(req, routePath, details) {
         asset: SOLANA_USDC_MINT,
         amount: cfg.amountMicro.toString(),
         maxTimeoutSeconds: 300,
-        payTo: MERCHANT_SOLANA_ATA,
-        extra: { name: "USD Coin (Solana)", version: "2", feePayer: SOLANA_FEE_PAYER }
+        payTo: MERCHANT_SOLANA_OWNER,
+        extra: { name: "USD Coin (Solana)", version: "2", feePayer: SOLANA_FEE_PAYER, recipientAta: MERCHANT_SOLANA_ATA }
       }
     ],
     payTo: MERCHANT_BASE,
@@ -1217,12 +1216,13 @@ async function preparePayAIRequirements(req, routePath, rawPaymentHeader) {
       network: SOLANA_NETWORK,
       amount: cfg.amountMicro.toString(),
       asset: SOLANA_USDC_MINT,
-      payTo: MERCHANT_SOLANA_ATA,
+      payTo: MERCHANT_SOLANA_OWNER,
       maxTimeoutSeconds: 300,
       extra: {
         name: "USD Coin (Solana)",
         version: "2",
-        feePayer: SOLANA_FEE_PAYER
+        feePayer: SOLANA_FEE_PAYER,
+        recipientAta: MERCHANT_SOLANA_ATA
       }
     };
 
