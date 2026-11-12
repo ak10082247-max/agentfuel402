@@ -29,11 +29,11 @@ AgentFuel402 guarantees that **buyers are never charged for dead links or upstre
 
 | Feed Endpoint | Price Tier (x402 USDC) | Apify PPE Event | Primary Use Case |
 | :--- | :---: | :---: | :--- |
-| **`/v1/fuel/b2b-intent-leads`** | **`$0.010 USDC`** | **`$0.030 USD`** (`lead-signal-fetch`) | Aggregates early-stage tech company product launches, founder discussion threads, hiring alerts, and tech stacks with Intent Scores (30–100). |
-| **`/v1/fuel/llm-clean-markdown`** | **`$0.005 USDC`** | **`$0.015 USD`** (`clean-markdown-fetch`) | Strips noisy JavaScript, ads, and navigation; normalizes HTML to clean Markdown; enforces SSRF protection and deterministic prompt-injection defense. |
-| **`/v1/fuel/ecom-price-stock`** | **`$0.005 USDC`** | **`$0.015 USD`** (`ecom-product-check`) | Real-time price, currency, SKU variants, discount deltas, and in-stock inventory monitoring for Shopify & Schema.org products. |
-| **`/v1/fuel/sdk-live-spec`** | **`$0.005 USDC`** | **`$0.010 USD`** (`sdk-spec-check`) | Verified PyPI & npm metadata, latest stable SemVer releases, deprecation notices, and breaking-change alerts for AI code generators. |
-| **`/v1/fuel/reverse-engineer`** | **`$0.020 USDC`** | **`$0.050 USD`** (`reverse-engineer-target`) | **Reverse Engineer Anything (REA):** Deep reverse-engineering of target web platforms: extracts hidden internal REST/GraphQL endpoints, hydration state (`__NEXT_DATA__`, Redux, JSON-LD), auto-generates OpenAPI 3.1 spec and zero-scrape Python/cURL bypass code. |
+| **`/v1/fuel/b2b-intent-leads`** | **`$0.010 USDC`** | **`$0.010 USD`** (`lead-signal-fetch`) | Aggregates early-stage tech company product launches, founder discussion threads, hiring alerts, and tech stacks with Intent Scores (30–100). |
+| **`/v1/fuel/llm-clean-markdown`** | **`$0.005 USDC`** | **`$0.003 USD`** (`clean-markdown-fetch`) | Strips noisy JavaScript, ads, and navigation; normalizes HTML to clean Markdown; enforces SSRF protection and deterministic prompt-injection defense. |
+| **`/v1/fuel/ecom-price-stock`** | **`$0.005 USDC`** | **`$0.003 USD`** (`ecom-product-check`) | Real-time price, currency, SKU variants, discount deltas, and in-stock inventory monitoring for Shopify & Schema.org products. |
+| **`/v1/fuel/sdk-live-spec`** | **`$0.005 USDC`** | `N/A` *(x402 HTTP / MCP only)* | Verified PyPI & npm metadata, latest stable SemVer releases, deprecation notices, and breaking-change alerts for AI code generators. |
+| **`/v1/fuel/reverse-engineer`** | **`$0.020 USDC`** | **`$0.015 USD`** (`reverse-engineer-target`) | **Reverse Engineer Anything (REA):** Deep reverse-engineering of target web platforms: extracts hidden internal REST/GraphQL endpoints, hydration state (`__NEXT_DATA__`, Redux, JSON-LD), auto-generates OpenAPI 3.1 spec and zero-scrape Python/cURL bypass code. |
 
 ---
 
