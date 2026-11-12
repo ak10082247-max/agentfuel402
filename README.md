@@ -84,7 +84,7 @@ Inspired by developer reverse-engineering workflows (such as `morluto/rea`), the
 
 All paid routes support HTTP `402 Payment Required` with gasless facilitators:
 - **Base Mainnet (`eip155:8453`)**: Circle USDC `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913` via EIP-712 `TransferWithAuthorization` to Merchant `0x80E0Ae84679b7f11bE171DaADd492FBECf628cd6`.
-- **Solana Mainnet (`solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp`)**: SPL USDC `EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v` to Merchant ATA `DD3A7jaXFeHcif9eYj6Vhomuxypat5Yxi8ow6wxz27yL` (sponsored by PayAI `feePayer`).
+- **Solana Mainnet (`solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp`)**: SPL USDC `EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v` to Merchant Owner `9wuMysgXwNhtQeqJgGByAiMYc4EjzZ5wUSmnjrrt3ffh` (ATA `DD3A7jaXFeHcif9eYj6Vhomuxypat5Yxi8ow6wxz27yL`, sponsored by PayAI `feePayer`).
 
 ### 🎟️ Agency Pass Prepay ($5.00 USD)
 Call `POST /v1/pass/prepay` with $5.00 USDC to activate an `X-Fuel-Session` session token valid for **1,000 cross-feed calls** with zero per-request transaction signing.
