@@ -2,9 +2,10 @@
 AgentFuel402 — Apify Pay-Per-Event (PPE) Execution Engine
 Verify -> Fetch -> Settle Architecture (Never Charge for Failed Upstream Targets)
 Publishes billable PPE events only on valid extracted data:
-1. lead-signal-fetch ($0.030 USD)
-2. clean-markdown-fetch ($0.015 USD)
-3. ecom-product-check ($0.015 USD)
+1. lead-signal-fetch ($0.010 USD)
+2. clean-markdown-fetch ($0.003 USD)
+3. ecom-product-check ($0.003 USD)
+4. reverse-engineer-target ($0.015 USD)
 """
 import asyncio
 import os
@@ -272,48 +273,77 @@ async def run_ecom_price(target_url: str):
                             }
             except: pass
 
-    # 2. HTML Inspection (OpenGraph / JSON-LD)
+    # 2. HTML Inspection (JSON-LD / OpenGraph / Price Selectors)
     try:
         async with httpx.AsyncClient(timeout=8.0, follow_redirects=True) as client:
             res = await client.get(target_url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"})
-            if res.status_code == 404:
-                return {"status": "error", "error": "upstream_target_unreachable", "http_status": 404, "product_url": target_url}
-            if res.status_code == 200:
-                html = res.text
-                soup = BeautifulSoup(html, "html.parser")
-                title = soup.title.string.strip() if soup.title and soup.title.string else "Product"
-                og_price = soup.find("meta", property=re.compile(r"price:amount", re.I))
-                price = float(og_price["content"]) if og_price and og_price.get("content") else 29.99
-                return {
-                    "status": "success",
-                    "event_name": "ecom-product-check",
-                    "feed": "/v1/fuel/ecom-price-stock",
-                    "platform": "OpenGraph / HTML",
-                    "product_url": target_url,
-                    "title": title,
-                    "price": price,
-                    "currency": "USD",
-                    "in_stock": "out of stock" not in html.lower(),
-                    "discount_delta": 0.0,
-                    "sku": "OG-SKU",
-                    "timestamp_ms": int(time.time() * 1000)
-                }
+            if res.status_code >= 400:
+                return {"status": "error", "error": "upstream_target_unreachable", "http_status": res.status_code, "product_url": target_url}
+            html = res.text
+            soup = BeautifulSoup(html, "html.parser")
+            title = soup.title.string.strip() if soup.title and soup.title.string else "Product"
+            price = None
+            currency = "USD"
+            platform = "OpenGraph / HTML"
+
+            # Check JSON-LD Product offers
+            import json
+            for script in soup.find_all("script", type="application/ld+json"):
+                try:
+                    data = json.loads(script.string or "")
+                    items = data if isinstance(data, list) else [data]
+                    for item in items:
+                        if not isinstance(item, dict):
+                            continue
+                        offers = item.get("offers")
+                        offer = offers[0] if isinstance(offers, list) and offers else offers
+                        if isinstance(offer, dict) and offer.get("price") is not None:
+                            price = float(str(offer["price"]).replace(",", ""))
+                            currency = str(offer.get("priceCurrency") or currency)
+                            platform = "Schema.org JSON-LD"
+                            break
+                    if price is not None:
+                        break
+                except Exception:
+                    pass
+
+            # Check OpenGraph / itemprop / common price CSS classes
+            if price is None:
+                og_price = soup.find("meta", property=re.compile(r"price:amount", re.I)) or soup.find(attrs={"itemprop": "price"})
+                raw_val = (og_price.get("content") or og_price.get_text()) if og_price else None
+                if not raw_val:
+                    price_el = soup.select_one(".price_color, [data-product-price], .product-price, .price")
+                    raw_val = price_el.get_text() if price_el else None
+                if raw_val:
+                    m = re.search(r"([0-9]+(?:[.,][0-9]+)?)", raw_val.replace(",", ""))
+                    if m:
+                        price = float(m.group(1))
+                    if "£" in raw_val:
+                        currency = "GBP"
+                    elif "€" in raw_val:
+                        currency = "EUR"
+
+            if price is None:
+                return {"status": "error", "error": "product_price_not_found", "product_url": target_url, "title": title}
+
+            return {
+                "status": "success",
+                "event_name": "ecom-product-check",
+                "feed": "/v1/fuel/ecom-price-stock",
+                "platform": platform,
+                "product_url": target_url,
+                "title": title,
+                "price": price,
+                "currency": currency,
+                "in_stock": "out of stock" not in html.lower(),
+                "discount_delta": 0.0,
+                "sku": "HTML-VERIFIED",
+                "timestamp_ms": int(time.time() * 1000)
+            }
     except Exception as e:
         Actor.log.warning(f"Ecom fetch failed: {e}")
 
-    return {
-        "status": "success",
-        "event_name": "ecom-product-check",
-        "feed": "/v1/fuel/ecom-price-stock",
-        "product_url": target_url,
-        "title": "Verified Product",
-        "price": 49.99,
-        "currency": "USD",
-        "in_stock": True,
-        "discount_delta": 10.00,
-        "sku": "SKU-AUTO-VERIFIED",
-        "timestamp_ms": int(time.time() * 1000)
-    }
+    return {"status": "error", "error": "upstream_target_unreachable", "product_url": target_url}
 
 async def run_reverse_engineer(target_url: str):
     import json
@@ -492,15 +522,31 @@ queryBypass();
         "timestamp_ms": int(time.time() * 1000)
     }
 
+ACTOR_ID_TO_MODE = {
+    "2KWgMEUJOiSzDpxeW": "llm-clean-markdown",       # kuroxreal/llm-clean-markdown-ppe
+    "JoVOb6vKPFaNhDDcj": "ecom-price-stock",         # kuroxreal/ecom-price-stock-ppe
+    "uOQ4jLOToRTwe10G1": "reverse-engineer-anything",# kuroxreal/reverse-engineer-anything
+    "2AbJGn42avqlwZo5V": "b2b-intent-leads",         # kuroxreal/b2b-intent-leads-ppe
+}
+
 async def main():
     async with Actor:
         actor_input = await Actor.get_input() or {}
-        mode = actor_input.get("mode") or os.environ.get("ACTOR_MODE") or "b2b-intent-leads"
-        target_url = actor_input.get("url") or "https://news.ycombinator.com"
+        actor_id = os.environ.get("APIFY_ACTOR_ID", "")
+        mode = ACTOR_ID_TO_MODE.get(actor_id) or actor_input.get("mode") or os.environ.get("ACTOR_MODE") or "b2b-intent-leads"
+        raw_url = (actor_input.get("url") or actor_input.get("product_url") or actor_input.get("target_url") or "").strip()
+        if not raw_url:
+            if "ecom" in mode.lower():
+                raw_url = "https://books.toscrape.com/catalogue/a-light-in-the-attic_1000/index.html"
+            elif "markdown" in mode.lower() or "reverse" in mode.lower():
+                raw_url = "https://example.com"
+            else:
+                raw_url = "https://news.ycombinator.com"
+        target_url = raw_url
         limit = int(actor_input.get("limit") or 10)
         category = actor_input.get("category") or "all"
 
-        Actor.log.info("AgentFuel402 Starting run in mode: %s", mode)
+        Actor.log.info("AgentFuel402 Starting run in mode: %s (actor_id=%s)", mode, actor_id or "local")
 
         result = None
         event_name = ""
@@ -514,7 +560,7 @@ async def main():
                 await Actor.set_status_message(f"Failed to fetch {target_url} — Buyer NOT charged.")
                 await Actor.push_data({"error": "upstream_target_unreachable", "charged": False, "target_url": target_url})
                 return
-            Actor.log.info("Markdown successfully extracted (%d chars). Charging PPE: %s ($0.015 USD)", len(result["markdown"]), event_name)
+            Actor.log.info("Markdown successfully extracted (%d chars). Charging PPE: %s ($0.003 USD)", len(result["markdown"]), event_name)
             await Actor.charge(event_name, count=1)
 
         elif "ecom" in mode.lower() or "price" in mode.lower():
@@ -525,7 +571,7 @@ async def main():
                 await Actor.set_status_message(f"Product page unreachable — Buyer NOT charged.")
                 await Actor.push_data({"error": "upstream_target_unreachable", "charged": False, "product_url": target_url})
                 return
-            Actor.log.info("Product data confirmed. Charging PPE: %s ($0.015 USD)", event_name)
+            Actor.log.info("Product data confirmed. Charging PPE: %s ($0.003 USD)", event_name)
             await Actor.charge(event_name, count=1)
 
         elif "reverse" in mode.lower() or "rea" in mode.lower():
@@ -536,7 +582,7 @@ async def main():
                 await Actor.set_status_message(f"Failed to reverse engineer {target_url} — Buyer NOT charged.")
                 await Actor.push_data({"error": "reverse_engineering_failed", "charged": False, "target_url": target_url})
                 return
-            Actor.log.info("Target successfully reverse-engineered. Charging PPE: %s ($0.050 USD)", event_name)
+            Actor.log.info("Target successfully reverse-engineered. Charging PPE: %s ($0.015 USD)", event_name)
             await Actor.charge(event_name, count=1)
 
         else:
@@ -548,7 +594,7 @@ async def main():
                 await Actor.set_status_message("B2B lead generation failed — Buyer NOT charged.")
                 await Actor.push_data({"error": "lead_generation_failed", "charged": False})
                 return
-            Actor.log.info("B2B leads generated (%d leads). Charging PPE: %s ($0.030 USD)", len(result["leads"]), event_name)
+            Actor.log.info("B2B leads generated (%d leads). Charging PPE: %s ($0.010 USD)", len(result["leads"]), event_name)
             await Actor.charge(event_name, count=1)
 
         await Actor.push_data(result)

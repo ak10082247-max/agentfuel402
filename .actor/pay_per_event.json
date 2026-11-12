@@ -4,17 +4,17 @@
     "lead-signal-fetch": {
       "eventTitle": "Lead Signal Fetch",
       "eventDescription": "Real-time B2B buying intent signal extraction from newly launched tech companies, hiring alerts, and tech stacks.",
-      "eventPriceUsd": 0.03
+      "eventPriceUsd": 0.01
     },
     "clean-markdown-fetch": {
       "eventTitle": "Clean Markdown Fetch",
       "eventDescription": "SSRF-protected, ad-free clean Markdown conversion with deterministic prompt-injection defense.",
-      "eventPriceUsd": 0.015
+      "eventPriceUsd": 0.003
     },
     "ecom-product-check": {
       "eventTitle": "E-Commerce Product Check",
       "eventDescription": "Live price, in-stock availability, SKU variants, and discount delta extraction for Shopify and Schema.org products.",
-      "eventPriceUsd": 0.015
+      "eventPriceUsd": 0.003
     }
   }
 }
