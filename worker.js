@@ -1203,6 +1203,7 @@ async function preparePayAIRequirements(req, routePath, rawPaymentHeader) {
 
   const url = new URL(req.url);
   const resourceUrl = `${url.origin}${routePath}`;
+  const { challengeObj } = buildChallengePayload(req, routePath);
 
   const incomingNetwork = (parsed.accepted?.network || parsed.network || "").toString();
   const isSolana = incomingNetwork.startsWith("solana") || Boolean(parsed.payload?.transaction);
@@ -1232,6 +1233,7 @@ async function preparePayAIRequirements(req, routePath, rawPaymentHeader) {
         description: cfg.description,
         mimeType: "application/json"
       },
+      extensions: parsed.extensions || challengeObj.extensions,
       accepted: requirements,
       payload: parsed.payload || parsed
     };
@@ -1254,6 +1256,7 @@ async function preparePayAIRequirements(req, routePath, rawPaymentHeader) {
         description: cfg.description,
         mimeType: "application/json"
       },
+      extensions: parsed.extensions || challengeObj.extensions,
       accepted: requirements,
       payload: parsed.payload || parsed
     };
