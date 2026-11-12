@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-11T17:13:49.261337+00:00",
+  "updated_at": "2026-11-12T00:49:14.559263+00:00",
   "contacted_emails": [
     "benny.json@gmail.com",
     "support@0xinsider.com",
@@ -101,7 +101,22 @@
     "mr.shahbaznns@gmail.com",
     "mortdeusdev@gmail.com",
     "adyasinha442@gmail.com",
-    "jake@soenneker.com"
+    "jake@soenneker.com",
+    "degenairnft@gmail.com",
+    "contact@codeofdigitaleternity.com",
+    "ronanchenlopes@gmail.com",
+    "jeremy@meltingpixels.com",
+    "leschk48@gmail.com",
+    "osscore@salesforce.com",
+    "github@rogmann.org",
+    "founders@mcpjam.com",
+    "info@sam-morrow.com",
+    "jgbright@gmail.com",
+    "light.unicon@gmail.com",
+    "ocakciomursel@gmail.com",
+    "atithecdr@gmail.com",
+    "abubakarjutt1@gmail.com",
+    "pedropfc.costa@gmail.com"
   ],
   "contacted_users": [
     "bennyjo",
@@ -204,7 +219,22 @@
     "mrshahbazdev",
     "mortdeus",
     "adyasinha1",
-    "soenneker"
+    "soenneker",
+    "highermaestro",
+    "maksimgalatin",
+    "lbcron",
+    "meltingpixelsai",
+    "leschk48-ux",
+    "tableau",
+    "srogmann",
+    "mcpjam",
+    "sammorrowdrums",
+    "jgbright",
+    "lightunicon",
+    "ocakciomursel-pixel",
+    "atithecdr-web",
+    "hafiz-abubakar-dev",
+    "pedro-csta"
   ],
   "history": [
     {
@@ -913,6 +943,111 @@
       "track": "track_agentfuel",
       "repo": "soenneker/soenneker.clay.httpclients",
       "sent_date": "2026-11-11T17:13:49.261316+00:00"
+    },
+    {
+      "username": "highermaestro",
+      "email": "degenairnft@gmail.com",
+      "track": "track_rugshield",
+      "repo": "HigherMaestro/highwire",
+      "sent_date": "2026-11-12T00:47:55.215355+00:00"
+    },
+    {
+      "username": "maksimgalatin",
+      "email": "contact@codeofdigitaleternity.com",
+      "track": "track_rugshield",
+      "repo": "MaksimGalatin/padam-nocturne",
+      "sent_date": "2026-11-12T00:47:59.915561+00:00"
+    },
+    {
+      "username": "lbcron",
+      "email": "ronanchenlopes@gmail.com",
+      "track": "track_rugshield",
+      "repo": "LBCron/steve-capital-multihopper-agent",
+      "sent_date": "2026-11-12T00:48:04.500447+00:00"
+    },
+    {
+      "username": "meltingpixelsai",
+      "email": "jeremy@meltingpixels.com",
+      "track": "track_rugshield",
+      "repo": "meltingpixelsai/zero-core-tools",
+      "sent_date": "2026-11-12T00:48:09.094656+00:00"
+    },
+    {
+      "username": "leschk48-ux",
+      "email": "leschk48@gmail.com",
+      "track": "track_rugshield",
+      "repo": "leschk48-ux/solvent-localization-mcp",
+      "sent_date": "2026-11-12T00:48:13.629362+00:00"
+    },
+    {
+      "username": "tableau",
+      "email": "osscore@salesforce.com",
+      "track": "track_canaryguard",
+      "repo": "tableau/tableau-mcp",
+      "sent_date": "2026-11-12T00:48:24.134434+00:00"
+    },
+    {
+      "username": "srogmann",
+      "email": "github@rogmann.org",
+      "track": "track_canaryguard",
+      "repo": "srogmann/McpToolsSdkBased",
+      "sent_date": "2026-11-12T00:48:28.944491+00:00"
+    },
+    {
+      "username": "mcpjam",
+      "email": "founders@mcpjam.com",
+      "track": "track_canaryguard",
+      "repo": "MCPJam/inspector",
+      "sent_date": "2026-11-12T00:48:33.756147+00:00"
+    },
+    {
+      "username": "sammorrowdrums",
+      "email": "info@sam-morrow.com",
+      "track": "track_canaryguard",
+      "repo": "SamMorrowDrums/mcp-csharp-starter",
+      "sent_date": "2026-11-12T00:48:38.743210+00:00"
+    },
+    {
+      "username": "jgbright",
+      "email": "jgbright@gmail.com",
+      "track": "track_canaryguard",
+      "repo": "jgbright/mcp-dotnet",
+      "sent_date": "2026-11-12T00:48:43.357943+00:00"
+    },
+    {
+      "username": "lightunicon",
+      "email": "light.unicon@gmail.com",
+      "track": "track_agentfuel",
+      "repo": "lightunicon/ai-operations-hub-showcase",
+      "sent_date": "2026-11-12T00:48:56.015873+00:00"
+    },
+    {
+      "username": "ocakciomursel-pixel",
+      "email": "ocakciomursel@gmail.com",
+      "track": "track_agentfuel",
+      "repo": "ocakciomursel-pixel/clay-n8n-b2b-enrichment-workflows",
+      "sent_date": "2026-11-12T00:49:00.753253+00:00"
+    },
+    {
+      "username": "atithecdr-web",
+      "email": "atithecdr@gmail.com",
+      "track": "track_agentfuel",
+      "repo": "atithecdr-web/AI-Powered-B2B-Lead-Enrichment-Agent",
+      "sent_date": "2026-11-12T00:49:05.307674+00:00"
+    },
+    {
+      "username": "hafiz-abubakar-dev",
+      "email": "abubakarjutt1@gmail.com",
+      "track": "track_agentfuel",
+      "repo": "hafiz-abubakar-dev/ai-lead-generation-automation",
+      "sent_date": "2026-11-12T00:49:09.911186+00:00"
+    },
+    {
+      "username": "pedro-csta",
+      "email": "pedropfc.costa@gmail.com",
+      "track": "track_agentfuel",
+      "repo": "Pedro-csta/br-enrichment-waterfall",
+      "sent_date": "2026-11-12T00:49:14.559241+00:00"
     }
   ]
 }
