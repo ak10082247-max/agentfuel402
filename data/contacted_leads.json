@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-12T11:26:22.101053+00:00",
+  "updated_at": "2026-11-12T18:08:43.223498+00:00",
   "contacted_emails": [
     "benny.json@gmail.com",
     "support@0xinsider.com",
@@ -131,7 +131,10 @@
     "behzad789@outlook.com",
     "limbadri3214@gmail.com",
     "23f2004058@ds.study.iitm.ac.in",
-    "quaywin@gmail.com"
+    "quaywin@gmail.com",
+    "maurice297@gmail.com",
+    "guy.taltou@gmail.com",
+    "i252610@isb.nu.edu.pk"
   ],
   "contacted_users": [
     "bennyjo",
@@ -264,7 +267,10 @@
     "hu78945",
     "git-limbadrirachrla",
     "23f2004058",
-    "quaywin"
+    "quaywin",
+    "mosn-agent",
+    "gtaltou",
+    "i252610-max"
   ],
   "history": [
     {
@@ -1183,6 +1189,27 @@
       "track": "track_agentfuel",
       "repo": "quaywin/strix",
       "sent_date": "2026-11-12T11:26:22.101035+00:00"
+    },
+    {
+      "username": "mosn-agent",
+      "email": "maurice297@gmail.com",
+      "track": "track_rugshield",
+      "repo": "mosn-agent/mosn-safety-api",
+      "sent_date": "2026-11-12T18:08:23.680078+00:00"
+    },
+    {
+      "username": "gtaltou",
+      "email": "guy.taltou@gmail.com",
+      "track": "track_canaryguard",
+      "repo": "gtaltou/autonomous-ai-agents-hub",
+      "sent_date": "2026-11-12T18:08:29.969384+00:00"
+    },
+    {
+      "username": "i252610-max",
+      "email": "i252610@isb.nu.edu.pk",
+      "track": "track_agentfuel",
+      "repo": "i252610-max/intel-flow-lite",
+      "sent_date": "2026-11-12T18:08:43.223475+00:00"
     }
   ]
 }
