@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-12T00:49:14.559263+00:00",
+  "updated_at": "2026-11-12T11:26:22.101053+00:00",
   "contacted_emails": [
     "benny.json@gmail.com",
     "support@0xinsider.com",
@@ -116,7 +116,22 @@
     "ocakciomursel@gmail.com",
     "atithecdr@gmail.com",
     "abubakarjutt1@gmail.com",
-    "pedropfc.costa@gmail.com"
+    "pedropfc.costa@gmail.com",
+    "alex@ponk.media",
+    "3210937091@qq.com",
+    "xxtheshadowcraft@gmail.com",
+    "acidpictures@gmail.com",
+    "chris00claw@gmail.com",
+    "yashwanthkumar201@gmail.com",
+    "mpolinowski@gmail.com",
+    "ksinghal_be24@thapar.edu",
+    "animireddygopinathreddy@gmail.com",
+    "3970621960@qq.com",
+    "help@cleanlist.ai",
+    "behzad789@outlook.com",
+    "limbadri3214@gmail.com",
+    "23f2004058@ds.study.iitm.ac.in",
+    "quaywin@gmail.com"
   ],
   "contacted_users": [
     "bennyjo",
@@ -234,7 +249,22 @@
     "ocakciomursel-pixel",
     "atithecdr-web",
     "hafiz-abubakar-dev",
-    "pedro-csta"
+    "pedro-csta",
+    "ponkexchange",
+    "b5-software",
+    "zachdreamz",
+    "dasein108",
+    "darks0l",
+    "yashwanth6366",
+    "mpolinowski",
+    "kashishsinghal011",
+    "gopi33989",
+    "tao706",
+    "cleanlist-ai",
+    "hu78945",
+    "git-limbadrirachrla",
+    "23f2004058",
+    "quaywin"
   ],
   "history": [
     {
@@ -1048,6 +1078,111 @@
       "track": "track_agentfuel",
       "repo": "Pedro-csta/br-enrichment-waterfall",
       "sent_date": "2026-11-12T00:49:14.559241+00:00"
+    },
+    {
+      "username": "ponkexchange",
+      "email": "alex@ponk.media",
+      "track": "track_rugshield",
+      "repo": "ponkexchange/ponk-sdk",
+      "sent_date": "2026-11-12T11:25:03.721497+00:00"
+    },
+    {
+      "username": "b5-software",
+      "email": "3210937091@qq.com",
+      "track": "track_rugshield",
+      "repo": "B5-Software/awesome-base-mcp",
+      "sent_date": "2026-11-12T11:25:08.406770+00:00"
+    },
+    {
+      "username": "zachdreamz",
+      "email": "xxtheshadowcraft@gmail.com",
+      "track": "track_rugshield",
+      "repo": "ZachDreamZ/base-defi-dashboard",
+      "sent_date": "2026-11-12T11:25:12.982545+00:00"
+    },
+    {
+      "username": "dasein108",
+      "email": "acidpictures@gmail.com",
+      "track": "track_rugshield",
+      "repo": "dasein108/aerodrome-lp-studio",
+      "sent_date": "2026-11-12T11:25:17.749616+00:00"
+    },
+    {
+      "username": "darks0l",
+      "email": "chris00claw@gmail.com",
+      "track": "track_rugshield",
+      "repo": "darks0l/autoresearch",
+      "sent_date": "2026-11-12T11:25:22.315801+00:00"
+    },
+    {
+      "username": "yashwanth6366",
+      "email": "yashwanthkumar201@gmail.com",
+      "track": "track_canaryguard",
+      "repo": "yashwanth6366/langchaindoc",
+      "sent_date": "2026-11-12T11:25:30.189494+00:00"
+    },
+    {
+      "username": "mpolinowski",
+      "email": "mpolinowski@gmail.com",
+      "track": "track_canaryguard",
+      "repo": "mpolinowski/rag-experiments",
+      "sent_date": "2026-11-12T11:25:34.742934+00:00"
+    },
+    {
+      "username": "kashishsinghal011",
+      "email": "ksinghal_be24@thapar.edu",
+      "track": "track_canaryguard",
+      "repo": "kashishsinghal011/Rag_chatbot_langchain",
+      "sent_date": "2026-11-12T11:25:39.376259+00:00"
+    },
+    {
+      "username": "gopi33989",
+      "email": "animireddygopinathreddy@gmail.com",
+      "track": "track_canaryguard",
+      "repo": "gopi33989/PDF-Vectorisation-Pipeline",
+      "sent_date": "2026-11-12T11:25:43.913283+00:00"
+    },
+    {
+      "username": "tao706",
+      "email": "3970621960@qq.com",
+      "track": "track_canaryguard",
+      "repo": "tao706/chest-xray-screening",
+      "sent_date": "2026-11-12T11:25:48.458797+00:00"
+    },
+    {
+      "username": "cleanlist-ai",
+      "email": "help@cleanlist.ai",
+      "track": "track_agentfuel",
+      "repo": "Cleanlist-ai/cleanlist-python-client",
+      "sent_date": "2026-11-12T11:26:03.821618+00:00"
+    },
+    {
+      "username": "hu78945",
+      "email": "behzad789@outlook.com",
+      "track": "track_agentfuel",
+      "repo": "Hu78945/scrapewatch",
+      "sent_date": "2026-11-12T11:26:08.424278+00:00"
+    },
+    {
+      "username": "git-limbadrirachrla",
+      "email": "limbadri3214@gmail.com",
+      "track": "track_agentfuel",
+      "repo": "Git-LimbadriRachrla/anti-gravity-gsm-automator",
+      "sent_date": "2026-11-12T11:26:13.002877+00:00"
+    },
+    {
+      "username": "23f2004058",
+      "email": "23f2004058@ds.study.iitm.ac.in",
+      "track": "track_agentfuel",
+      "repo": "23f2004058/playwright-scraper",
+      "sent_date": "2026-11-12T11:26:17.579749+00:00"
+    },
+    {
+      "username": "quaywin",
+      "email": "quaywin@gmail.com",
+      "track": "track_agentfuel",
+      "repo": "quaywin/strix",
+      "sent_date": "2026-11-12T11:26:22.101035+00:00"
     }
   ]
 }
