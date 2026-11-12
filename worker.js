@@ -1411,11 +1411,11 @@ export default {
     <h3>Available Data Feeds &amp; Direct Credit-Card / x402 Access</h3>
     <table>
       <tr><th>Endpoint</th><th>x402 Price</th><th>Credit Card (Apify)</th><th>Description</th></tr>
-      <tr><td><code>GET /v1/fuel/b2b-intent-leads</code></td><td>$0.010 USDC</td><td><a href="https://apify.com/kuroxreal/b2b-intent-leads-ppe" target="_blank" rel="noopener">Apify Actor ($0.030)</a></td><td>Live B2B buying intent signals, founder launches &amp; tech stacks.</td></tr>
-      <tr><td><code>GET /v1/fuel/llm-clean-markdown</code></td><td>$0.005 USDC</td><td><a href="https://apify.com/kuroxreal/llm-clean-markdown-ppe" target="_blank" rel="noopener">Apify Actor ($0.015)</a></td><td>Prompt-injection-safe RAG Markdown extractor.</td></tr>
-      <tr><td><code>GET /v1/fuel/ecom-price-stock</code></td><td>$0.005 USDC</td><td><a href="https://apify.com/kuroxreal/ecom-price-stock-ppe" target="_blank" rel="noopener">Apify Actor ($0.015)</a></td><td>Real-time Shopify &amp; Schema.org prices, stock &amp; variants.</td></tr>
+      <tr><td><code>GET /v1/fuel/b2b-intent-leads</code></td><td>$0.010 USDC</td><td><a href="https://apify.com/kuroxreal/b2b-intent-leads-ppe" target="_blank" rel="noopener">Apify Actor ($0.010)</a></td><td>Live B2B buying intent signals, founder launches &amp; tech stacks.</td></tr>
+      <tr><td><code>GET /v1/fuel/llm-clean-markdown</code></td><td>$0.005 USDC</td><td><a href="https://apify.com/kuroxreal/llm-clean-markdown-ppe" target="_blank" rel="noopener">Apify Actor ($0.003)</a></td><td>Prompt-injection-safe RAG Markdown extractor.</td></tr>
+      <tr><td><code>GET /v1/fuel/ecom-price-stock</code></td><td>$0.005 USDC</td><td><a href="https://apify.com/kuroxreal/ecom-price-stock-ppe" target="_blank" rel="noopener">Apify Actor ($0.003)</a></td><td>Real-time Shopify &amp; Schema.org prices, stock &amp; variants.</td></tr>
       <tr><td><code>GET /v1/fuel/sdk-live-spec</code></td><td>$0.005 USDC</td><td><a href="/v1/preview/sdk-live-spec">Free Preview</a></td><td>Live PyPI &amp; npm release metadata and breaking warnings.</td></tr>
-      <tr><td><code>POST /v1/fuel/reverse-engineer</code></td><td>$0.020 USDC</td><td><a href="https://apify.com/kuroxreal/reverse-engineer-anything" target="_blank" rel="noopener">Apify Actor ($0.050)</a></td><td>Reverse Engineer Anything (REA): hidden JSON/hydration APIs &amp; OpenAPI 3.1.</td></tr>
+      <tr><td><code>POST /v1/fuel/reverse-engineer</code></td><td>$0.020 USDC</td><td><a href="https://apify.com/kuroxreal/reverse-engineer-anything" target="_blank" rel="noopener">Apify Actor ($0.015)</a></td><td>Reverse Engineer Anything (REA): hidden JSON/hydration APIs &amp; OpenAPI 3.1.</td></tr>
     </table>
   </div>
 

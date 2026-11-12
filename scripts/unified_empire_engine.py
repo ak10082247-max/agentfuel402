@@ -627,7 +627,7 @@ Try it right now with zero wallet setup or via Apify / x402:
 - Free Instant Previews (no key/wallet):
   * B2B Leads: https://agentfuel402.ak10082247.workers.dev/v1/preview/b2b-intent-leads
   * Clean Markdown: https://agentfuel402.ak10082247.workers.dev/v1/preview/llm-clean-markdown
-- 1-Click Credit Card / Free Monthly Credits via Apify Store ($0.015 - $0.050 USD):
+- 1-Click Credit Card / Free Monthly Credits via Apify Store ($0.003 - $0.015 USD):
   * Reverse Engineer Anything: https://apify.com/kuroxreal/reverse-engineer-anything
   * B2B Intent Leads: https://apify.com/kuroxreal/b2b-intent-leads-ppe
   * Clean Markdown: https://apify.com/kuroxreal/llm-clean-markdown-ppe
