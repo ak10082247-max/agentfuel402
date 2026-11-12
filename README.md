@@ -93,10 +93,17 @@ Call `POST /v1/pass/prepay` with $5.00 USDC to activate an `X-Fuel-Session` sess
 
 ## 📦 Apify Pay-Per-Event (PPE) Store Actors
 
-1. [**B2B Intent Leads (`kuroxreal/b2b-intent-leads-ppe`)**](https://apify.com/kuroxreal/b2b-intent-leads-ppe): High-frequency buying intent signals for Clay, n8n & AI SDRs.
-2. [**LLM Clean Markdown (`kuroxreal/llm-clean-markdown-ppe`)**](https://apify.com/kuroxreal/llm-clean-markdown-ppe): Token-optimized, ad-free web content extractor with prompt injection defense.
-3. [**E-Commerce Price & Stock (`kuroxreal/ecom-price-stock-ppe`)**](https://apify.com/kuroxreal/ecom-price-stock-ppe): Real-time Shopify & Schema.org price, variant, and stock monitor.
-4. [**Pulse402 Oracle (`kuroxreal/pulse402-oracle`)**](https://apify.com/kuroxreal/pulse402-oracle): High-frequency Base DEX liquidity & Polymarket odds alpha.
+1. [**B2B Intent Leads (`kuroxreal/b2b-intent-leads-ppe`)**](https://apify.com/kuroxreal/b2b-intent-leads-ppe): High-frequency buying intent signals for Clay, n8n & AI SDRs ($0.010/event).
+2. [**LLM Clean Markdown (`kuroxreal/llm-clean-markdown-ppe`)**](https://apify.com/kuroxreal/llm-clean-markdown-ppe): Token-optimized, ad-free web content extractor with prompt injection defense ($0.003/event).
+3. [**E-Commerce Price & Stock (`kuroxreal/ecom-price-stock-ppe`)**](https://apify.com/kuroxreal/ecom-price-stock-ppe): Real-time Shopify & Schema.org price, variant, and stock monitor ($0.003/event).
+4. [**Reverse Engineer Anything (`kuroxreal/reverse-engineer-anything`)**](https://apify.com/kuroxreal/reverse-engineer-anything): Automated OpenAPI 3.1 synthesis and zero-scrape cURL/Python extractor ($0.015/event).
+
+---
+
+## ⚡ Ready-to-Drop No-Code Workflows (n8n & Make.com)
+
+- **n8n Workflow Template**: [`workflows/n8n_b2b_lead_enrichment.json`](workflows/n8n_b2b_lead_enrichment.json) — Polls live B2B intent signals every 4 hours, scores founder momentum, and auto-enriches HubSpot / Airtable / Slack.
+- **Make.com Scenario Template**: [`workflows/make_ecom_price_monitor.json`](workflows/make_ecom_price_monitor.json) — Checks target Shopify competitor prices every hour and triggers instant Discord/Slack price-drop alerts.
 
 ---
 
