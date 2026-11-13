@@ -1490,6 +1490,54 @@ export default {
       });
     }
 
+    // Pricing & Plans
+    if (path === "/pricing" || path === "/plans") {
+      const endpoints = Object.entries(ROUTE_CONFIGS)
+        .filter(([route]) => route.startsWith("/v1/fuel/"))
+        .map(([route, cfg]) => ({
+          endpoint: route,
+          name: cfg.name,
+          price_usdc: (cfg.amountMicro / 1e6).toFixed(3),
+          amount_micro: cfg.amountMicro,
+          description: cfg.description
+        }));
+
+      return new Response(JSON.stringify({
+        service: "agentfuel402",
+        pricing_model: "x402-pay-per-request-plus-agency-pass",
+        x402_version: 2,
+        accepted_currencies: [
+          "USDC on Base (eip155:8453)",
+          "USDC on Solana (solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp)"
+        ],
+        merchant_base: MERCHANT_BASE,
+        merchant_solana_owner: MERCHANT_SOLANA_OWNER,
+        merchant_solana_ata: MERCHANT_SOLANA_ATA,
+        facilitator: PAYAI_FACILITATOR,
+        gasless_sponsorship: "100% sponsored ($0 ETH / $0 SOL required)",
+        endpoints,
+        agency_pass: {
+          endpoint: "/v1/pass/prepay",
+          method: "POST",
+          price_usdc: "5.000",
+          amount_micro: 5000000,
+          calls_included: 1000,
+          effective_price_per_call: "$0.005 USDC"
+        },
+        credit_card_apify_store: "https://apify.com/kuroxreal",
+        free_previews: [
+          "/v1/preview/leads",
+          "/v1/preview/ecom-price-stock",
+          "/v1/preview/sdk-live-spec",
+          "/v1/preview/llm-clean-markdown"
+        ],
+        docs: `${url.origin}/openapi.json`
+      }, null, 2), {
+        status: 200,
+        headers: { ...cors, "Content-Type": "application/json" }
+      });
+    }
+
     // Landing Page
     if (path === "/" || path === "/index.html") {
       return new Response(`<!DOCTYPE html>
