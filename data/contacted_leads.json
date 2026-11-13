@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-12T20:00:17.705805+00:00",
+  "updated_at": "2026-11-13T01:55:00.175754+00:00",
   "suppressed_emails": [
     "paulalexeev10@gmail.com",
     "serge.lopes.94@free.fr",
@@ -146,7 +146,22 @@
     "guy.taltou@gmail.com",
     "i252610@isb.nu.edu.pk",
     "ibrahimpima76@gmail.com",
-    "info@staymellow.ai"
+    "info@staymellow.ai",
+    "leohoudinisanders@gmail.com",
+    "playplay2736@gmail.com",
+    "sriram1983007@gmail.com",
+    "azcon.comercial@gmail.com",
+    "harshdhillon53@gmail.com",
+    "johnlynasdev@gmail.com",
+    "julesgabriel.dayaux@gmail.com",
+    "booker@booker.codes",
+    "pppdns@gmail.com",
+    "saransamikannu@gmail.com",
+    "team@clay.run",
+    "v@getbeton.ai",
+    "krishishah027@gmail.com",
+    "mostadawood@gmail.com",
+    "israelstratton@gmail.com"
   ],
   "contacted_users": [
     "bennyjo",
@@ -284,7 +299,22 @@
     "gtaltou",
     "i252610-max",
     "fozagtx",
-    "mellow-artificial-intelligence"
+    "mellow-artificial-intelligence",
+    "leohoudinisanders-byte",
+    "giskard09",
+    "sriram1983007-dev",
+    "azconcomercial-cloud",
+    "har50",
+    "johnlynas",
+    "julesgabriel",
+    "bookercodes",
+    "pppdns",
+    "saran-73",
+    "clay-run",
+    "getbeton",
+    "growth-by-krishi",
+    "mostadaoud",
+    "israelstratton"
   ],
   "history": [
     {
@@ -1238,6 +1268,111 @@
       "track": "track_canaryguard",
       "repo": "Mellow-Artificial-Intelligence/openextract",
       "sent_date": "2026-11-12T20:00:17.705779+00:00"
+    },
+    {
+      "username": "leohoudinisanders-byte",
+      "email": "leohoudinisanders@gmail.com",
+      "track": "track_rugshield",
+      "repo": "leohoudinisanders-byte/agentkit-provider-onchain-forensics",
+      "sent_date": "2026-11-13T01:53:36.028981+00:00"
+    },
+    {
+      "username": "giskard09",
+      "email": "playplay2736@gmail.com",
+      "track": "track_rugshield",
+      "repo": "giskard09/checkpoint-producer-binding-ref-anchor",
+      "sent_date": "2026-11-13T01:53:40.765406+00:00"
+    },
+    {
+      "username": "sriram1983007-dev",
+      "email": "sriram1983007@gmail.com",
+      "track": "track_rugshield",
+      "repo": "sriram1983007-dev/sra-riskgate",
+      "sent_date": "2026-11-13T01:53:45.529339+00:00"
+    },
+    {
+      "username": "azconcomercial-cloud",
+      "email": "azcon.comercial@gmail.com",
+      "track": "track_rugshield",
+      "repo": "azconcomercial-cloud/coinbase-agentkit-azcon",
+      "sent_date": "2026-11-13T01:53:50.307977+00:00"
+    },
+    {
+      "username": "har50",
+      "email": "harshdhillon53@gmail.com",
+      "track": "track_rugshield",
+      "repo": "Har50/ngt-agentkit-demo",
+      "sent_date": "2026-11-13T01:53:55.064181+00:00"
+    },
+    {
+      "username": "johnlynas",
+      "email": "johnlynasdev@gmail.com",
+      "track": "track_canaryguard",
+      "repo": "johnlynas/mastra-nipp-agent",
+      "sent_date": "2026-11-13T01:54:07.310869+00:00"
+    },
+    {
+      "username": "julesgabriel",
+      "email": "julesgabriel.dayaux@gmail.com",
+      "track": "track_canaryguard",
+      "repo": "julesgabriel/test-mastra-agentique",
+      "sent_date": "2026-11-13T01:54:12.413941+00:00"
+    },
+    {
+      "username": "bookercodes",
+      "email": "booker@booker.codes",
+      "track": "track_canaryguard",
+      "repo": "bookercodes/mastra-docs-agent",
+      "sent_date": "2026-11-13T01:54:17.601310+00:00"
+    },
+    {
+      "username": "pppdns",
+      "email": "pppdns@gmail.com",
+      "track": "track_canaryguard",
+      "repo": "pppdns/job-agent-mastra",
+      "sent_date": "2026-11-13T01:54:22.637461+00:00"
+    },
+    {
+      "username": "saran-73",
+      "email": "saransamikannu@gmail.com",
+      "track": "track_canaryguard",
+      "repo": "Saran-73/theme-park-ai-agent-using-mastra",
+      "sent_date": "2026-11-13T01:54:27.412936+00:00"
+    },
+    {
+      "username": "clay-run",
+      "email": "team@clay.run",
+      "track": "track_agentfuel",
+      "repo": "clay-run/agent-plugins",
+      "sent_date": "2026-11-13T01:54:40.810117+00:00"
+    },
+    {
+      "username": "getbeton",
+      "email": "v@getbeton.ai",
+      "track": "track_agentfuel",
+      "repo": "getbeton/beton-ai",
+      "sent_date": "2026-11-13T01:54:45.551978+00:00"
+    },
+    {
+      "username": "growth-by-krishi",
+      "email": "krishishah027@gmail.com",
+      "track": "track_agentfuel",
+      "repo": "growth-by-krishi/rb2b-clay-hubspot-pipeline",
+      "sent_date": "2026-11-13T01:54:50.689935+00:00"
+    },
+    {
+      "username": "mostadaoud",
+      "email": "mostadawood@gmail.com",
+      "track": "track_agentfuel",
+      "repo": "MostaDaoud/gtm-outbound",
+      "sent_date": "2026-11-13T01:54:55.445807+00:00"
+    },
+    {
+      "username": "israelstratton",
+      "email": "israelstratton@gmail.com",
+      "track": "track_agentfuel",
+      "repo": "IsraelStratton/gtm-enrichment-quality-pipeline",
+      "sent_date": "2026-11-13T01:55:00.175727+00:00"
     }
   ]
 }
