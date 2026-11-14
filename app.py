@@ -148,18 +148,10 @@ async def get_b2b_intent_leads(limit: int = Query(10, ge=1, le=25), category: st
     except: pass
 
     if not leads:
-        leads = [{
-            "company_name": "VectorFlow AI",
-            "launch_headline": "VectorFlow — Real-time continuous embeddings for edge vector search",
-            "domain": "vectorflow.dev",
-            "source_url": "https://vectorflow.dev",
-            "author": "alex_founder",
-            "score": 64,
-            "comments_count": 28,
-            "detected_tech_stack": ["AI/LLM", "Rust", "Database"],
-            "hiring_intent": True,
-            "intent_score": 85
-        }]
+        raise HTTPException(
+            status_code=503,
+            detail="Upstream B2B lead sources (Algolia HN / Firebase HN) returned no matching live items."
+        )
 
     return {
         "status": "success",
@@ -334,36 +326,26 @@ async def ecom_price_stock(url: Optional[str] = None, payload: Optional[EcomRequ
                 soup = BeautifulSoup(html, "html.parser")
                 title = soup.title.string.strip() if soup.title and soup.title.string else "Product"
                 og_price = soup.find("meta", property=re.compile(r"price:amount", re.I))
-                price = float(og_price["content"]) if og_price and og_price.get("content") else 29.99
-                return {
-                    "status": "success",
-                    "feed": "/v1/fuel/ecom-price-stock",
-                    "platform": "OpenGraph / HTML",
-                    "product_url": target_url,
-                    "title": title,
-                    "price": price,
-                    "currency": "USD",
-                    "in_stock": "out of stock" not in html.lower(),
-                    "discount_delta": 0.0,
-                    "sku": "OG-SKU",
-                    "timestamp_ms": int(time.time() * 1000)
-                }
+                if og_price and og_price.get("content"):
+                    price = float(og_price["content"])
+                    return {
+                        "status": "success",
+                        "feed": "/v1/fuel/ecom-price-stock",
+                        "platform": "OpenGraph / HTML",
+                        "product_url": target_url,
+                        "title": title,
+                        "price": price,
+                        "currency": "USD",
+                        "in_stock": "out of stock" not in html.lower(),
+                        "discount_delta": 0.0,
+                        "sku": "OG-SKU",
+                        "timestamp_ms": int(time.time() * 1000)
+                    }
     except HTTPException:
         raise
     except: pass
 
-    return {
-        "status": "success",
-        "feed": "/v1/fuel/ecom-price-stock",
-        "product_url": target_url,
-        "title": "Verified Product",
-        "price": 49.99,
-        "currency": "USD",
-        "in_stock": True,
-        "discount_delta": 10.00,
-        "sku": "SKU-AUTO-VERIFIED",
-        "timestamp_ms": int(time.time() * 1000)
-    }
+    raise HTTPException(status_code=422, detail="Could not extract verified product or stock metadata from target URL.")
 
 @app.get("/v1/fuel/sdk-live-spec")
 @app.post("/v1/fuel/sdk-live-spec")

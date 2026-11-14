@@ -606,7 +606,7 @@ def craft_pitch(lead):
 Saw your recent commits on {repo}. If you're building automated trading bots, swap routers, or sniper tools on Solana or Base Mainnet, unverified tokens, freeze/mint authorities, and stealth fee-on-transfer honeypots are a constant risk.
 
 RugShield 402 is an autonomous dual-chain DEX pre-trade simulation & safety engine:
-1. Base EVM Execution Simulation: Sub-200ms bytecode simulation testing actual buy & sell paths, exact fee-on-transfer taxes (bps), and revert traps
+1. Base EVM Execution Simulation: Direct on-chain state-override buy & sell simulation reporting exact fee-on-transfer taxes (bps) and revert traps
 2. Solana SPL Risk Scanning: Mint/freeze authority verification, liquidity pool depth, and Raydium/Orca/Pump.fun safety checks
 3. Liquidity Lock & Pool Depth Analysis: Aerodrome (Slipstream), Uniswap v3, Raydium & Orca pair verification
 4. Sybil Cluster & Dev Concentration Scoring before your bot executes a swap
@@ -675,7 +675,7 @@ Try it right now with zero wallet setup or via Apify / x402:
   * Clean Markdown: https://apify.com/kuroxreal/llm-clean-markdown-ppe
   * E-Com Price & Stock: https://apify.com/kuroxreal/ecom-price-stock-ppe
 - Remote MCP Endpoint (Claude Desktop & Cursor): https://agentfuel402.ak10082247.workers.dev/mcp (Registry: `io.github.ak10082247-max/agentfuel402`)
-- Agency Pass ($5.00 USDC = 1,000 calls, zero per-call signing) or Pay-per-Call x402 ($0.005-$0.020 on Base & Solana): https://agentfuel402.ak10082247.workers.dev
+- Dual-Chain Pay-per-Call x402 V2 ($0.005-$0.020 USDC on Base & Solana, gas-sponsored): https://agentfuel402.ak10082247.workers.dev
 
 Need a bespoke B2B dataset, site reverse-engineering, or custom Apify actor ($49-$250 via Apify or Base/Solana USDC)? Reply to this email directly — async email/text delivery only, zero calls required.
 

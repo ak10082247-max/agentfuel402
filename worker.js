@@ -144,8 +144,7 @@ const ROUTE_CONFIGS = {
   }
 };
 
-// In-memory store for multi-call Fuel Pass tokens
-const activePasses = new Map();
+// Stateless Cloudflare Worker — prepaid stateful passes are disabled.
 
 // Helper: Common CORS headers
 function corsHeaders(req) {
@@ -176,7 +175,7 @@ const ROUTE_BAZAAR_EXAMPLES = {
       feed: "/v1/fuel/b2b-intent-leads",
       timestamp_ms: 1794516545000,
       count: 1,
-      leads: [{ source: "Show HN", title: "VectorFlow AI", domain: "vectorflow.example", category: "ai", score: 42 }]
+      leads: [{ source: "Show HN", title: "Example Show HN Launch", domain: "example.org", category: "ai", score: 42 }]
     }
   },
   "/v1/fuel/llm-clean-markdown": {
@@ -192,16 +191,16 @@ const ROUTE_BAZAAR_EXAMPLES = {
     }
   },
   "/v1/fuel/ecom-price-stock": {
-    input: { url: "https://example.com/products/sample-widget" },
+    input: { url: "https://scrapeme.live/shop/Bulbasaur/" },
     output: {
       status: "success",
-      product_url: "https://example.com/products/sample-widget",
-      title: "Sample Widget",
-      price: 39.99,
-      currency: "USD",
+      product_url: "https://scrapeme.live/shop/Bulbasaur/",
+      title: "Bulbasaur",
+      price: 63.0,
+      currency: "GBP",
       in_stock: true,
-      discount_delta: 10.0,
-      sku: "SKU-001"
+      discount_delta: 0.0,
+      sku: "4391"
     }
   },
   "/v1/fuel/sdk-live-spec": {
@@ -571,40 +570,9 @@ async function fetchB2BLeads(limit = 10, category = "all") {
     } catch {}
   }
 
-  // Guaranteed deterministic quality fallback if network fails
+  // Fail closed when live upstream lead sources return zero matching items (never invent synthetic leads or charge buyer)
   if (leads.length === 0) {
-    leads.push(
-      {
-        company_name: "VectorFlow AI",
-        launch_headline: "VectorFlow — Real-time continuous embeddings for edge vector search",
-        domain: "vectorflow.dev",
-        source_url: "https://vectorflow.dev",
-        discussion_url: "https://news.ycombinator.com/item?id=41890201",
-        author: "alex_foundervf",
-        score: 64,
-        comments_count: 28,
-        detected_tech_stack: ["AI/LLM", "Rust", "Database"],
-        hiring_intent: true,
-        intent_score: 85,
-        estimated_stage: "Seed/Series A",
-        signals: ["Recent public launch", "Active hiring footprint", "Enterprise API expansion"]
-      },
-      {
-        company_name: "PrismRelay",
-        launch_headline: "PrismRelay — Zero-latency Webhook router and dead-letter deduplication",
-        domain: "prismrelay.io",
-        source_url: "https://prismrelay.io",
-        discussion_url: "https://news.ycombinator.com/item?id=41890455",
-        author: "maborowski",
-        score: 42,
-        comments_count: 14,
-        detected_tech_stack: ["Developer Tools", "Next.js/React", "Cloud Infrastructure"],
-        hiring_intent: false,
-        intent_score: 65,
-        estimated_stage: "Pre-Seed",
-        signals: ["Recent developer tool launch", "Cloud-native infrastructure"]
-      }
-    );
+    throw new UpstreamTargetError("Upstream B2B lead sources (Algolia HN / Firebase HN) returned no matching live launches.", 502);
   }
 
   return {
@@ -1504,7 +1472,7 @@ export default {
 
       return new Response(JSON.stringify({
         service: "agentfuel402",
-        pricing_model: "x402-pay-per-request-plus-agency-pass",
+        pricing_model: "x402-pay-per-request-and-apify-ppe",
         x402_version: 2,
         accepted_currencies: [
           "USDC on Base (eip155:8453)",
@@ -1516,14 +1484,6 @@ export default {
         facilitator: PAYAI_FACILITATOR,
         gasless_sponsorship: "100% sponsored ($0 ETH / $0 SOL required)",
         endpoints,
-        agency_pass: {
-          endpoint: "/v1/pass/prepay",
-          method: "POST",
-          price_usdc: "5.000",
-          amount_micro: 5000000,
-          calls_included: 1000,
-          effective_price_per_call: "$0.005 USDC"
-        },
         credit_card_apify_store: "https://apify.com/kuroxreal",
         free_previews: [
           "/v1/preview/leads",
@@ -1565,17 +1525,17 @@ export default {
 </head>
 <body>
   <h1>⚡ AgentFuel402</h1>
-  <p><strong>B2B, E-Commerce &amp; Developer Consumable Data Factory on Cloudflare Edge (0ms Cold Start)</strong></p>
+  <p><strong>B2B, E-Commerce &amp; Developer Consumable Data Factory on Cloudflare Workers Edge</strong></p>
   <div>
     <span class="badge">Cloudflare Edge</span>
     <span class="badge">x402 V2 (Base + Solana USDC)</span>
     <span class="badge">Apify Store (Credit Card)</span>
-    <span class="badge">Glama Rated B MCP (5 Tools)</span>
+    <span class="badge">Glama Listed MCP (5 Tools)</span>
   </div>
 
   <div class="cta-bar">
     <a class="btn btn-green" href="https://apify.com/kuroxreal" target="_blank" rel="noopener">💳 Run by Credit Card on Apify (Free Monthly Credits)</a>
-    <a class="btn btn-blue" href="#agency-pass">🎟️ $5.00 USDC Agency Pass (1,000 Calls)</a>
+    <a class="btn btn-blue" href="https://www.npmjs.com/package/@kurox_real/agentfuel402" target="_blank" rel="noopener">📦 npm CLI / MCP (@kurox_real/agentfuel402)</a>
     <a class="btn" href="https://glama.ai/mcp/servers/ak10082247-max/agentfuel402" target="_blank" rel="noopener">🧩 Glama MCP Listing</a>
     <a class="btn" href="https://ak10082247-max.github.io/" target="_blank" rel="noopener">🛡️ Big 3 Directory</a>
     <a class="btn" href="mailto:armkhan18@gmail.com?subject=AgentFuel402%20Custom%20Feed%20or%20Audit">📧 Email-Only Custom Work ($49-$250)</a>
@@ -1604,9 +1564,9 @@ export default {
     </table>
   </div>
 
-  <div class="card" id="agency-pass">
-    <h3>🎟️ $5.00 USDC Agency Pass (1,000 Calls = $0.005/call) &amp; Async Custom Builds</h3>
-    <p>Mint a 1,000-call prepaid <code>X-API-Key</code> in a single gasless x402 transaction via <code>POST /v1/pass/prepay</code> (Base <code>0x80E0Ae84679b7f11bE171DaADd492FBECf628cd6</code> or Solana ATA <code>DD3A7jaXFeHcif9eYj6Vhomuxypat5Yxi8ow6wxz27yL</code>).</p>
+  <div class="card" id="custom-builds">
+    <h3>🛠️ Pay-Per-Call Access &amp; Async Custom Builds</h3>
+    <p>Pay per execution via gasless x402 V2 (Base <code>0x80E0Ae84679b7f11bE171DaADd492FBECf628cd6</code> or Solana ATA <code>DD3A7jaXFeHcif9eYj6Vhomuxypat5Yxi8ow6wxz27yL</code>) or by credit card on <a href="https://apify.com/kuroxreal" target="_blank" rel="noopener">Apify Store</a> — zero prepaid lock-in.</p>
     <p>Need bespoke B2B lead exports, custom site reverse-engineering, or Apify actors (<strong>$49–$250 one-time</strong>)? Email <a href="mailto:armkhan18@gmail.com?subject=AgentFuel402%20Custom%20Build">armkhan18@gmail.com</a> directly — <strong>async email/text delivery only, zero calls required</strong>.</p>
   </div>
 
@@ -1689,7 +1649,31 @@ export default {
               ],
               responses: {
                 "200": { description: "Live package version and release notes" },
-                "402": { description: "Payment Required (0.005 USDC)" }
+                "402": { description: "Payment Required (0.005 USDC)" },
+                "422": { description: "Upstream target unreachable (charged: false)" }
+              }
+            }
+          },
+          "/v1/fuel/reverse-engineer": {
+            post: {
+              summary: "Reverse Engineer Anything (REA)",
+              description: "Detects frameworks, hidden REST/GraphQL endpoints, hydration state, and generates OpenAPI 3.1 specs for a target URL.",
+              requestBody: {
+                required: true,
+                content: {
+                  "application/json": {
+                    schema: {
+                      type: "object",
+                      properties: { url: { type: "string", format: "uri" } },
+                      required: ["url"]
+                    }
+                  }
+                }
+              },
+              responses: {
+                "200": { description: "Extracted API endpoints, hydration state, and OpenAPI 3.1 spec" },
+                "402": { description: "Payment Required (0.020 USDC)" },
+                "422": { description: "Upstream target unreachable (charged: false)" }
               }
             }
           }
@@ -1702,15 +1686,16 @@ export default {
     if (path === "/skill.md") {
       return new Response(`---
 name: agentfuel402
-description: High-frequency consumable B2B buying intent leads, LLM-clean Markdown sanitization, live e-commerce price & stock monitoring, and real-time SDK specs via x402 dual-chain payment and MCP.
+description: High-frequency consumable B2B buying intent leads, LLM-clean Markdown sanitization, live e-commerce price & stock monitoring, real-time SDK specs, and Reverse Engineer Anything (REA) via x402 dual-chain payment and MCP.
 ---
 # AgentFuel402 Skill
 
 Provides live, non-cacheable consumable data feeds for AI agents:
 1. \`/v1/fuel/b2b-intent-leads\` ($0.010 USDC): Live startup launches, hiring signals, domains.
 2. \`/v1/fuel/llm-clean-markdown\` ($0.005 USDC): SSRF-safe Markdown extraction + prompt-injection defense.
-3. \`/v1/fuel/ecom-price-stock\` ($0.005 USDC): Shopify & Schema.org price, stock, and variant tracker.
+3. \`/v1/fuel/ecom-price-stock\` ($0.005 USDC): Shopify, WooCommerce & Schema.org price, stock, and variant tracker.
 4. \`/v1/fuel/sdk-live-spec\` ($0.005 USDC): Real-time PyPI & npm release versions and deprecation warnings.
+5. \`/v1/fuel/reverse-engineer\` ($0.020 USDC): Hidden REST/GraphQL endpoint discovery, hydration extraction, and OpenAPI 3.1 synthesis.
 `, { status: 200, headers: { ...cors, "Content-Type": "text/markdown; charset=utf-8" } });
     }
 
@@ -1723,8 +1708,9 @@ Facilitator: PayAI (https://facilitator.payai.network)
 Endpoints:
 - /v1/fuel/b2b-intent-leads ($0.010 USDC): Intent signals from tech launches
 - /v1/fuel/llm-clean-markdown ($0.005 USDC): Stripped DOM to Markdown with prompt injection defense
-- /v1/fuel/ecom-price-stock ($0.005 USDC): Live Shopify/WooCommerce prices
+- /v1/fuel/ecom-price-stock ($0.005 USDC): Live Shopify/WooCommerce/Schema.org prices
 - /v1/fuel/sdk-live-spec ($0.005 USDC): PyPI & npm latest versions & breaking warnings
+- /v1/fuel/reverse-engineer ($0.020 USDC): Hidden APIs, hydration state & OpenAPI 3.1 synthesis
 `, { status: 200, headers: { ...cors, "Content-Type": "text/plain; charset=utf-8" } });
     }
 
@@ -1749,17 +1735,16 @@ Endpoints:
     if (path === "/.well-known/agent-card.json") {
       return new Response(JSON.stringify({
         name: "AgentFuel402",
-        description: "B2B Intent Leads, E-Commerce Price & Stock, LLM Clean Markdown, and SDK Spec Feeds",
+        description: "B2B Intent Leads, E-Commerce Price & Stock, LLM Clean Markdown, SDK Spec Feeds, and Reverse Engineer Anything (REA)",
         protocol: "x402-v2",
         mcpEndpoint: "https://agentfuel402.ak10082247.workers.dev/mcp",
-        capabilities: ["b2b_intent_leads", "llm_clean_markdown", "ecom_price_stock", "sdk_live_spec"]
+        capabilities: ["b2b_intent_leads", "llm_clean_markdown", "ecom_price_stock", "sdk_live_spec", "reverse_engineer"]
       }, null, 2), { status: 200, headers: { ...cors, "Content-Type": "application/json" } });
     }
 
     // Free Preview Routes: /v1/preview/{feed}
     if (path.startsWith("/v1/preview/")) {
       const feedKey = path.replace("/v1/preview/", "");
-      const fullRoute = `/v1/fuel/${feedKey}`;
       const previewHeaders = {
         ...cors,
         "Content-Type": "application/json",
@@ -1767,95 +1752,49 @@ Endpoints:
         "X-Fuel-Preview": "true"
       };
 
-      if (feedKey === "b2b-intent-leads" || feedKey === "leads") {
-        const data = await fetchB2BLeads(2);
-        return new Response(JSON.stringify({ ...data, preview: true, full_feed_access: "Pay $0.010 USDC via x402 on /v1/fuel/b2b-intent-leads" }, null, 2), { status: 200, headers: previewHeaders });
-      }
-      if (feedKey === "llm-clean-markdown") {
-        try {
-          const data = await cleanMarkdownEngine("https://news.ycombinator.com");
-          return new Response(JSON.stringify({ ...data, preview: true }, null, 2), { status: 200, headers: previewHeaders });
-        } catch {
-          return new Response(JSON.stringify({
-            status: "success",
-            feed: "/v1/fuel/llm-clean-markdown",
-            preview: true,
-            target_url: "https://news.ycombinator.com",
-            title: "Hacker News — Clean Markdown Preview",
-            token_estimate: 185,
-            sanitized: true,
-            markdown: "# Hacker News\n\n- VectorFlow AI: Continuous embeddings for edge vector search\n- AgentFuel402: Consumable B2B data factory for AI agents"
-          }, null, 2), { status: 200, headers: previewHeaders });
+      try {
+        if (feedKey === "b2b-intent-leads" || feedKey === "leads") {
+          const data = await fetchB2BLeads(2);
+          return new Response(JSON.stringify({ ...data, preview: true, full_feed_access: "Pay $0.010 USDC via x402 on /v1/fuel/b2b-intent-leads" }, null, 2), { status: 200, headers: previewHeaders });
         }
-      }
-      if (feedKey === "ecom-price-stock") {
+        if (feedKey === "llm-clean-markdown") {
+          const previewTarget = url.searchParams.get("url") || "https://news.ycombinator.com";
+          const data = await cleanMarkdownEngine(previewTarget);
+          return new Response(JSON.stringify({ ...data, preview: true }, null, 2), { status: 200, headers: previewHeaders });
+        }
+        if (feedKey === "ecom-price-stock") {
+          const previewProductUrl = url.searchParams.get("url") || "https://scrapeme.live/shop/Bulbasaur/";
+          const data = await getEcomPriceStock(previewProductUrl);
+          return new Response(JSON.stringify({ ...data, preview: true }, null, 2), { status: 200, headers: previewHeaders });
+        }
+        if (feedKey === "sdk-live-spec") {
+          const pkg = url.searchParams.get("package") || "fastapi";
+          const eco = url.searchParams.get("ecosystem") || "pypi";
+          const data = await getSdkLiveSpec(pkg, eco);
+          return new Response(JSON.stringify({ ...data, preview: true }, null, 2), { status: 200, headers: previewHeaders });
+        }
+      } catch (previewErr) {
         return new Response(JSON.stringify({
-          status: "success",
-          feed: "/v1/fuel/ecom-price-stock",
-          preview: true,
-          product_url: "https://example.com/products/sample-widget",
-          title: "Sample Wireless Charging Dock",
-          price: 39.99,
-          currency: "USD",
-          in_stock: true,
-          discount_delta: 10.00,
-          sku: "PREVIEW-SKU-1"
-        }, null, 2), { status: 200, headers: previewHeaders });
+          status: "error",
+          error: "upstream_preview_unavailable",
+          charged: false,
+          details: previewErr.message
+        }, null, 2), { status: previewErr.httpStatus === 400 || previewErr.httpStatus === 403 ? previewErr.httpStatus : 502, headers: { ...cors, "Content-Type": "application/json" } });
       }
-      if (feedKey === "sdk-live-spec") {
-        const data = await getSdkLiveSpec("fastapi", "pypi");
-        return new Response(JSON.stringify({ ...data, preview: true }, null, 2), { status: 200, headers: previewHeaders });
-      }
-      return new Response(JSON.stringify({ error: "Unknown preview feed" }), { status: 404, headers: cors });
+      return new Response(JSON.stringify({ error: "Unknown preview feed" }), { status: 404, headers: { ...cors, "Content-Type": "application/json" } });
     }
 
-    // $5.00 Agency Pass: POST /v1/pass/prepay
-    if (path === "/v1/pass/prepay" && req.method === "POST") {
-      const paymentHdr = req.headers.get("PAYMENT-SIGNATURE") || req.headers.get("X-PAYMENT");
-      if (!paymentHdr) {
-        const passChallenge = {
-          x402Version: 2,
-          resource: { url: `${url.origin}/v1/pass/prepay`, description: "$5.00 USD Agency Pass (1,000 cross-feed calls)" },
-          accepts: [
-            { scheme: "exact", network: "eip155:8453", asset: BASE_USDC, amount: "5000000", payTo: MERCHANT_BASE },
-            { scheme: "exact", network: SOLANA_NETWORK, asset: SOLANA_USDC_MINT, amount: "5000000", payTo: MERCHANT_SOLANA_ATA }
-          ],
-          price: "$5.00 USDC"
-        };
-        const b64 = btoa(JSON.stringify(passChallenge));
-        return new Response(JSON.stringify(passChallenge, null, 2), {
-          status: 402,
-          headers: { ...cors, "Content-Type": "application/json", "PAYMENT-REQUIRED": b64, "X-Payment-Required": b64 }
-        });
-      }
-
-      // Settle pass payment
-      try {
-        const dummyCfgRoute = "/v1/pass/prepay";
-        ROUTE_CONFIGS[dummyCfgRoute] = { amountMicro: 5000000, description: "Agency Pass Prepay" };
-        const receipt = await verifyAndSettlePayAI(req, dummyCfgRoute, paymentHdr);
-        const passToken = `fuel_pass_${crypto.randomUUID().replace(/-/g, "")}`;
-        activePasses.set(passToken, { callsRemaining: 1000, payer: receipt.payer, created: Date.now() });
-
-        return new Response(JSON.stringify({
-          status: "success",
-          message: "Agency Pass Activated! Attach 'X-Fuel-Session' header to call any /v1/fuel/* route.",
-          session_token: passToken,
-          calls_remaining: 1000,
-          receipt
-        }, null, 2), {
-          status: 200,
-          headers: {
-            ...cors,
-            "Content-Type": "application/json",
-            "X-Fuel-Session": passToken,
-            "X-Fuel-Calls-Remaining": "1000",
-            "PAYMENT-RESPONSE": btoa(JSON.stringify(receipt))
-          }
-        });
-      } catch (err) {
-        return build402Challenge(req, "/v1/fuel/b2b-intent-leads", `Pass settlement failed: ${err.message}`);
-      }
+    // $5.00 Agency Pass: disabled on stateless edge isolates (never settle $5 for volatile memory)
+    if (path === "/v1/pass/prepay") {
+      return new Response(JSON.stringify({
+        status: "error",
+        error: "agency_pass_disabled",
+        charged: false,
+        message: "Prepaid in-memory Agency Pass sessions are disabled on stateless Cloudflare Workers isolates. Use pay-per-request x402 V2 (Base or Solana USDC) on /v1/fuel/* or Credit Card billing on Apify Store (https://apify.com/kuroxreal)."
+      }, null, 2), {
+        status: 503,
+        headers: { ...cors, "Content-Type": "application/json" }
+      });
     }
 
     // -------------------------------------------------------------------------
@@ -1941,11 +1880,9 @@ Endpoints:
           return new Response(JSON.stringify({ jsonrpc: "2.0", id, error: { code: -32601, message: `Tool '${toolName}' not found` } }), { status: 200, headers: { ...cors, "Content-Type": "application/json" } });
         }
 
-        const sessionToken = req.headers.get("X-Fuel-Session");
-        const hasValidSession = Boolean(sessionToken && activePasses.has(sessionToken) && activePasses.get(sessionToken).callsRemaining > 0);
         const paymentHdr = req.headers.get("PAYMENT-SIGNATURE") || req.headers.get("X-PAYMENT") || params?._meta?.["x402/payment"];
 
-        if (!hasValidSession && !paymentHdr) {
+        if (!paymentHdr) {
           return mcpPaymentRequiredResponse(
             cors,
             id,
@@ -1957,12 +1894,10 @@ Endpoints:
 
         // Step 1: Verify payment authorization BEFORE tool execution
         let paymentPrep = null;
-        if (!hasValidSession && paymentHdr) {
-          try {
-            paymentPrep = await validateAndVerifyPayAI(req, toolRoute, paymentHdr);
-          } catch (verifyErr) {
-            return mcpPaymentRequiredResponse(cors, id, req, toolRoute, `Payment validation rejected: ${verifyErr.message}`);
-          }
+        try {
+          paymentPrep = await validateAndVerifyPayAI(req, toolRoute, paymentHdr);
+        } catch (verifyErr) {
+          return mcpPaymentRequiredResponse(cors, id, req, toolRoute, `Payment validation rejected: ${verifyErr.message}`);
         }
 
         // Step 2: Execute tool cleanly (never settle if target fails)
@@ -1994,7 +1929,7 @@ Endpoints:
           }), { status: 200, headers: { ...cors, "Content-Type": "application/json" } });
         }
 
-        // Step 3: Settle verified payment or deduct pass AFTER successful execution
+        // Step 3: Settle verified payment AFTER successful execution
         let meta = {};
         if (paymentPrep) {
           try {
@@ -2003,9 +1938,6 @@ Endpoints:
           } catch (settleErr) {
             return mcpPaymentRequiredResponse(cors, id, req, toolRoute, `Settlement failed: ${settleErr.message}`);
           }
-        } else if (hasValidSession) {
-          activePasses.get(sessionToken).callsRemaining -= 1;
-          meta.sessionCallsRemaining = activePasses.get(sessionToken).callsRemaining;
         }
 
         return new Response(JSON.stringify({
@@ -2023,34 +1955,25 @@ Endpoints:
     }
 
     // -------------------------------------------------------------------------
-    // THE 4 CONSUMABLE DATA ROUTES: /v1/fuel/*
+    // THE CONSUMABLE DATA ROUTES: /v1/fuel/*
     // -------------------------------------------------------------------------
     if (ROUTE_CONFIGS[path]) {
       const cfg = ROUTE_CONFIGS[path];
 
-      // Check Pass Token
-      const sessionToken = req.headers.get("X-Fuel-Session");
-      const hasPass = sessionToken && activePasses.has(sessionToken) && activePasses.get(sessionToken).callsRemaining > 0;
-      if (hasPass) {
-        activePasses.get(sessionToken).callsRemaining -= 1;
-      }
-
       // Check x402 Payment Header
       const paymentHdr = req.headers.get("PAYMENT-SIGNATURE") || req.headers.get("X-PAYMENT") || req.headers.get("payment-signature");
 
-      if (!hasPass && !paymentHdr) {
+      if (!paymentHdr) {
         return build402Challenge(req, path);
       }
 
       // Step 1: Pre-Verify Payment Authorization via PayAI Facilitator (DO NOT SETTLE YET)
       let paymentPrep = null;
-      if (!hasPass && paymentHdr) {
-        try {
-          paymentPrep = await validateAndVerifyPayAI(req, path, paymentHdr);
-        } catch (verifyErr) {
-          // Negative test proof: invalid or dummy payment headers return HTTP 402 with details
-          return build402Challenge(req, path, `Payment validation rejected: ${verifyErr.message}`);
-        }
+      try {
+        paymentPrep = await validateAndVerifyPayAI(req, path, paymentHdr);
+      } catch (verifyErr) {
+        // Negative test proof: invalid or dummy payment headers return HTTP 402 with details
+        return build402Challenge(req, path, `Payment validation rejected: ${verifyErr.message}`);
       }
 
       // Extract Input Parameters
@@ -2134,9 +2057,6 @@ Endpoints:
       if (receipt) {
         outHeaders["PAYMENT-RESPONSE"] = btoa(JSON.stringify(receipt));
         outHeaders["X-Payment-Response"] = btoa(JSON.stringify(receipt));
-      }
-      if (hasPass) {
-        outHeaders["X-Fuel-Calls-Remaining"] = activePasses.get(sessionToken).callsRemaining.toString();
       }
 
       return new Response(JSON.stringify(resultData, null, 2), { status: 200, headers: outHeaders });

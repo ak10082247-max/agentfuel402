@@ -115,18 +115,15 @@ async def run_b2b_leads(limit=10, category="all"):
             Actor.log.warning(f"Firebase fallback failed: {e}")
 
     if not leads:
-        leads = [{
-            "company_name": "VectorFlow AI",
-            "launch_headline": "VectorFlow — Real-time continuous embeddings for edge vector search",
-            "domain": "vectorflow.dev",
-            "source_url": "https://vectorflow.dev",
-            "author": "alex_founder",
-            "score": 64,
-            "comments_count": 28,
-            "detected_tech_stack": ["AI/LLM", "Rust", "Database"],
-            "hiring_intent": True,
-            "intent_score": 85
-        }]
+        return {
+            "status": "error",
+            "error": "upstream_leads_unavailable",
+            "event_name": "lead-signal-fetch",
+            "feed": "/v1/fuel/b2b-intent-leads",
+            "timestamp_ms": int(time.time() * 1000),
+            "count": 0,
+            "leads": []
+        }
 
     return {
         "status": "success",
