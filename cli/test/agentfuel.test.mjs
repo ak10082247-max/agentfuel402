@@ -77,7 +77,7 @@ async function withMockSolanaRpc(fn) {
 }
 
 test("exposes 5 MCP tools and routes unauthenticated calls to free previews or fail-closed 402", async () => {
-  assert.equal(SERVICE_VERSION, "1.0.0");
+  assert.equal(SERVICE_VERSION, "1.0.1");
   assert.equal(MCP_TOOLS.length, 5);
   assert.ok(AGENTFUEL_UPGRADE_HINT.includes("apify.com/kuroxreal"));
 

@@ -6,6 +6,7 @@
  * Supports dual-chain x402 v2 auto-payment (Solana USDC via PayAI & Base USDC via EIP-3009),
  * free /v1/preview/* evaluation, and honest Apify Store credit-card PPE upsell links.
  */
+import { realpathSync } from "node:fs";
 import * as readline from "node:readline";
 import {
   createGuardPayingFetchAsync,
@@ -14,7 +15,7 @@ import {
   resolveSolanaRpcUrl,
 } from "@kurox_real/solana-agent-kit-guard";
 
-export const SERVICE_VERSION = "1.0.0";
+export const SERVICE_VERSION = "1.0.1";
 export const AGENTFUEL_DEFAULT_URL =
   process.env.AGENTFUEL_URL || "https://agentfuel402.ak10082247.workers.dev";
 export const APIFY_STORE_URL = "https://apify.com/kuroxreal";
@@ -455,13 +456,19 @@ async function main() {
   });
 }
 
-const isMainEntry =
-  typeof process !== "undefined" &&
-  Array.isArray(process.argv) &&
-  process.argv[1] &&
-  /index\.(js|ts)$/.test(process.argv[1].replace(/\\/g, "/"));
+function isMainInvocation(): boolean {
+  if (typeof process === "undefined" || !Array.isArray(process.argv) || !process.argv[1]) {
+    return false;
+  }
+  try {
+    const resolved = realpathSync(process.argv[1]).replace(/\\/g, "/");
+    return /index\.(js|ts)$/.test(resolved);
+  } catch {
+    return /index\.(js|ts)$/.test(process.argv[1].replace(/\\/g, "/"));
+  }
+}
 
-if (isMainEntry) {
+if (isMainInvocation()) {
   main().catch((err) => {
     console.error("Fatal AgentFuel402 error:", err);
     process.exit(1);

@@ -1,6 +1,6 @@
 {
   "name": "@kurox_real/agentfuel402",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "mcpName": "io.github.ak10082247-max/agentfuel402",
   "description": "MCP Server & CLI for AgentFuel402: live B2B intent leads, LLM-clean Markdown, e-commerce price/stock, PyPI/npm SDK specs, and Reverse Engineer Anything with dual-chain Solana/Base USDC x402 v2 auto-pay and Apify fiat fallback.",
   "type": "module",
