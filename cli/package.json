@@ -1,0 +1,55 @@
+{
+  "name": "@kurox_real/agentfuel402",
+  "version": "1.0.0",
+  "mcpName": "io.github.ak10082247-max/agentfuel402",
+  "description": "MCP Server & CLI for AgentFuel402: live B2B intent leads, LLM-clean Markdown, e-commerce price/stock, PyPI/npm SDK specs, and Reverse Engineer Anything with dual-chain Solana/Base USDC x402 v2 auto-pay and Apify fiat fallback.",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "agentfuel402": "dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "server.json"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "start": "node dist/index.js",
+    "build": "tsc",
+    "test": "node --test test/agentfuel.test.mjs",
+    "prepublishOnly": "npm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ak10082247-max/agentfuel402.git",
+    "directory": "cli"
+  },
+  "homepage": "https://agentfuel402.ak10082247.workers.dev",
+  "keywords": [
+    "agentfuel402",
+    "x402",
+    "mcp",
+    "mcp-server",
+    "web-scraping",
+    "html-to-markdown",
+    "b2b-leads",
+    "reverse-engineering",
+    "ecommerce-scraper",
+    "solana-usdc",
+    "base-usdc",
+    "apify"
+  ],
+  "author": "kurox_real",
+  "license": "MIT",
+  "dependencies": {
+    "@kurox_real/solana-agent-kit-guard": "^1.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "typescript": "^5.7.2"
+  }
+}

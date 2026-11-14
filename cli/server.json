@@ -1,0 +1,23 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.ak10082247-max/agentfuel402",
+  "title": "AgentFuel402 — Live Data, Markdown, E-Com & Reverse Engineering MCP",
+  "description": "Zero-API-key MCP server and CLI for live B2B intent leads, prompt-injection-sanitized Markdown, e-commerce price/stock extraction, SDK live specs, and Reverse Engineer Anything over x402 v2 (Solana & Base USDC) or Apify credit-card PPE.",
+  "version": "1.0.0",
+  "websiteUrl": "https://agentfuel402.ak10082247.workers.dev",
+  "repository": {
+    "url": "https://github.com/ak10082247-max/agentfuel402",
+    "source": "github",
+    "subfolder": "cli"
+  },
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "@kurox_real/agentfuel402",
+      "version": "1.0.0",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}
