@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-13T01:55:00.175754+00:00",
+  "updated_at": "2026-11-14T01:30:28.018859+00:00",
   "suppressed_emails": [
     "paulalexeev10@gmail.com",
     "serge.lopes.94@free.fr",
@@ -161,7 +161,22 @@
     "v@getbeton.ai",
     "krishishah027@gmail.com",
     "mostadawood@gmail.com",
-    "israelstratton@gmail.com"
+    "israelstratton@gmail.com",
+    "vtburakinan@gmail.com",
+    "abdul.fariz11@gmail.com",
+    "matthewkarstenconnects@gmail.com",
+    "hello@bitquery.io",
+    "developers@cryptoapis.io",
+    "bru1noia@gmail.com",
+    "ochinimus@gmail.com",
+    "vincentkquainoo@gmail.com",
+    "meanusarcanus@gmail.com",
+    "robsonmartello@gmail.com",
+    "wyc610721@gmail.com",
+    "michael@svelte-apps.me",
+    "hello@firecrawl.dev",
+    "juanfhuttemann@gmail.com",
+    "torsten@raudssus.de"
   ],
   "contacted_users": [
     "bennyjo",
@@ -314,7 +329,22 @@
     "getbeton",
     "growth-by-krishi",
     "mostadaoud",
-    "israelstratton"
+    "israelstratton",
+    "vtcipto",
+    "noobshole",
+    "expertvagabond",
+    "bitquery",
+    "cryptoapis-io",
+    "bru1noia",
+    "seekdaseek",
+    "vinqotech",
+    "meanusarcanus",
+    "robmartello",
+    "yolow92",
+    "michael-obele",
+    "firecrawl",
+    "juanhuttemann",
+    "getty"
   ],
   "history": [
     {
@@ -1373,6 +1403,111 @@
       "track": "track_agentfuel",
       "repo": "IsraelStratton/gtm-enrichment-quality-pipeline",
       "sent_date": "2026-11-13T01:55:00.175727+00:00"
+    },
+    {
+      "username": "vtcipto",
+      "email": "vtburakinan@gmail.com",
+      "track": "track_rugshield",
+      "repo": "vtcipto/base-airdrop-about-2",
+      "sent_date": "2026-11-14T01:29:06.553189+00:00"
+    },
+    {
+      "username": "noobshole",
+      "email": "abdul.fariz11@gmail.com",
+      "track": "track_rugshield",
+      "repo": "noobshole/svalin-agent",
+      "sent_date": "2026-11-14T01:29:11.377334+00:00"
+    },
+    {
+      "username": "expertvagabond",
+      "email": "matthewkarstenconnects@gmail.com",
+      "track": "track_rugshield",
+      "repo": "ExpertVagabond/solana-mcp-server",
+      "sent_date": "2026-11-14T01:29:16.655527+00:00"
+    },
+    {
+      "username": "bitquery",
+      "email": "hello@bitquery.io",
+      "track": "track_rugshield",
+      "repo": "bitquery/mcp",
+      "sent_date": "2026-11-14T01:29:22.323524+00:00"
+    },
+    {
+      "username": "cryptoapis-io",
+      "email": "developers@cryptoapis.io",
+      "track": "track_rugshield",
+      "repo": "CryptoAPIs-io/cryptoapis-mcp-transactions-data",
+      "sent_date": "2026-11-14T01:29:27.254511+00:00"
+    },
+    {
+      "username": "bru1noia",
+      "email": "bru1noia@gmail.com",
+      "track": "track_canaryguard",
+      "repo": "bru1noia/plugin-vextorium",
+      "sent_date": "2026-11-14T01:29:39.484308+00:00"
+    },
+    {
+      "username": "seekdaseek",
+      "email": "ochinimus@gmail.com",
+      "track": "track_canaryguard",
+      "repo": "seekdaseek/plugin-agentfeed",
+      "sent_date": "2026-11-14T01:29:44.329142+00:00"
+    },
+    {
+      "username": "vinqotech",
+      "email": "vincentkquainoo@gmail.com",
+      "track": "track_canaryguard",
+      "repo": "Vinqotech/plugin-aura-gateway",
+      "sent_date": "2026-11-14T01:29:49.162707+00:00"
+    },
+    {
+      "username": "meanusarcanus",
+      "email": "meanusarcanus@gmail.com",
+      "track": "track_canaryguard",
+      "repo": "meanusarcanus/apify_m2m_gateway",
+      "sent_date": "2026-11-14T01:29:54.018711+00:00"
+    },
+    {
+      "username": "robmartello",
+      "email": "robsonmartello@gmail.com",
+      "track": "track_canaryguard",
+      "repo": "RobMartello/plugin-tereno",
+      "sent_date": "2026-11-14T01:29:58.864348+00:00"
+    },
+    {
+      "username": "yolow92",
+      "email": "wyc610721@gmail.com",
+      "track": "track_agentfuel",
+      "repo": "YOLOW92/pagesift",
+      "sent_date": "2026-11-14T01:30:08.007883+00:00"
+    },
+    {
+      "username": "michael-obele",
+      "email": "michael@svelte-apps.me",
+      "track": "track_agentfuel",
+      "repo": "Michael-Obele/tomoshibi",
+      "sent_date": "2026-11-14T01:30:12.935599+00:00"
+    },
+    {
+      "username": "firecrawl",
+      "email": "hello@firecrawl.dev",
+      "track": "track_agentfuel",
+      "repo": "firecrawl/firecrawl-mcp-server",
+      "sent_date": "2026-11-14T01:30:17.921300+00:00"
+    },
+    {
+      "username": "juanhuttemann",
+      "email": "juanfhuttemann@gmail.com",
+      "track": "track_agentfuel",
+      "repo": "juanhuttemann/deep-research",
+      "sent_date": "2026-11-14T01:30:23.038084+00:00"
+    },
+    {
+      "username": "getty",
+      "email": "torsten@raudssus.de",
+      "track": "track_agentfuel",
+      "repo": "Getty/p5-net-async-firecrawl",
+      "sent_date": "2026-11-14T01:30:28.018836+00:00"
     }
   ]
 }
