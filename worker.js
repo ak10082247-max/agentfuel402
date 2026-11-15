@@ -153,7 +153,7 @@ function corsHeaders(req) {
     "Access-Control-Allow-Origin": origin,
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS, HEAD",
     "Access-Control-Allow-Headers": "Content-Type, Authorization, PAYMENT-SIGNATURE, X-PAYMENT, X-Payment-Signature, X-Fuel-Session, Mcp-Session-Id",
-    "Access-Control-Expose-Headers": "PAYMENT-REQUIRED, PAYMENT-RESPONSE, X-Payment-Required, X-Payment-Response, X-402-Version, X-402-Amount, X-402-Payment-To, X-402-Network, X-402-Asset, X-Fuel-Calls-Remaining",
+    "Access-Control-Expose-Headers": "PAYMENT-REQUIRED, PAYMENT-RESPONSE, X-Payment-Required, X-Payment-Response, X-402-Version, X-402-Amount, X-402-Payment-To, X-402-Network, X-402-Asset, X-Fuel-Calls-Remaining, X-Edge-Cache, Server-Timing",
     "Access-Control-Max-Age": "86400"
   };
 }
@@ -1427,8 +1427,7 @@ async function verifyAndSettlePayAI(req, routePath, rawPaymentHeader) {
 // -----------------------------------------------------------------------------
 // MAIN WORKER FETCH HANDLER
 // -----------------------------------------------------------------------------
-export default {
-  async fetch(req, env, ctx) {
+async function handleWorkerFetch(req, env, ctx) {
     const url = new URL(req.url);
     const path = url.pathname;
     const cors = corsHeaders(req);
@@ -2067,5 +2066,48 @@ Endpoints:
       status: 404,
       headers: { ...cors, "Content-Type": "application/json" }
     });
+}
+
+export default {
+  async fetch(req, env, ctx) {
+    const url = new URL(req.url);
+    if (req.method === "GET" && url.pathname.startsWith("/v1/preview/")) {
+      const t0 = typeof performance !== "undefined" && typeof performance.now === "function" ? performance.now() : Date.now();
+      const cache = typeof caches !== "undefined" && caches.default ? caches.default : null;
+      const cacheKey = new Request(url.toString(), { method: "GET" });
+
+      if (cache) {
+        const cached = await cache.match(cacheKey);
+        if (cached) {
+          const hitHeaders = new Headers(cached.headers);
+          for (const [k, v] of Object.entries(corsHeaders(req))) {
+            hitHeaders.set(k, v);
+          }
+          const hitMs = Number(((typeof performance !== "undefined" && typeof performance.now === "function" ? performance.now() : Date.now()) - t0).toFixed(2));
+          hitHeaders.set("X-Edge-Cache", "HIT");
+          hitHeaders.set("Server-Timing", `edge-cache;dur=${hitMs}`);
+          return new Response(cached.body, { status: cached.status, headers: hitHeaders });
+        }
+      }
+
+      const res = await handleWorkerFetch(req, env, ctx);
+      const missMs = Number(((typeof performance !== "undefined" && typeof performance.now === "function" ? performance.now() : Date.now()) - t0).toFixed(2));
+      if (res.status === 200) {
+        const missHeaders = new Headers(res.headers);
+        if (!missHeaders.has("Cache-Control")) {
+          missHeaders.set("Cache-Control", "public, max-age=60");
+        }
+        missHeaders.set("X-Edge-Cache", "MISS");
+        missHeaders.set("Server-Timing", `edge-worker;dur=${missMs}`);
+        const outRes = new Response(res.body, { status: res.status, headers: missHeaders });
+        if (cache && ctx && typeof ctx.waitUntil === "function") {
+          ctx.waitUntil(cache.put(cacheKey, outRes.clone()));
+        }
+        return outRes;
+      }
+      return res;
+    }
+
+    return await handleWorkerFetch(req, env, ctx);
   }
 };
