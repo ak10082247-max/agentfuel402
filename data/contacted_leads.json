@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-14T01:30:28.018859+00:00",
+  "updated_at": "2026-11-15T06:44:30.860856+00:00",
   "suppressed_emails": [
     "paulalexeev10@gmail.com",
     "serge.lopes.94@free.fr",
@@ -176,7 +176,22 @@
     "michael@svelte-apps.me",
     "hello@firecrawl.dev",
     "juanfhuttemann@gmail.com",
-    "torsten@raudssus.de"
+    "torsten@raudssus.de",
+    "nadiralikhanofficial1@gmail.com",
+    "joemekw@gmail.com",
+    "tylerscv22@gmail.com",
+    "build@regents.sh",
+    "povrouyre@gmail.com",
+    "chhayank44@gmail.com",
+    "abisheakp197@gmail.com",
+    "x@goplus.org",
+    "warppay.402@gmail.com",
+    "maaaanideep@gmail.com",
+    "yuan.chen@xibojiaoyu.com",
+    "marilyntrent2020@zunestou.com",
+    "hasanyelaldi9@gmail.com",
+    "contact@urbankitstudio.com",
+    "jenniferhernandezy041@gmail.com"
   ],
   "contacted_users": [
     "bennyjo",
@@ -344,7 +359,22 @@
     "michael-obele",
     "firecrawl",
     "juanhuttemann",
-    "getty"
+    "getty",
+    "nadiraliofficial",
+    "joemekw-code",
+    "tyler-james-bridges",
+    "regents-ai",
+    "povrouyre-wq",
+    "chhayankjain",
+    "abisheakp197",
+    "goplus",
+    "warppay402",
+    "1manideep",
+    "indie-builder",
+    "zovulrira1974",
+    "hasanyelaldi",
+    "urbankitstudio",
+    "tiobeharxi1987"
   ],
   "history": [
     {
@@ -1508,6 +1538,111 @@
       "track": "track_agentfuel",
       "repo": "Getty/p5-net-async-firecrawl",
       "sent_date": "2026-11-14T01:30:28.018836+00:00"
+    },
+    {
+      "username": "nadiraliofficial",
+      "email": "nadiralikhanofficial1@gmail.com",
+      "track": "track_rugshield",
+      "repo": "NadirAliOfficial/charcoin-keepalive-bot",
+      "sent_date": "2026-11-15T06:43:03.981917+00:00"
+    },
+    {
+      "username": "joemekw-code",
+      "email": "joemekw@gmail.com",
+      "track": "track_rugshield",
+      "repo": "joemekw-code/ozc",
+      "sent_date": "2026-11-15T06:43:08.896084+00:00"
+    },
+    {
+      "username": "tyler-james-bridges",
+      "email": "tylerscv22@gmail.com",
+      "track": "track_rugshield",
+      "repo": "tyler-james-bridges/agent-tool-index",
+      "sent_date": "2026-11-15T06:43:13.786571+00:00"
+    },
+    {
+      "username": "regents-ai",
+      "email": "build@regents.sh",
+      "track": "track_rugshield",
+      "repo": "regents-ai/autolaunch",
+      "sent_date": "2026-11-15T06:43:18.656665+00:00"
+    },
+    {
+      "username": "povrouyre-wq",
+      "email": "povrouyre@gmail.com",
+      "track": "track_rugshield",
+      "repo": "povrouyre-wq/automaton-onchain-tools",
+      "sent_date": "2026-11-15T06:43:23.566415+00:00"
+    },
+    {
+      "username": "chhayankjain",
+      "email": "chhayank44@gmail.com",
+      "track": "track_canaryguard",
+      "repo": "chhayankjain/AgentProbe",
+      "sent_date": "2026-11-15T06:43:37.364038+00:00"
+    },
+    {
+      "username": "abisheakp197",
+      "email": "abisheakp197@gmail.com",
+      "track": "track_canaryguard",
+      "repo": "abisheakp197/nti-leaderboard",
+      "sent_date": "2026-11-15T06:43:42.389563+00:00"
+    },
+    {
+      "username": "goplus",
+      "email": "x@goplus.org",
+      "track": "track_canaryguard",
+      "repo": "goplus/llcppg",
+      "sent_date": "2026-11-15T06:43:47.544440+00:00"
+    },
+    {
+      "username": "warppay402",
+      "email": "warppay.402@gmail.com",
+      "track": "track_canaryguard",
+      "repo": "Warppay402/autogen-warppay402",
+      "sent_date": "2026-11-15T06:43:52.293789+00:00"
+    },
+    {
+      "username": "1manideep",
+      "email": "maaaanideep@gmail.com",
+      "track": "track_canaryguard",
+      "repo": "1manideep/ratchet",
+      "sent_date": "2026-11-15T06:43:57.119358+00:00"
+    },
+    {
+      "username": "indie-builder",
+      "email": "yuan.chen@xibojiaoyu.com",
+      "track": "track_agentfuel",
+      "repo": "indie-builder/agentport",
+      "sent_date": "2026-11-15T06:44:10.979594+00:00"
+    },
+    {
+      "username": "zovulrira1974",
+      "email": "marilyntrent2020@zunestou.com",
+      "track": "track_agentfuel",
+      "repo": "zovulrira1974/blender-ai-copilot-assets",
+      "sent_date": "2026-11-15T06:44:15.767679+00:00"
+    },
+    {
+      "username": "hasanyelaldi",
+      "email": "hasanyelaldi9@gmail.com",
+      "track": "track_agentfuel",
+      "repo": "hasanyelaldi/repo-pulse-mcp",
+      "sent_date": "2026-11-15T06:44:20.601870+00:00"
+    },
+    {
+      "username": "urbankitstudio",
+      "email": "contact@urbankitstudio.com",
+      "track": "track_agentfuel",
+      "repo": "urbankitstudio/mcp-atlas",
+      "sent_date": "2026-11-15T06:44:25.738807+00:00"
+    },
+    {
+      "username": "tiobeharxi1987",
+      "email": "jenniferhernandezy041@gmail.com",
+      "track": "track_agentfuel",
+      "repo": "tiobeharxi1987/blender-ai-copilot-flow",
+      "sent_date": "2026-11-15T06:44:30.860835+00:00"
     }
   ]
 }
