@@ -415,6 +415,8 @@ def is_spam_repo(owner: str, repo_name: str, repo_desc: str) -> bool:
     )
     if any(tok in blob for tok in low_intent_tokens):
         return True
+    if re.search(r"\b(blender|godot|unity3d|unreal|minecraft|roblox|neovim|wallpaper)\b", blob):
+        return True
     """Filters out own repos, GitHub profile README repos, and SEO/malware bot-farm repositories."""
     if not owner or not repo_name:
         return True
@@ -456,32 +458,32 @@ def search_github_leads(track="track_rugshield", limit=5, exclude_emails=None, e
             "erc4337 agent wallet NOT how-to"
         ],
         "track_canaryguard": [
-            "mcp server",
-            "modelcontextprotocol",
-            "langchain",
-            "crewai",
-            "autogen",
+            "mcp server stars:>=3",
+            "modelcontextprotocol stars:>=3",
+            "langchain agent stars:>=3",
+            "crewai stars:>=3",
+            "autogen agent stars:>=3",
             "prompt injection",
-            "openai agents",
+            "openai agents sdk stars:>=3",
             "elizaos plugin",
-            "langgraph agent",
-            "pydantic ai",
-            "mastra agent",
-            "dify workflow"
+            "langgraph agent stars:>=3",
+            "pydantic ai stars:>=3",
+            "mastra agent stars:>=3",
+            "dify workflow stars:>=3"
         ],
         "track_agentfuel": [
-            "n8n",
-            "firecrawl",
-            "crawl4ai",
+            "n8n workflow stars:>=3",
+            "firecrawl stars:>=3",
+            "crawl4ai stars:>=3",
             "shopify scraper",
-            "lead generation",
-            "apify",
+            "b2b lead generation stars:>=3",
+            "apify actor stars:>=3",
             "clay enrichment",
-            "playwright scraper",
+            "playwright scraper stars:>=3",
             "shopify price monitor",
             "b2b enrichment",
-            "web scraper api",
-            "mcp server"
+            "web scraper api stars:>=3",
+            "rag crawler stars:>=3"
         ]
     }
 
@@ -511,6 +513,14 @@ def search_github_leads(track="track_rugshield", limit=5, exclude_emails=None, e
                 for repo in items:
                     if len(discovered) >= limit:
                         break
+                    if repo.get("fork") or repo.get("archived"):
+                        continue
+                    min_stars = 1 if track == "track_rugshield" else 3
+                    if (repo.get("stargazers_count") or 0) < min_stars:
+                        continue
+                    pushed_at = repo.get("pushed_at") or ""
+                    if pushed_at and pushed_at < "2026-05-01":
+                        continue
                     owner = repo.get("owner", {}).get("login")
                     repo_name = repo.get("full_name")
                     repo_desc = repo.get("description") or "GitHub Project"
@@ -615,10 +625,11 @@ Integrate directly in seconds (free preview -> credit card via Apify -> or Base/
 - Free Live Pre-Trade Check (`POST /v1/scan/preview`): https://rugshield-402.onrender.com/v1/scan/preview
 - 1-Click Fiat Run on Apify Store ($0.005/scan, free credits available): https://apify.com/kuroxreal/rugshield-402
 - Open-Source MCP Server (Claude Desktop & Cursor): https://rugshield-402.onrender.com/mcp (tools: `rugshield_pre_swap_scan`, `check_honeypot`, `analyze_liquidity`)
+- npm SDKs & CLI: `npx @kurox_real/x402-sniper-bot`, `@kurox_real/rugshield-client`, `@kurox_real/solana-agent-kit-guard`
 - Dual-Chain x402 API ($0.010 USDC on Base & Solana): https://rugshield-402.onrender.com/v1/scan
 
 Hope this helps your bot avoid bad fills across Solana and Base!
-Need a custom pre-trade security integration or token audit? Reply directly to this email (async email/text delivery only — no calls or meetings required).
+Need a self-hosted commercial scanner license ($39-$89) or custom pre-trade security integration? Reply directly to this email (async email/text delivery only — no calls or meetings required).
 
 Best regards,
 Kurox DEX Security Team
@@ -632,7 +643,7 @@ https://github.com/ak10082247-max/rugshield-402
 Loved what you're building in {repo}. With LLM agents taking autonomous actions and reading untrusted web data or user inputs, indirect prompt injections, jailbreaks, and tool-poisoning attacks are a critical vulnerability.
 
 CanaryGuard 402 is a deterministic security firewall and honeypot scrubber built specifically for AI agents:
-1. Sub-10ms deterministic prompt-injection detection and instruction override neutralization
+1. Deterministic prompt-injection detection and instruction override neutralization
 2. Hidden Unicode, zero-width steganography, and malicious script scrubbing
 3. Cryptographic tamper-evident inspection receipts with risk scores (0-100)
 4. Contextual scoring for extracted crypto addresses and wallet-drain commands
@@ -641,11 +652,11 @@ Connect it in seconds (free test endpoint -> credit card via Apify -> or Base/So
 - Free Live Sandbox (`POST /v1/sanitize/preview`): https://canaryguard-402.onrender.com/v1/sanitize/preview
 - 1-Click Fiat Run on Apify Store ($0.003/check, free credits available): https://apify.com/kuroxreal/canaryguard-402
 - Claude Desktop & Cursor Remote MCP: https://canaryguard-402.onrender.com/mcp
-- npm SDKs: `@kurox_real/plugin-canaryguard`, `@kurox_real/agentkit-canaryguard-402`, `@kurox_real/canaryguard-client`
+- npm SDKs: `@kurox_real/plugin-canaryguard`, `@kurox_real/agentkit-canaryguard-402`, `@kurox_real/canaryguard-client`, `elizaos-plugin-kurox-sentinel`
 - Open-Source Repo: https://github.com/ak10082247-max/canaryguard-402
 
 Keep your agents safe from prompt injection!
-Need a custom MCP security firewall or prompt-audit setup? Reply directly to this email (async email/text delivery only — no calls or meetings required).
+Need a self-hosted commercial firewall proxy ($39-$89) or custom MCP security setup? Reply directly to this email (async email/text delivery only — no calls or meetings required).
 
 Best regards,
 Kurox AI Safety Engineering
@@ -669,6 +680,7 @@ Try it right now with zero wallet setup or via Apify / x402:
 - Free Instant Previews (no key/wallet):
   * B2B Leads: https://agentfuel402.ak10082247.workers.dev/v1/preview/b2b-intent-leads
   * Clean Markdown: https://agentfuel402.ak10082247.workers.dev/v1/preview/llm-clean-markdown
+- Zero-Config CLI & MCP Quickstart: `npx @kurox_real/agentfuel402`
 - 1-Click Credit Card / Free Monthly Credits via Apify Store ($0.003 - $0.015 USD):
   * Reverse Engineer Anything: https://apify.com/kuroxreal/reverse-engineer-anything
   * B2B Intent Leads: https://apify.com/kuroxreal/b2b-intent-leads-ppe
