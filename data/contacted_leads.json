@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-15T06:44:30.860856+00:00",
+  "updated_at": "2026-11-16T06:41:44.828422+00:00",
   "suppressed_emails": [
     "paulalexeev10@gmail.com",
     "serge.lopes.94@free.fr",
@@ -193,7 +193,22 @@
     "marilyntrent2020@zunestou.com",
     "hasanyelaldi9@gmail.com",
     "contact@urbankitstudio.com",
-    "jenniferhernandezy041@gmail.com"
+    "jenniferhernandezy041@gmail.com",
+    "satishjalan9163@gmail.com",
+    "srivastavaprakhar3010@gmail.com",
+    "jesleytassili@gmail.com",
+    "0xsardius@gmail.com",
+    "anataliocs@gmail.com",
+    "jeremiah.jenkins@gmail.com",
+    "contact@3ivis.com",
+    "abhid14@outlook.com",
+    "hello@shadcn-labs.com",
+    "hi@diagrid.io",
+    "hello@apify.com",
+    "anandanairaan@gmail.com",
+    "ayyoub.ag@gmail.com",
+    "miguelbatistasilva32@gmail.com",
+    "rcspence96@gmail.com"
   ],
   "contacted_users": [
     "bennyjo",
@@ -376,7 +391,22 @@
     "zovulrira1974",
     "hasanyelaldi",
     "urbankitstudio",
-    "tiobeharxi1987"
+    "tiobeharxi1987",
+    "satish-jalan",
+    "prakhar-30",
+    "jesleytassili-glitch",
+    "0xsardius",
+    "anataliocs",
+    "jjj-mo3",
+    "3ivis",
+    "abhid14",
+    "shadcn-labs",
+    "diagridio",
+    "apify",
+    "anandanair",
+    "ayyouboss0011",
+    "miguelbatistasilva",
+    "rcspence1"
   ],
   "history": [
     {
@@ -1645,6 +1675,111 @@
       "track": "track_agentfuel",
       "repo": "tiobeharxi1987/blender-ai-copilot-flow",
       "sent_date": "2026-11-15T06:44:30.860835+00:00"
+    },
+    {
+      "username": "satish-jalan",
+      "email": "satishjalan9163@gmail.com",
+      "track": "track_rugshield",
+      "repo": "SATISH-JALAN/Aven",
+      "sent_date": "2026-11-16T06:40:24.757304+00:00"
+    },
+    {
+      "username": "prakhar-30",
+      "email": "srivastavaprakhar3010@gmail.com",
+      "track": "track_rugshield",
+      "repo": "Prakhar-30/POINCARE",
+      "sent_date": "2026-11-16T06:40:29.387901+00:00"
+    },
+    {
+      "username": "jesleytassili-glitch",
+      "email": "jesleytassili@gmail.com",
+      "track": "track_rugshield",
+      "repo": "jesleytassili-glitch/b2b-quant-mcp-n8n-suite",
+      "sent_date": "2026-11-16T06:40:33.961911+00:00"
+    },
+    {
+      "username": "0xsardius",
+      "email": "0xsardius@gmail.com",
+      "track": "track_rugshield",
+      "repo": "0xSardius/solenrich",
+      "sent_date": "2026-11-16T06:40:38.561985+00:00"
+    },
+    {
+      "username": "anataliocs",
+      "email": "anataliocs@gmail.com",
+      "track": "track_rugshield",
+      "repo": "anataliocs/nestjs-typeorm-full-example",
+      "sent_date": "2026-11-16T06:40:43.202403+00:00"
+    },
+    {
+      "username": "jjj-mo3",
+      "email": "jeremiah.jenkins@gmail.com",
+      "track": "track_canaryguard",
+      "repo": "JJJ-Mo3/yardarm",
+      "sent_date": "2026-11-16T06:40:58.816123+00:00"
+    },
+    {
+      "username": "3ivis",
+      "email": "contact@3ivis.com",
+      "track": "track_canaryguard",
+      "repo": "3IVIS/buildaharness",
+      "sent_date": "2026-11-16T06:41:03.342036+00:00"
+    },
+    {
+      "username": "abhid14",
+      "email": "abhid14@outlook.com",
+      "track": "track_canaryguard",
+      "repo": "Abhid14/cx-support-agent-mastra-neo4j",
+      "sent_date": "2026-11-16T06:41:08.010436+00:00"
+    },
+    {
+      "username": "shadcn-labs",
+      "email": "hello@shadcn-labs.com",
+      "track": "track_canaryguard",
+      "repo": "shadcn-labs/agentcn",
+      "sent_date": "2026-11-16T06:41:12.645438+00:00"
+    },
+    {
+      "username": "diagridio",
+      "email": "hi@diagrid.io",
+      "track": "track_canaryguard",
+      "repo": "diagridio/catalyst-quickstarts",
+      "sent_date": "2026-11-16T06:41:17.186896+00:00"
+    },
+    {
+      "username": "apify",
+      "email": "hello@apify.com",
+      "track": "track_agentfuel",
+      "repo": "apify/crawlee-python",
+      "sent_date": "2026-11-16T06:41:26.361065+00:00"
+    },
+    {
+      "username": "anandanair",
+      "email": "anandanairaan@gmail.com",
+      "track": "track_agentfuel",
+      "repo": "anandanair/job-scraper",
+      "sent_date": "2026-11-16T06:41:30.987449+00:00"
+    },
+    {
+      "username": "ayyouboss0011",
+      "email": "ayyoub.ag@gmail.com",
+      "track": "track_agentfuel",
+      "repo": "Ayyouboss0011/SherlockMaps",
+      "sent_date": "2026-11-16T06:41:35.527375+00:00"
+    },
+    {
+      "username": "miguelbatistasilva",
+      "email": "miguelbatistasilva32@gmail.com",
+      "track": "track_agentfuel",
+      "repo": "MiguelBatistaSilva/Automatic",
+      "sent_date": "2026-11-16T06:41:40.151710+00:00"
+    },
+    {
+      "username": "rcspence1",
+      "email": "rcspence96@gmail.com",
+      "track": "track_agentfuel",
+      "repo": "rcspence1/skool-scraper",
+      "sent_date": "2026-11-16T06:41:44.828401+00:00"
     }
   ]
 }
