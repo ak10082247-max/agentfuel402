@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import worker from "./worker.js";
+import { signKuroxToken } from "./stripe_billing.js";
 
 const ENV = {
   MERCHANT_BASE_ADDRESS: "0x80E0Ae84679b7f11bE171DaADd492FBECf628cd6",
@@ -155,4 +156,246 @@ test("MCP initialize and tools/list expose all 5 AgentFuel tools", async () => {
   const rpc = await res.json();
   assert.equal(rpc.result.tools.length, 5);
   assert.ok(rpc.result.tools.some((t) => t.name === "fuel_reverse_engineer"));
+});
+
+test("Stripe Checkout creation, instant ZIP download fulfillment, Bearer API key auth & webhook signature verification", async () => {
+  const TEST_SECRET = "test_signing_secret_32_bytes_minimum_ok_12345";
+  const TEST_WEBHOOK_SECRET = "whsec_test_secret_12345";
+  const STRIPE_ENV = {
+    ...ENV,
+    STRIPE_SECRET_KEY: "sk_test_mock_key",
+    KUROX_SIGNING_SECRET: TEST_SECRET,
+    STRIPE_WEBHOOK_SECRET: TEST_WEBHOOK_SECRET,
+  };
+
+  // 1. Invalid plan / sku fail closed cleanly with 400
+  const badPlanRes = await worker.fetch(
+    new Request("https://agentfuel402.ak10082247.workers.dev/v1/checkout/api-key?plan=unknown"),
+    STRIPE_ENV,
+  );
+  assert.equal(badPlanRes.status, 400);
+
+  const badSkuRes = await worker.fetch(
+    new Request("https://agentfuel402.ak10082247.workers.dev/v1/checkout/bundle?sku=nonexistent"),
+    STRIPE_ENV,
+  );
+  assert.equal(badSkuRes.status, 400);
+
+  // 2. Checkout creation (303 redirect & format=json) + Fulfillment (/v1/stripe/success + /v1/stripe/download)
+  let capturedFormBodies = [];
+  globalThis.fetch = async (url, init = {}) => {
+    const u = String(url);
+    if (u === "https://api.stripe.com/v1/checkout/sessions" && init.method === "POST") {
+      capturedFormBodies.push(String(init.body || ""));
+      return new Response(
+        JSON.stringify({ id: "cs_test_a1b2c3d4", url: "https://checkout.stripe.com/c/pay/cs_test_a1b2c3d4" }),
+        { status: 200, headers: { "content-type": "application/json" } },
+      );
+    }
+    if (u.startsWith("https://api.stripe.com/v1/checkout/sessions/cs_test_paid_dual")) {
+      return new Response(
+        JSON.stringify({
+          id: "cs_test_paid_dual",
+          payment_status: "paid",
+          amount_total: 1500,
+          currency: "usd",
+          customer_details: { email: "buyer@example.com" },
+          metadata: { kind: "bundle", sku: "kurox-security-suite-bundle-v1" },
+          line_items: { data: [{ price: { id: "price_1Uc5uGDmOa2iw8hhUDSzdTQc" } }] },
+        }),
+        { status: 200, headers: { "content-type": "application/json" } },
+      );
+    }
+    if (u.startsWith("https://api.stripe.com/v1/checkout/sessions/cs_test_unpaid")) {
+      return new Response(
+        JSON.stringify({ id: "cs_test_unpaid", payment_status: "unpaid" }),
+        { status: 200, headers: { "content-type": "application/json" } },
+      );
+    }
+    if (u.startsWith("https://pypi.org/pypi/fastapi/json")) {
+      return new Response(
+        JSON.stringify({
+          info: {
+            version: "0.115.0",
+            summary: "FastAPI framework",
+            requires_python: ">=3.8",
+            license: "MIT",
+            author: "Tiangolo",
+            requires_dist: ["starlette>=0.40.0", "pydantic>=2.0"],
+            project_urls: { Homepage: "https://fastapi.tiangolo.com/" },
+          },
+          releases: { "0.115.0": [{ upload_time: "2025-10-01T00:00:00Z" }] },
+        }),
+        { status: 200, headers: { "content-type": "application/json" } },
+      );
+    }
+    throw new Error(`Unexpected fetch: ${u}`);
+  };
+
+  try {
+    // 2a. API Key Checkout (303 redirect)
+    const redirectRes = await worker.fetch(
+      new Request("https://agentfuel402.ak10082247.workers.dev/v1/checkout/api-key?plan=starter"),
+      STRIPE_ENV,
+    );
+    assert.equal(redirectRes.status, 303);
+    assert.equal(redirectRes.headers.get("Location"), "https://checkout.stripe.com/c/pay/cs_test_a1b2c3d4");
+    assert.match(capturedFormBodies[0], /unit_amount%5D=500/);
+
+    // 2b. Bundle Checkout (JSON)
+    const bundleJsonRes = await worker.fetch(
+      new Request("https://agentfuel402.ak10082247.workers.dev/v1/checkout/bundle?sku=dual&format=json"),
+      STRIPE_ENV,
+    );
+    assert.equal(bundleJsonRes.status, 200);
+    const bundleJson = await bundleJsonRes.json();
+    assert.equal(bundleJson.id, "cs_test_a1b2c3d4");
+    assert.match(capturedFormBodies[1], /price_1Uc5uGDmOa2iw8hhUDSzdTQc/);
+
+    // 2c. Unpaid session rejects with 402
+    const unpaidRes = await worker.fetch(
+      new Request("https://agentfuel402.ak10082247.workers.dev/v1/stripe/success?session_id=cs_test_unpaid&format=json"),
+      STRIPE_ENV,
+    );
+    assert.equal(unpaidRes.status, 402);
+
+    // 2d. Paid session mints working API key + 2 download ZIP URLs
+    const successRes = await worker.fetch(
+      new Request("https://agentfuel402.ak10082247.workers.dev/v1/stripe/success?session_id=cs_test_paid_dual&format=json"),
+      STRIPE_ENV,
+    );
+    assert.equal(successRes.status, 200);
+    const fulfillment = await successRes.json();
+    assert.equal(fulfillment.paid, true);
+    assert.ok(fulfillment.api_key.startsWith("sk_kurox_v1."));
+    assert.equal(fulfillment.downloads.length, 2);
+
+    // 2e. Download actual CanaryGuard + RugShield ZIP bytes via signed token
+    const dl1 = await worker.fetch(new Request(fulfillment.downloads[0].url), STRIPE_ENV);
+    assert.equal(dl1.status, 200);
+    assert.equal(dl1.headers.get("Content-Type"), "application/zip");
+    const zip1Buf = new Uint8Array(await dl1.arrayBuffer());
+    assert.equal(zip1Buf.byteLength, 41842);
+    assert.equal(zip1Buf[0], 0x50); // 'P'
+    assert.equal(zip1Buf[1], 0x4b); // 'K'
+
+    const dl2 = await worker.fetch(new Request(fulfillment.downloads[1].url), STRIPE_ENV);
+    assert.equal(dl2.status, 200);
+    const zip2Buf = new Uint8Array(await dl2.arrayBuffer());
+    assert.equal(zip2Buf.byteLength, 42358);
+    assert.equal(zip2Buf[0], 0x50);
+    assert.equal(zip2Buf[1], 0x4b);
+
+    // 2f. Tampered / missing download tokens fail closed
+    const badDl = await worker.fetch(
+      new Request("https://agentfuel402.ak10082247.workers.dev/v1/stripe/download?token=dl_v1.tampered.sig"),
+      STRIPE_ENV,
+    );
+    assert.equal(badDl.status, 403);
+    const missingDl = await worker.fetch(
+      new Request("https://agentfuel402.ak10082247.workers.dev/v1/stripe/download"),
+      STRIPE_ENV,
+    );
+    assert.equal(missingDl.status, 400);
+
+    // 3. Bearer API key authenticates both HTTP /v1/fuel/* and MCP tools/call without x402
+    const httpFuelRes = await worker.fetch(
+      new Request("https://agentfuel402.ak10082247.workers.dev/v1/fuel/sdk-live-spec?package=fastapi&ecosystem=pypi", {
+        headers: { Authorization: `Bearer ${fulfillment.api_key}` },
+      }),
+      STRIPE_ENV,
+    );
+    assert.equal(httpFuelRes.status, 200);
+    assert.equal(httpFuelRes.headers.get("X-Kurox-Auth"), "bearer-api-key");
+    const httpFuelBody = await httpFuelRes.json();
+    assert.equal(httpFuelBody.package, "fastapi");
+
+    const mcpFuelRes = await worker.fetch(
+      new Request("https://agentfuel402.ak10082247.workers.dev/mcp", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-API-Key": fulfillment.api_key,
+        },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          id: 99,
+          method: "tools/call",
+          params: { name: "fuel_sdk_spec", arguments: { package: "fastapi", ecosystem: "pypi" } },
+        }),
+      }),
+      STRIPE_ENV,
+    );
+    assert.equal(mcpFuelRes.status, 200);
+    const mcpFuelBody = await mcpFuelRes.json();
+    assert.equal(mcpFuelBody.result.isError, false);
+    assert.equal(mcpFuelBody.result._meta["kurox/auth"].mode, "bearer-api-key");
+
+    // 4. Tampered & expired Bearer keys fail closed (401), missing secret fails closed (503)
+    const tamperedHttpRes = await worker.fetch(
+      new Request("https://agentfuel402.ak10082247.workers.dev/v1/fuel/sdk-live-spec?package=fastapi", {
+        headers: { Authorization: `${`Bearer ${fulfillment.api_key}`}tamper` },
+      }),
+      STRIPE_ENV,
+    );
+    assert.equal(tamperedHttpRes.status, 401);
+
+    const expiredKey = await signKuroxToken(
+      { typ: "api_key", sid: "cs_exp", sku: "kurox-api-starter-30d", tier: "starter", iat: 100, exp: 200 },
+      TEST_SECRET,
+      "sk_kurox_v1",
+    );
+    const expiredMcpRes = await worker.fetch(
+      new Request("https://agentfuel402.ak10082247.workers.dev/mcp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${expiredKey}` },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          id: 100,
+          method: "tools/call",
+          params: { name: "fuel_sdk_spec", arguments: { package: "fastapi" } },
+        }),
+      }),
+      STRIPE_ENV,
+    );
+    assert.equal(expiredMcpRes.status, 401);
+
+    const noSecretRes = await worker.fetch(
+      new Request("https://agentfuel402.ak10082247.workers.dev/v1/fuel/sdk-live-spec?package=fastapi", {
+        headers: { Authorization: `Bearer ${fulfillment.api_key}` },
+      }),
+      ENV,
+    );
+    assert.equal(noSecretRes.status, 503);
+
+    // 5. Stripe Webhook HMAC-SHA256 Verification
+    const whBody = JSON.stringify({ id: "evt_1", type: "checkout.session.completed" });
+    const ts = Math.floor(Date.now() / 1000);
+    const cryptoNode = await import("node:crypto");
+    const sigHex = cryptoNode.createHmac("sha256", TEST_WEBHOOK_SECRET).update(`${ts}.${whBody}`).digest("hex");
+
+    const goodWh = await worker.fetch(
+      new Request("https://agentfuel402.ak10082247.workers.dev/v1/stripe/webhook", {
+        method: "POST",
+        headers: { "Stripe-Signature": `t=${ts},v1=${sigHex}` },
+        body: whBody,
+      }),
+      STRIPE_ENV,
+    );
+    assert.equal(goodWh.status, 200);
+    const goodWhJson = await goodWh.json();
+    assert.equal(goodWhJson.received, true);
+
+    const badWh = await worker.fetch(
+      new Request("https://agentfuel402.ak10082247.workers.dev/v1/stripe/webhook", {
+        method: "POST",
+        headers: { "Stripe-Signature": `t=${ts},v1=${"0".repeat(64)}` },
+        body: whBody,
+      }),
+      STRIPE_ENV,
+    );
+    assert.equal(badWh.status, 400);
+  } finally {
+    globalThis.fetch = ORIG_FETCH;
+  }
 });

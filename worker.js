@@ -1,8 +1,21 @@
 /**
  * AgentFuel402 — B2B, E-Commerce & Developer Consumable Data Factory
  * Zero-Cold-Start Cloudflare Edge Worker
- * Multi-Chain x402 Protocol V2 (Base Mainnet + Solana Mainnet) + MCP JSON-RPC 2.0
+ * Multi-Chain x402 Protocol V2 (Base Mainnet + Solana Mainnet) + MCP JSON-RPC 2.0 + Stripe Instant Delivery
  */
+
+import { BUNDLE_ZIPS } from "./bundles.js";
+import {
+  API_KEY_PLANS,
+  BUNDLE_SKUS,
+  authenticateBearerApiKey,
+  createStripeCheckoutSession,
+  verifyCheckoutSessionAndMint,
+  verifyKuroxToken,
+  decodeBase64ToBytes,
+  renderFulfillmentHtml,
+  verifyStripeWebhookSignature,
+} from "./stripe_billing.js";
 
 const MERCHANT_BASE = "0x80E0Ae84679b7f11bE171DaADd492FBECf628cd6";
 const BASE_USDC = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
@@ -152,8 +165,8 @@ function corsHeaders(req) {
   return {
     "Access-Control-Allow-Origin": origin,
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS, HEAD",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization, PAYMENT-SIGNATURE, X-PAYMENT, X-Payment-Signature, X-Fuel-Session, Mcp-Session-Id",
-    "Access-Control-Expose-Headers": "PAYMENT-REQUIRED, PAYMENT-RESPONSE, X-Payment-Required, X-Payment-Response, X-402-Version, X-402-Amount, X-402-Payment-To, X-402-Network, X-402-Asset, X-Fuel-Calls-Remaining, X-Edge-Cache, Server-Timing",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization, X-API-Key, PAYMENT-SIGNATURE, X-PAYMENT, X-Payment-Signature, X-Fuel-Session, Mcp-Session-Id",
+    "Access-Control-Expose-Headers": "PAYMENT-REQUIRED, PAYMENT-RESPONSE, X-Payment-Required, X-Payment-Response, X-402-Version, X-402-Amount, X-402-Payment-To, X-402-Network, X-402-Asset, X-Fuel-Calls-Remaining, X-Edge-Cache, Server-Timing, X-Kurox-Auth, X-Kurox-Tier",
     "Access-Control-Max-Age": "86400"
   };
 }
@@ -1484,6 +1497,33 @@ async function handleWorkerFetch(req, env, ctx) {
         gasless_sponsorship: "100% sponsored ($0 ETH / $0 SOL required)",
         endpoints,
         credit_card_apify_store: "https://apify.com/kuroxreal",
+        credit_card_stripe_checkout: {
+          api_key_plans: {
+            starter: {
+              price: "$5 USD / 30 days",
+              checkout_url: `${url.origin}/v1/checkout/api-key?plan=starter`
+            },
+            pro: {
+              price: "$19 USD / 90 days",
+              checkout_url: `${url.origin}/v1/checkout/api-key?plan=pro`
+            }
+          },
+          instant_source_bundles: {
+            canaryguard: {
+              price: "$9 USD (ZIP + 30d API Key)",
+              checkout_url: `${url.origin}/v1/checkout/bundle?sku=canaryguard`
+            },
+            rugshield: {
+              price: "$9 USD (ZIP + 30d API Key)",
+              checkout_url: `${url.origin}/v1/checkout/bundle?sku=rugshield`
+            },
+            dual: {
+              price: "$15 USD (Both ZIPs + 60d API Key)",
+              checkout_url: `${url.origin}/v1/checkout/bundle?sku=dual`
+            }
+          },
+          fulfillment: "Automated instant ZIP download + Bearer API key (sk_kurox_v1.*) at /v1/stripe/success"
+        },
         free_previews: [
           "/v1/preview/leads",
           "/v1/preview/ecom-price-stock",
@@ -1528,16 +1568,31 @@ async function handleWorkerFetch(req, env, ctx) {
   <div>
     <span class="badge">Cloudflare Edge</span>
     <span class="badge">x402 V2 (Base + Solana USDC)</span>
+    <span class="badge">Stripe Instant API Keys &amp; ZIPs</span>
     <span class="badge">Apify Store (Credit Card)</span>
     <span class="badge">Glama Listed MCP (5 Tools)</span>
   </div>
 
   <div class="cta-bar">
-    <a class="btn btn-green" href="https://apify.com/kuroxreal" target="_blank" rel="noopener">💳 Run by Credit Card on Apify (Free Monthly Credits)</a>
-    <a class="btn btn-blue" href="https://www.npmjs.com/package/@kurox_real/agentfuel402" target="_blank" rel="noopener">📦 npm CLI / MCP (@kurox_real/agentfuel402)</a>
-    <a class="btn" href="https://glama.ai/mcp/servers/ak10082247-max/agentfuel402" target="_blank" rel="noopener">🧩 Glama MCP Listing</a>
-    <a class="btn" href="https://ak10082247-max.github.io/" target="_blank" rel="noopener">🛡️ Big 3 Directory</a>
-    <a class="btn" href="mailto:armkhan18@gmail.com?subject=AgentFuel402%20Custom%20Feed%20or%20Audit">📧 Email-Only Custom Work ($49-$250)</a>
+    <a class="btn btn-green" href="/v1/checkout/api-key?plan=starter">🔑 Buy API Key ($5 Starter / 30d)</a>
+    <a class="btn btn-blue" href="/v1/checkout/api-key?plan=pro">🚀 Buy Pro API Key ($19 / 90d)</a>
+    <a class="btn" href="/v1/checkout/bundle?sku=dual">📦 Dual Security ZIP Bundle ($15 Instant)</a>
+    <a class="btn" href="https://apify.com/kuroxreal" target="_blank" rel="noopener">💳 Apify Store</a>
+    <a class="btn" href="https://www.npmjs.com/package/@kurox_real/agentfuel402" target="_blank" rel="noopener">📦 npm CLI / MCP</a>
+    <a class="btn" href="https://ak10082247-max.github.io/products.html" target="_blank" rel="noopener">🛡️ All Big 3 Products</a>
+    <a class="btn" href="mailto:armkhan18@gmail.com?subject=AgentFuel402%20Custom%20Feed%20or%20Audit">📧 Custom Work ($49-$250)</a>
+  </div>
+
+  <div class="card" id="stripe-instant">
+    <h3>💳 Instant Credit Card Access (No Crypto Wallet Required)</h3>
+    <p style="color:#94a3b8;font-size:0.9rem;">Pay with card via Stripe Checkout and receive your Bearer API key (<code>Authorization: Bearer sk_kurox_v1...</code>) or source-code <code>.zip</code> download link <strong>immediately</strong> upon redirect.</p>
+    <div class="cta-bar" style="margin:0.75rem 0;">
+      <a class="btn btn-green" href="/v1/checkout/api-key?plan=starter">Starter API Key ($5 / 30d)</a>
+      <a class="btn btn-blue" href="/v1/checkout/api-key?plan=pro">Pro API Key ($19 / 90d)</a>
+      <a class="btn" href="/v1/checkout/bundle?sku=canaryguard">CanaryGuard Proxy ZIP ($9)</a>
+      <a class="btn" href="/v1/checkout/bundle?sku=rugshield">RugShield Scanner ZIP ($9)</a>
+      <a class="btn btn-green" href="/v1/checkout/bundle?sku=dual">Dual Security Bundle ($15)</a>
+    </div>
   </div>
 
   <div class="card">
@@ -1783,6 +1838,196 @@ Endpoints:
       return new Response(JSON.stringify({ error: "Unknown preview feed" }), { status: 404, headers: { ...cors, "Content-Type": "application/json" } });
     }
 
+    // -------------------------------------------------------------------------
+    // STRIPE INSTANT CHECKOUT, FULFILLMENT, DOWNLOAD & WEBHOOK ROUTES
+    // -------------------------------------------------------------------------
+    if (path === "/v1/checkout/api-key") {
+      if (req.method !== "GET" && req.method !== "POST") {
+        return new Response(JSON.stringify({ error: "Method not allowed" }), { status: 405, headers: { ...cors, "Content-Type": "application/json" } });
+      }
+      let bodyParams = {};
+      if (req.method === "POST") {
+        try { bodyParams = await req.json(); } catch { bodyParams = {}; }
+      }
+      const planKey = String(url.searchParams.get("plan") || bodyParams.plan || "starter").toLowerCase();
+      const planCfg = API_KEY_PLANS[planKey];
+      if (!planCfg) {
+        return new Response(JSON.stringify({ error: "invalid_plan", available: Object.keys(API_KEY_PLANS) }), {
+          status: 400,
+          headers: { ...cors, "Content-Type": "application/json" }
+        });
+      }
+      try {
+        const session = await createStripeCheckoutSession({
+          successUrl: `${url.origin}/v1/stripe/success?session_id={CHECKOUT_SESSION_ID}`,
+          cancelUrl: `${url.origin}/?canceled=1`,
+          lineItems: [{
+            price_data: {
+              currency: "usd",
+              unit_amount: planCfg.amountCents,
+              product_data: {
+                name: planCfg.name,
+                description: planCfg.description
+              }
+            },
+            quantity: 1
+          }],
+          metadata: { kind: "api_key", sku: planCfg.sku, plan: planCfg.id }
+        }, env);
+
+        if (req.method === "POST" || url.searchParams.get("format") === "json") {
+          return new Response(JSON.stringify({
+            id: session.id,
+            url: session.url,
+            plan: planCfg.id,
+            sku: planCfg.sku,
+            amount_cents: planCfg.amountCents
+          }, null, 2), { status: 200, headers: { ...cors, "Content-Type": "application/json" } });
+        }
+        return new Response(null, { status: 303, headers: { ...cors, Location: session.url } });
+      } catch (err) {
+        return new Response(JSON.stringify({ error: err.message, charged: false }), {
+          status: err.httpStatus || 502,
+          headers: { ...cors, "Content-Type": "application/json" }
+        });
+      }
+    }
+
+    if (path === "/v1/checkout/bundle") {
+      if (req.method !== "GET" && req.method !== "POST") {
+        return new Response(JSON.stringify({ error: "Method not allowed" }), { status: 405, headers: { ...cors, "Content-Type": "application/json" } });
+      }
+      let bodyParams = {};
+      if (req.method === "POST") {
+        try { bodyParams = await req.json(); } catch { bodyParams = {}; }
+      }
+      const rawSku = String(url.searchParams.get("sku") || bodyParams.sku || "dual").toLowerCase();
+      const aliasMap = {
+        "canaryguard": BUNDLE_SKUS.canaryguard,
+        "canaryguard-firewall-proxy-v1": BUNDLE_SKUS.canaryguard,
+        "rugshield": BUNDLE_SKUS.rugshield,
+        "rugshield-pretrade-scanner-v1": BUNDLE_SKUS.rugshield,
+        "dual": BUNDLE_SKUS.dual,
+        "kurox-security-suite-bundle-v1": BUNDLE_SKUS.dual,
+      };
+      const bundleCfg = aliasMap[rawSku];
+      if (!bundleCfg) {
+        return new Response(JSON.stringify({ error: "invalid_sku", available: Object.keys(BUNDLE_SKUS) }), {
+          status: 400,
+          headers: { ...cors, "Content-Type": "application/json" }
+        });
+      }
+      try {
+        const session = await createStripeCheckoutSession({
+          successUrl: `${url.origin}/v1/stripe/success?session_id={CHECKOUT_SESSION_ID}`,
+          cancelUrl: "https://ak10082247-max.github.io/products.html?canceled=1",
+          lineItems: [{ price: bundleCfg.priceId, quantity: 1 }],
+          metadata: { kind: "bundle", sku: bundleCfg.sku }
+        }, env);
+
+        if (req.method === "POST" || url.searchParams.get("format") === "json") {
+          return new Response(JSON.stringify({
+            id: session.id,
+            url: session.url,
+            sku: bundleCfg.sku,
+            name: bundleCfg.name,
+            price: bundleCfg.priceDisplay
+          }, null, 2), { status: 200, headers: { ...cors, "Content-Type": "application/json" } });
+        }
+        return new Response(null, { status: 303, headers: { ...cors, Location: session.url } });
+      } catch (err) {
+        return new Response(JSON.stringify({ error: err.message, charged: false }), {
+          status: err.httpStatus || 502,
+          headers: { ...cors, "Content-Type": "application/json" }
+        });
+      }
+    }
+
+    if (path === "/v1/stripe/success") {
+      const sessionId = url.searchParams.get("session_id") || "";
+      try {
+        const fulfillment = await verifyCheckoutSessionAndMint(sessionId, url.origin, env);
+        const accept = req.headers.get("Accept") || "";
+        if (url.searchParams.get("format") === "json" || (accept.includes("application/json") && !accept.includes("text/html"))) {
+          return new Response(JSON.stringify(fulfillment, null, 2), {
+            status: 200,
+            headers: { ...cors, "Content-Type": "application/json", "Cache-Control": "no-store" }
+          });
+        }
+        return new Response(renderFulfillmentHtml(fulfillment, url.origin), {
+          status: 200,
+          headers: { ...cors, "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" }
+        });
+      } catch (err) {
+        return new Response(JSON.stringify({ error: err.message, paid: false }, null, 2), {
+          status: err.httpStatus || 500,
+          headers: { ...cors, "Content-Type": "application/json", "Cache-Control": "no-store" }
+        });
+      }
+    }
+
+    if (path === "/v1/stripe/download") {
+      if (!env?.KUROX_SIGNING_SECRET) {
+        return new Response(JSON.stringify({ error: "download_verification_unavailable" }), {
+          status: 503,
+          headers: { ...cors, "Content-Type": "application/json" }
+        });
+      }
+      const token = url.searchParams.get("token") || "";
+      if (!token) {
+        return new Response(JSON.stringify({ error: "missing_token" }), {
+          status: 400,
+          headers: { ...cors, "Content-Type": "application/json" }
+        });
+      }
+      const payload = await verifyKuroxToken(token, env.KUROX_SIGNING_SECRET, "dl_v1");
+      if (!payload || payload.typ !== "download" || !BUNDLE_ZIPS[payload.bundle]) {
+        return new Response(JSON.stringify({ error: "invalid_or_expired_download_token" }), {
+          status: 403,
+          headers: { ...cors, "Content-Type": "application/json", "Cache-Control": "no-store" }
+        });
+      }
+      const zip = BUNDLE_ZIPS[payload.bundle];
+      const bytes = decodeBase64ToBytes(zip.base64);
+      return new Response(bytes, {
+        status: 200,
+        headers: {
+          ...cors,
+          "Content-Type": "application/zip",
+          "Content-Disposition": `attachment; filename="${zip.filename}"`,
+          "Content-Length": String(bytes.byteLength),
+          "Cache-Control": "no-store"
+        }
+      });
+    }
+
+    if (path === "/v1/stripe/webhook") {
+      if (req.method !== "POST") {
+        return new Response(JSON.stringify({ error: "Method not allowed" }), { status: 405, headers: { ...cors, "Content-Type": "application/json" } });
+      }
+      if (!env?.STRIPE_WEBHOOK_SECRET) {
+        return new Response(JSON.stringify({ error: "webhook_secret_not_configured" }), {
+          status: 503,
+          headers: { ...cors, "Content-Type": "application/json" }
+        });
+      }
+      const rawBody = await req.text();
+      const sigHeader = req.headers.get("Stripe-Signature") || req.headers.get("stripe-signature") || "";
+      const validSig = await verifyStripeWebhookSignature(rawBody, sigHeader, env.STRIPE_WEBHOOK_SECRET);
+      if (!validSig) {
+        return new Response(JSON.stringify({ error: "invalid_stripe_signature" }), {
+          status: 400,
+          headers: { ...cors, "Content-Type": "application/json" }
+        });
+      }
+      let event = {};
+      try { event = JSON.parse(rawBody); } catch { event = {}; }
+      return new Response(JSON.stringify({ received: true, type: event.type || "unknown" }), {
+        status: 200,
+        headers: { ...cors, "Content-Type": "application/json" }
+      });
+    }
+
     // $5.00 Agency Pass: disabled on stateless edge isolates (never settle $5 for volatile memory)
     if (path === "/v1/pass/prepay") {
       return new Response(JSON.stringify({
@@ -1879,24 +2124,35 @@ Endpoints:
           return new Response(JSON.stringify({ jsonrpc: "2.0", id, error: { code: -32601, message: `Tool '${toolName}' not found` } }), { status: 200, headers: { ...cors, "Content-Type": "application/json" } });
         }
 
-        const paymentHdr = req.headers.get("PAYMENT-SIGNATURE") || req.headers.get("X-PAYMENT") || params?._meta?.["x402/payment"];
-
-        if (!paymentHdr) {
-          return mcpPaymentRequiredResponse(
-            cors,
+        const bearerAuth = await authenticateBearerApiKey(req, env);
+        if (bearerAuth.present && !bearerAuth.valid) {
+          return new Response(JSON.stringify({
+            jsonrpc: "2.0",
             id,
-            req,
-            toolRoute,
-            "Payment required: attach x402 payment in params._meta['x402/payment'] or PAYMENT-SIGNATURE header (or use free REST /v1/preview/* routes)."
-          );
+            error: { code: -32001, message: bearerAuth.error }
+          }), { status: bearerAuth.status || 401, headers: { ...cors, "Content-Type": "application/json" } });
         }
 
-        // Step 1: Verify payment authorization BEFORE tool execution
+        // Step 1: Verify payment authorization BEFORE tool execution (or bypass via verified Kurox Bearer API key)
         let paymentPrep = null;
-        try {
-          paymentPrep = await validateAndVerifyPayAI(req, toolRoute, paymentHdr);
-        } catch (verifyErr) {
-          return mcpPaymentRequiredResponse(cors, id, req, toolRoute, `Payment validation rejected: ${verifyErr.message}`);
+        if (!bearerAuth.valid) {
+          const paymentHdr = req.headers.get("PAYMENT-SIGNATURE") || req.headers.get("X-PAYMENT") || params?._meta?.["x402/payment"];
+
+          if (!paymentHdr) {
+            return mcpPaymentRequiredResponse(
+              cors,
+              id,
+              req,
+              toolRoute,
+              "Payment required: attach x402 payment in params._meta['x402/payment'] or PAYMENT-SIGNATURE header, or pass Authorization: Bearer sk_kurox_v1.* (or use free REST /v1/preview/* routes)."
+            );
+          }
+
+          try {
+            paymentPrep = await validateAndVerifyPayAI(req, toolRoute, paymentHdr);
+          } catch (verifyErr) {
+            return mcpPaymentRequiredResponse(cors, id, req, toolRoute, `Payment validation rejected: ${verifyErr.message}`);
+          }
         }
 
         // Step 2: Execute tool cleanly (never settle if target fails)
@@ -1930,6 +2186,9 @@ Endpoints:
 
         // Step 3: Settle verified payment AFTER successful execution
         let meta = {};
+        if (bearerAuth.valid) {
+          meta["kurox/auth"] = { mode: "bearer-api-key", tier: bearerAuth.payload.tier, sid: bearerAuth.payload.sid };
+        }
         if (paymentPrep) {
           try {
             const receipt = await settlePayAI(paymentPrep);
@@ -1959,20 +2218,34 @@ Endpoints:
     if (ROUTE_CONFIGS[path]) {
       const cfg = ROUTE_CONFIGS[path];
 
-      // Check x402 Payment Header
-      const paymentHdr = req.headers.get("PAYMENT-SIGNATURE") || req.headers.get("X-PAYMENT") || req.headers.get("payment-signature");
-
-      if (!paymentHdr) {
-        return build402Challenge(req, path);
+      const bearerAuth = await authenticateBearerApiKey(req, env);
+      if (bearerAuth.present && !bearerAuth.valid) {
+        return new Response(JSON.stringify({
+          status: "error",
+          error: "invalid_api_key",
+          charged: false,
+          message: bearerAuth.error
+        }, null, 2), {
+          status: bearerAuth.status || 401,
+          headers: { ...cors, "Content-Type": "application/json" }
+        });
       }
 
-      // Step 1: Pre-Verify Payment Authorization via PayAI Facilitator (DO NOT SETTLE YET)
+      // Step 1: Pre-Verify Payment Authorization via PayAI Facilitator (or bypass via verified Kurox Bearer API key)
       let paymentPrep = null;
-      try {
-        paymentPrep = await validateAndVerifyPayAI(req, path, paymentHdr);
-      } catch (verifyErr) {
-        // Negative test proof: invalid or dummy payment headers return HTTP 402 with details
-        return build402Challenge(req, path, `Payment validation rejected: ${verifyErr.message}`);
+      if (!bearerAuth.valid) {
+        const paymentHdr = req.headers.get("PAYMENT-SIGNATURE") || req.headers.get("X-PAYMENT") || req.headers.get("payment-signature");
+
+        if (!paymentHdr) {
+          return build402Challenge(req, path);
+        }
+
+        try {
+          paymentPrep = await validateAndVerifyPayAI(req, path, paymentHdr);
+        } catch (verifyErr) {
+          // Negative test proof: invalid or dummy payment headers return HTTP 402 with details
+          return build402Challenge(req, path, `Payment validation rejected: ${verifyErr.message}`);
+        }
       }
 
       // Extract Input Parameters
@@ -2052,6 +2325,11 @@ Endpoints:
         "Cache-Control": "no-store, max-age=10",
         "X-Fuel-Freshness": "live"
       };
+
+      if (bearerAuth.valid) {
+        outHeaders["X-Kurox-Auth"] = "bearer-api-key";
+        outHeaders["X-Kurox-Tier"] = bearerAuth.payload.tier || "api_key";
+      }
 
       if (receipt) {
         outHeaders["PAYMENT-RESPONSE"] = btoa(JSON.stringify(receipt));
