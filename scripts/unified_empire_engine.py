@@ -613,7 +613,7 @@ def craft_pitch(lead):
         subject = f"Dual-Chain Base & Solana Honeypot + Pre-Trade Scan for {repo} (RugShield 402)"
         text = f"""Hi {name},
 
-Saw your recent commits on {repo}. If you're building automated trading bots, swap routers, or sniper tools on Solana or Base Mainnet, unverified tokens, freeze/mint authorities, and stealth fee-on-transfer honeypots are a constant risk.
+Saw your recent commits on {repo}. If you're building automated trading bots, swap routers, or DeFi execution tools on Solana or Base Mainnet, unverified tokens, freeze/mint authorities, and stealth fee-on-transfer honeypots are a constant risk.
 
 RugShield 402 is an autonomous dual-chain DEX pre-trade simulation & safety engine:
 1. Base EVM Execution Simulation: Direct on-chain state-override buy & sell simulation reporting exact fee-on-transfer taxes (bps) and revert traps
@@ -621,15 +621,18 @@ RugShield 402 is an autonomous dual-chain DEX pre-trade simulation & safety engi
 3. Liquidity Lock & Pool Depth Analysis: Aerodrome (Slipstream), Uniswap v3, Raydium & Orca pair verification
 4. Sybil Cluster & Dev Concentration Scoring before your bot executes a swap
 
-Integrate directly in seconds (free preview -> credit card via Apify -> or Base/Solana x402 USDC):
+Integrate directly in seconds (free preview -> instant card API key or ZIP -> Base/Solana x402 USDC):
 - Free Live Pre-Trade Check (`POST /v1/scan/preview`): https://rugshield-402.onrender.com/v1/scan/preview
+- Instant Card Checkout ($9 Self-Hosted TypeScript Source ZIP + 30-day API Key): https://agentfuel402.ak10082247.workers.dev/v1/checkout/bundle?sku=rugshield
+- Dual Security Suite ($15 CanaryGuard + RugShield ZIPs + 60-day API Key): https://agentfuel402.ak10082247.workers.dev/v1/checkout/bundle?sku=dual
+- Starter API Key ($5 / 30d Bearer access — zero crypto wallet needed): https://agentfuel402.ak10082247.workers.dev/v1/checkout/api-key?plan=starter
 - 1-Click Fiat Run on Apify Store ($0.005/scan, free credits available): https://apify.com/kuroxreal/rugshield-402
 - Open-Source MCP Server (Claude Desktop & Cursor): https://rugshield-402.onrender.com/mcp (tools: `rugshield_pre_swap_scan`, `check_honeypot`, `analyze_liquidity`)
-- npm SDKs & CLI: `npx @kurox_real/x402-sniper-bot`, `@kurox_real/rugshield-client`, `@kurox_real/solana-agent-kit-guard`
+- npm SDKs & CLI: `@kurox_real/rugshield-client`, `@kurox_real/agentkit-rugshield-402`, `@kurox_real/solana-agent-kit-guard`
 - Dual-Chain x402 API ($0.010 USDC on Base & Solana): https://rugshield-402.onrender.com/v1/scan
 
-Hope this helps your bot avoid bad fills across Solana and Base!
-Need a self-hosted commercial scanner license ($39-$89) or custom pre-trade security integration? Reply directly to this email (async email/text delivery only — no calls or meetings required).
+All products & instant downloads: https://ak10082247-max.github.io/products.html
+Need a custom pre-trade integration? Reply directly to this email (async email/text delivery only — no calls or meetings required).
 
 Best regards,
 Kurox DEX Security Team
@@ -648,15 +651,18 @@ CanaryGuard 402 is a deterministic security firewall and honeypot scrubber built
 3. Cryptographic tamper-evident inspection receipts with risk scores (0-100)
 4. Contextual scoring for extracted crypto addresses and wallet-drain commands
 
-Connect it in seconds (free test endpoint -> credit card via Apify -> or Base/Solana x402 USDC):
+Connect it in seconds (free test endpoint -> instant card API key or ZIP -> Base/Solana x402 USDC):
 - Free Live Sandbox (`POST /v1/sanitize/preview`): https://canaryguard-402.onrender.com/v1/sanitize/preview
+- Instant Card Checkout ($9 Self-Hosted Proxy ZIP + 30-day API Key): https://agentfuel402.ak10082247.workers.dev/v1/checkout/bundle?sku=canaryguard
+- Dual Security Suite ($15 CanaryGuard + RugShield ZIPs + 60-day API Key): https://agentfuel402.ak10082247.workers.dev/v1/checkout/bundle?sku=dual
+- Starter API Key ($5 / 30d Bearer access — zero crypto wallet needed): https://agentfuel402.ak10082247.workers.dev/v1/checkout/api-key?plan=starter
 - 1-Click Fiat Run on Apify Store ($0.003/check, free credits available): https://apify.com/kuroxreal/canaryguard-402
 - Claude Desktop & Cursor Remote MCP: https://canaryguard-402.onrender.com/mcp
 - npm SDKs: `@kurox_real/plugin-canaryguard`, `@kurox_real/agentkit-canaryguard-402`, `@kurox_real/canaryguard-client`, `elizaos-plugin-kurox-sentinel`
 - Open-Source Repo: https://github.com/ak10082247-max/canaryguard-402
 
-Keep your agents safe from prompt injection!
-Need a self-hosted commercial firewall proxy ($39-$89) or custom MCP security setup? Reply directly to this email (async email/text delivery only — no calls or meetings required).
+All products & instant downloads: https://ak10082247-max.github.io/products.html
+Need a bespoke MCP security setup? Reply directly to this email (async email/text delivery only — no calls or meetings required).
 
 Best regards,
 Kurox AI Safety Engineering
@@ -676,10 +682,13 @@ We launched AgentFuel402 — a zero-cold-start consumable data factory built spe
 4. Reverse Engineer Anything (REA): Discovers Next.js hydration APIs, hidden REST/GraphQL routes, and auto-generates OpenAPI 3.1 specs + client code without scraping
 5. Zero-Charge Resilience: We never charge on 404s or dead links under our Verify -> Fetch -> Settle guarantee
 
-Try it right now with zero wallet setup or via Apify / x402:
+Try it right now with zero wallet setup, instant Stripe API key, Apify, or x402:
 - Free Instant Previews (no key/wallet):
-  * B2B Leads: https://agentfuel402.ak10082247.workers.dev/v1/preview/b2b-intent-leads
+  * B2B Leads: https://agentfuel402.ak10082247.workers.dev/v1/preview/leads
   * Clean Markdown: https://agentfuel402.ak10082247.workers.dev/v1/preview/llm-clean-markdown
+- Instant Credit Card API Keys (immediate Bearer key — no crypto wallet needed):
+  * Starter Key ($5 / 30 days): https://agentfuel402.ak10082247.workers.dev/v1/checkout/api-key?plan=starter
+  * Pro Key ($19 / 90 days): https://agentfuel402.ak10082247.workers.dev/v1/checkout/api-key?plan=pro
 - Zero-Config CLI & MCP Quickstart: `npx @kurox_real/agentfuel402`
 - 1-Click Credit Card / Free Monthly Credits via Apify Store ($0.003 - $0.015 USD):
   * Reverse Engineer Anything: https://apify.com/kuroxreal/reverse-engineer-anything
@@ -689,7 +698,8 @@ Try it right now with zero wallet setup or via Apify / x402:
 - Remote MCP Endpoint (Claude Desktop & Cursor): https://agentfuel402.ak10082247.workers.dev/mcp (Registry: `io.github.ak10082247-max/agentfuel402`)
 - Dual-Chain Pay-per-Call x402 V2 ($0.005-$0.020 USDC on Base & Solana, gas-sponsored): https://agentfuel402.ak10082247.workers.dev
 
-Need a bespoke B2B dataset, site reverse-engineering, or custom Apify actor ($49-$250 via Apify or Base/Solana USDC)? Reply to this email directly — async email/text delivery only, zero calls required.
+Storefront & self-hosted source packs ($9-$15 instant ZIPs): https://ak10082247-max.github.io/products.html
+Need a bespoke B2B dataset or custom Apify actor ($49-$250 async)? Reply to this email directly — zero calls required.
 
 Cheers and happy building,
 Kurox Real / AgentFuel402
