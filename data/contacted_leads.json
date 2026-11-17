@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-17T03:58:47.981697+00:00",
+  "updated_at": "2026-11-17T16:56:33.778672+00:00",
   "suppressed_emails": [
     "paulalexeev10@gmail.com",
     "serge.lopes.94@free.fr",
@@ -223,7 +223,13 @@
     "jeremylongshore@gmail.com",
     "mar.kostrz@onet.pl",
     "yrc602@gmail.com",
-    "soumyadeeproychowdhury101@gmail.com"
+    "soumyadeeproychowdhury101@gmail.com",
+    "dazzanova1@gmail.com",
+    "4n0nym0u5.cyber@gmail.com",
+    "info@rbjglobal.com",
+    "mr.aungthiha@gmail.com",
+    "ericy.song@mail.utoronto.ca",
+    "hello@gros.farm"
   ],
   "contacted_users": [
     "bennyjo",
@@ -436,7 +442,13 @@
     "jeremylongshore",
     "marekk13",
     "ryq99",
-    "soumyadeep-rc"
+    "soumyadeep-rc",
+    "dazzanova",
+    "mikeminer",
+    "rbjglobal",
+    "aungthiha",
+    "chardxbt",
+    "gros-farm"
   ],
   "history": [
     {
@@ -1915,6 +1927,48 @@
       "track": "track_agentfuel",
       "repo": "soumyadeep-rc/RAG-CRAW",
       "sent_date": "2026-11-17T03:58:47.981687+00:00"
+    },
+    {
+      "username": "dazzanova",
+      "email": "dazzanova1@gmail.com",
+      "track": "track_rugshield",
+      "repo": "Dazzanova/Jaegr",
+      "sent_date": "2026-11-17T16:54:35.289567+00:00"
+    },
+    {
+      "username": "mikeminer",
+      "email": "4n0nym0u5.cyber@gmail.com",
+      "track": "track_rugshield",
+      "repo": "mikeminer/OnlyFridge",
+      "sent_date": "2026-11-17T16:54:53.795559+00:00"
+    },
+    {
+      "username": "rbjglobal",
+      "email": "info@rbjglobal.com",
+      "track": "track_canaryguard",
+      "repo": "RBJGlobal/TradingAgentsLab-Pro",
+      "sent_date": "2026-11-17T16:55:18.604745+00:00"
+    },
+    {
+      "username": "aungthiha",
+      "email": "mr.aungthiha@gmail.com",
+      "track": "track_canaryguard",
+      "repo": "AungThiha/AndroidDevelopmentWorkflow",
+      "sent_date": "2026-11-17T16:55:44.174899+00:00"
+    },
+    {
+      "username": "chardxbt",
+      "email": "ericy.song@mail.utoronto.ca",
+      "track": "track_agentfuel",
+      "repo": "ChardXBT/CS2-Marketplace-Trading-System",
+      "sent_date": "2026-11-17T16:56:15.325157+00:00"
+    },
+    {
+      "username": "gros-farm",
+      "email": "hello@gros.farm",
+      "track": "track_agentfuel",
+      "repo": "Gros-farm/Price_Monitoring",
+      "sent_date": "2026-11-17T16:56:33.778672+00:00"
     }
   ]
 }

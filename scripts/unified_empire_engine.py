@@ -775,6 +775,7 @@ Emails Sent Today:                {leads_summary['sent_today']} / {MAX_EMAILS_PE
 def main():
     parser = argparse.ArgumentParser(description="Big 3 Empire Engine")
     parser.add_argument("--digest-only", action="store_true", help="Only query treasury & send scorecard without prospecting")
+    parser.add_argument("--force-send", type=int, default=0, help="Send an immediate capped batch (1-6) even if today's daily quota was reached")
     args = parser.parse_args()
 
     print(f"[{datetime.now(timezone.utc).isoformat()}] Starting Big 3 Empire Engine...")
@@ -795,14 +796,15 @@ def main():
     leads_data = load_leads()
     sent_today = count_sent_today(leads_data["history"])
     remaining_today = max(0, MAX_EMAILS_PER_DAY - sent_today)
-    print(f"[+] Outbound Sent Today: {sent_today}/{MAX_EMAILS_PER_DAY} (Remaining capacity: {remaining_today})")
+    force_budget = max(0, min(int(args.force_send or 0), 6))
+    print(f"[+] Outbound Sent Today: {sent_today}/{MAX_EMAILS_PER_DAY} (Remaining capacity: {remaining_today}, Force batch: {force_budget})")
 
     track_counts = {"track_rugshield": 0, "track_canaryguard": 0, "track_agentfuel": 0}
 
-    if not args.digest_only and remaining_today > 0:
+    if not args.digest_only and (remaining_today > 0 or force_budget > 0):
         # Spread sends across 3-hourly cron runs (max 3 per run, 12/day) for high inbox placement
-        run_budget = min(remaining_today, MAX_EMAILS_PER_RUN)
-        per_track = max(1, run_budget // 3)
+        run_budget = force_budget if force_budget > 0 else min(remaining_today, MAX_EMAILS_PER_RUN)
+        per_track = max(1, (run_budget + 2) // 3)
         known_emails = (
             {e.lower().strip() for e in leads_data.get("contacted_emails", [])}
             | {e.lower().strip() for e in leads_data.get("suppressed_emails", [])}
@@ -811,7 +813,7 @@ def main():
 
         sent_this_run = 0
         for track_name in ["track_rugshield", "track_canaryguard", "track_agentfuel"]:
-            if sent_this_run >= run_budget or count_sent_today(leads_data["history"]) >= MAX_EMAILS_PER_DAY:
+            if sent_this_run >= run_budget or (force_budget == 0 and count_sent_today(leads_data["history"]) >= MAX_EMAILS_PER_DAY):
                 break
             leads = search_github_leads(
                 track_name,
@@ -820,7 +822,7 @@ def main():
                 exclude_users=known_users,
             )
             for lead in leads:
-                if sent_this_run >= run_budget or count_sent_today(leads_data["history"]) >= MAX_EMAILS_PER_DAY:
+                if sent_this_run >= run_budget or (force_budget == 0 and count_sent_today(leads_data["history"]) >= MAX_EMAILS_PER_DAY):
                     break
                 email = lead["email"].lower().strip()
                 user = lead["username"].lower().strip()
