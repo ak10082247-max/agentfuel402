@@ -68,7 +68,8 @@ SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 587
 DIGEST_RECIPIENTS = ["ak10082247@gmail.com", "armkhan18@gmail.com"]
 
-MAX_EMAILS_PER_DAY = 15
+MAX_EMAILS_PER_DAY = 12
+MAX_EMAILS_PER_RUN = 3
 DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
 CONTACTED_FILE = os.path.join(DATA_DIR, "contacted_leads.json")
 
@@ -332,6 +333,12 @@ BLOCKED_EMAIL_DOMAINS = {
 EMAIL_PREFIX_PATTERN = re.compile(r"^[a-z0-9][a-z0-9._%+\-]{0,63}$")
 EMAIL_DOMAIN_PATTERN = re.compile(r"^[a-z0-9](?:[a-z0-9\-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9\-]{0,61}[a-z0-9])?)+$")
 ICLOUD_RELAY_PATTERN = re.compile(r"(?:^[0-9]+[._-]|[._-][0-9a-z]{2}$|\d[a-z]$|(?:_|-|\.)[a-z]+\d[a-z]?$|^(?:[a-z0-9]+[-_.]){2,}[a-z0-9]{1,3}$)")
+STUDENT_ROLL_PREFIX_PATTERN = re.compile(r"^(?:[bf]?(?:1[5-9]|2[0-9])[a-z]{2,4}\d[a-z0-9]{2,6}|[bf](?:1[5-9]|2[0-9])[a-z]{2}\d{3,4})$", re.IGNORECASE)
+DISPOSABLE_OR_STUDENT_DOMAINS = {
+    "qq.com", "163.com", "126.com", "yeah.net", "sina.com", "sohu.com", "foxmail.com",
+    "vvit.net", "onet.pl", "mail.ru", "yandex.ru", "bk.ru", "list.ru", "inbox.ru",
+    "guerrillamail.com", "mailinator.com", "tempmail.com", "10minutemail.com",
+}
 SPAM_REPO_PATTERN = re.compile(
     r"(?:how-to-(?:create|launch|configure|understand|build|run|deploy|set-up)-|"
     r"arbitrage-bot-(?:execution|deployment|cost-awareness|swap-routes|wallet-setup|loan-execution))",
@@ -369,7 +376,7 @@ def has_valid_mx_record(domain: str) -> bool:
     return valid
 
 def is_deliverable_personal_email(email: str) -> bool:
-    """Validates email syntax, blocks relays/noreply traps, and verifies custom startup domains via live MX lookup."""
+    """Validates email syntax, blocks relays/students/noreply traps, and verifies custom startup domains via live MX lookup."""
     if not email or "@" not in email:
         return False
     cleaned = email.lower().strip()
@@ -383,8 +390,10 @@ def is_deliverable_personal_email(email: str) -> bool:
     if domain in BLOCKED_EMAIL_DOMAINS or domain.endswith((".noreply.github.com", ".local", ".internal", ".test", ".invalid", ".arpa")):
         return False
 
-    # Exclude automated, bounce-trap, or generic helpdesk mailboxes
+    # Exclude automated, bounce-trap, student roll-number, or generic helpdesk mailboxes
     if prefix in DISALLOWED_PREFIXES or any(p in prefix for p in ["noreply", "no-reply", "donotreply", "mailer", "dependabot", "[bot]"]):
+        return False
+    if STUDENT_ROLL_PREFIX_PATTERN.match(prefix):
         return False
 
     # Exclude Apple Hide-My-Email relay aliases & consumer bot/academic bounce domains
@@ -392,9 +401,15 @@ def is_deliverable_personal_email(email: str) -> bool:
         return False
     if domain.endswith("privaterelay.appleid.com"):
         return False
-    if domain in {"qq.com", "163.com", "126.com", "yeah.net", "sina.com", "sohu.com", "foxmail.com"}:
+    if domain in DISPOSABLE_OR_STUDENT_DOMAINS:
         return False
-    if domain == "edu" or domain.endswith(".edu") or ".edu." in domain or ".ac." in domain:
+    if (
+        domain == "edu"
+        or domain.endswith((".edu", ".ac.in", ".ac.uk", ".edu.cn", ".edu.in", ".k12.us"))
+        or ".edu." in domain
+        or ".ac." in domain
+        or "student." in domain
+    ):
         return False
 
     # Fast path for verified consumer domains
@@ -405,19 +420,7 @@ def is_deliverable_personal_email(email: str) -> bool:
     return has_valid_mx_record(domain)
 
 def is_spam_repo(owner: str, repo_name: str, repo_desc: str) -> bool:
-    blob = f"{owner or ''} {repo_name or ''} {repo_desc or ''}".lower()
-    low_intent_tokens = (
-        "homework", "assignment", "coursework", "capstone", "bootcamp", "university",
-        "college", "student", "semester", "cs50", "100-days", "tutorial",
-        "practice", "learning", "my-first", "todo-app", "hello-world", "leetcode",
-        "portfolio", "clone-app", "final-project", "mini-project", "mini_project",
-        "class-project", "test-repo", "demo-app", "sample-app", "workshop"
-    )
-    if any(tok in blob for tok in low_intent_tokens):
-        return True
-    if re.search(r"\b(blender|godot|unity3d|unreal|minecraft|roblox|neovim|wallpaper)\b", blob):
-        return True
-    """Filters out own repos, GitHub profile README repos, and SEO/malware bot-farm repositories."""
+    """Filters out own repos, student/hobby toys, and SEO/malware bot-farm repositories."""
     if not owner or not repo_name:
         return True
     if owner.lower() in {"ak10082247-max"}:
@@ -426,64 +429,74 @@ def is_spam_repo(owner: str, repo_name: str, repo_desc: str) -> bool:
         return True
     if SPAM_REPO_PATTERN.search(repo_name):
         return True
+    blob = f"{owner or ''} {repo_name or ''} {repo_desc or ''}".lower()
+    low_intent_tokens = (
+        "homework", "assignment", "coursework", "capstone", "bootcamp", "university",
+        "college", "student", "semester", "cs50", "100-days", "tutorial", "ctf",
+        "jailbreak-lab", "train-delay", "facebook-group", "interview", "resume", "thesis",
+        "practice", "learning", "my-first", "todo-app", "hello-world", "leetcode",
+        "portfolio", "clone-app", "final-project", "mini-project", "mini_project",
+        "class-project", "test-repo", "demo-app", "sample-app", "workshop", "awesome-"
+    )
+    if any(tok in blob for tok in low_intent_tokens):
+        return True
+    if re.search(r"\b(blender|godot|unity3d|unreal|minecraft|roblox|neovim|wallpaper)\b", blob):
+        return True
     desc_l = (repo_desc or "").lower()
     if "video-based guide to" in desc_l or "solidity arbitrage executor" in desc_l:
         return True
     return False
 
+def has_commercial_builder_signal(u_data: dict, email: str) -> bool:
+    """Prioritize real founders, maintainers, or funded builders over one-off student accounts."""
+    domain = email.split("@")[-1].lower().strip()
+    is_custom_domain = domain not in TRUSTED_EMAIL_DOMAINS
+    has_company_or_site = bool((u_data.get("company") or "").strip() or (u_data.get("blog") or "").strip())
+    public_repos = u_data.get("public_repos") or 0
+    followers = u_data.get("followers") or 0
+    return is_custom_domain or has_company_or_site or (public_repos >= 5 and followers >= 10)
+
 # -----------------------------------------------------------------------------
-# 3-TRACK SNIPER PROSPECTING ENGINE
+# 3-TRACK COMMERCIAL BUILDER PROSPECTING ENGINE
 # -----------------------------------------------------------------------------
 def search_github_leads(track="track_rugshield", limit=5, exclude_emails=None, exclude_users=None):
     """
-    Track 1: DeFi, Solana & Base Trading Bot Builders -> Pitch RugShield 402
-    Track 2: AI Agent, MCP & LLM App Builders -> Pitch CanaryGuard 402
-    Track 3: B2B Growth, E-Commerce & Web Scraping Devs -> Pitch AgentFuel402
+    Track 1: DeFi, Solana & Base Production Builders -> Pitch RugShield 402
+    Track 2: Commercial AI Agent & MCP Server Maintainers -> Pitch CanaryGuard 402
+    Track 3: Automation, SaaS, Shopify & Data Enrichment Teams -> Pitch AgentFuel402
     """
     exclude_emails = set(exclude_emails or ())
     exclude_users = set(exclude_users or ())
     track_queries = {
         "track_rugshield": [
-            "jupiter solana swap NOT arbitrage-bot",
-            "solana agent kit NOT arbitrage-bot",
-            "coinbase agentkit NOT arbitrage-bot",
-            "aerodrome base defi NOT arbitrage-bot",
-            "x402 solana agent NOT how-to",
-            "dexscreener api bot stars:>=3 NOT how-to",
-            "viem swap base NOT arbitrage-bot",
-            "solana web3 sdk NOT how-to",
-            "uniswap v4 hook NOT how-to",
-            "base onchain agent NOT how-to",
-            "mcp solana server NOT how-to",
-            "erc4337 agent wallet NOT how-to"
+            '"solana swap" stars:>=15',
+            '"jupiter aggregator" solana stars:>=15',
+            '"solana-agent-kit" stars:>=15',
+            '"coinbase/agentkit" OR "agentkit" defi stars:>=15',
+            '"dexscreener" solana OR base stars:>=15',
+            '"trading bot" solana OR raydium stars:>=20',
+            '"uniswap v3" OR "aerodrome" base stars:>=15',
+            '"x402" defi OR swap stars:>=10'
         ],
         "track_canaryguard": [
-            "mcp server stars:>=3",
-            "modelcontextprotocol stars:>=3",
-            "langchain agent stars:>=3",
-            "crewai stars:>=3",
-            "autogen agent stars:>=3",
-            "prompt injection",
-            "openai agents sdk stars:>=3",
-            "elizaos plugin",
-            "langgraph agent stars:>=3",
-            "pydantic ai stars:>=3",
-            "mastra agent stars:>=3",
-            "dify workflow stars:>=3"
+            '"mcp server" stars:>=20',
+            '"modelcontextprotocol" stars:>=20',
+            '"langchain" agent stars:>=25',
+            '"openai agents" stars:>=15',
+            '"langgraph" OR "crewai" stars:>=25',
+            '"pydantic-ai" OR "mastra" stars:>=20',
+            '"ai agent" llm stars:>=25',
+            '"dify" workflow OR plugin stars:>=20'
         ],
         "track_agentfuel": [
-            "n8n workflow stars:>=3",
-            "firecrawl stars:>=3",
-            "crawl4ai stars:>=3",
-            "shopify scraper",
-            "b2b lead generation stars:>=3",
-            "apify actor stars:>=3",
-            "clay enrichment",
-            "playwright scraper stars:>=3",
-            "shopify price monitor",
-            "b2b enrichment",
-            "web scraper api stars:>=3",
-            "rag crawler stars:>=3"
+            '"n8n" workflow stars:>=20',
+            '"firecrawl" OR "crawl4ai" stars:>=20',
+            '"shopify" scraper OR webhook stars:>=15',
+            '"apify" actor OR scraper stars:>=10',
+            '"lead enrichment" OR "b2b leads" stars:>=15',
+            '"price monitor" OR "ecommerce scraper" stars:>=15',
+            '"playwright" scraper stars:>=20',
+            '"clay" enrichment OR pipeline stars:>=15'
         ]
     }
 
@@ -504,7 +517,7 @@ def search_github_leads(track="track_rugshield", limit=5, exclude_emails=None, e
         for page in (1, 2):
             if len(discovered) >= limit:
                 break
-            url = f"https://api.github.com/search/repositories?q={urllib.parse.quote(q)}&sort=updated&order=desc&per_page=10&page={page}"
+            url = f"https://api.github.com/search/repositories?q={urllib.parse.quote(q)}&sort=updated&order=desc&per_page=12&page={page}"
             try:
                 res_data = fetch_json(url, timeout=6, headers=headers)
                 items = res_data.get("items", [])
@@ -515,11 +528,10 @@ def search_github_leads(track="track_rugshield", limit=5, exclude_emails=None, e
                         break
                     if repo.get("fork") or repo.get("archived"):
                         continue
-                    min_stars = 1 if track == "track_rugshield" else 3
-                    if (repo.get("stargazers_count") or 0) < min_stars:
+                    if (repo.get("stargazers_count") or 0) < 15:
                         continue
                     pushed_at = repo.get("pushed_at") or ""
-                    if pushed_at and pushed_at < "2026-05-01":
+                    if pushed_at and pushed_at < "2026-08-01":
                         continue
                     owner = repo.get("owner", {}).get("login")
                     repo_name = repo.get("full_name")
@@ -547,7 +559,7 @@ def search_github_leads(track="track_rugshield", limit=5, exclude_emails=None, e
                                         email = cand
                                         break
 
-                        if email and is_deliverable_personal_email(email):
+                        if email and is_deliverable_personal_email(email) and has_commercial_builder_signal(u_data, email):
                             norm_email = email.lower().strip()
                             norm_user = owner.lower().strip()
                             if norm_email in exclude_emails or norm_user in exclude_users:
@@ -560,7 +572,8 @@ def search_github_leads(track="track_rugshield", limit=5, exclude_emails=None, e
                                 "name": name,
                                 "email": norm_email,
                                 "repo": repo_name,
-                                "repo_desc": repo_desc
+                                "repo_desc": repo_desc,
+                                "stars": repo.get("stargazers_count", 0)
                             })
                     except Exception:
                         pass
@@ -576,22 +589,16 @@ def search_github_leads(track="track_rugshield", limit=5, exclude_emails=None, e
 def send_email(to_addr, subject, body_text, body_html=None):
     is_outreach = bool(to_addr and SMTP_USER and to_addr.lower().strip() != SMTP_USER.lower().strip())
     if is_outreach:
-        opt_out_line = (
-            f"\n\n---\nNo more emails? Reply with 'unsubscribe' or email {SMTP_USER}?subject=unsubscribe to opt out immediately."
-        )
+        opt_out_line = "\n\n---\nReply 'unsubscribe' if you don't want notes from me."
         if body_text and "unsubscribe" not in body_text.lower():
             body_text = body_text.rstrip() + opt_out_line
-        if body_html and "unsubscribe" not in body_html.lower():
-            body_html = body_html.rstrip() + (
-                f'<p style="color:#64748b;font-size:12px;margin-top:24px;">No more emails? '
-                f'<a href="mailto:{SMTP_USER}?subject=unsubscribe">Click here or reply unsubscribe</a> to opt out.</p>'
-            )
 
     msg = MIMEMultipart("alternative")
     msg["Subject"] = subject
-    msg["From"] = f"Kurox Alpha & Security Suite <{SMTP_USER}>"
+    msg["From"] = f"Arman (Kurox) <{SMTP_USER}>"
     msg["To"] = to_addr
     if is_outreach and SMTP_USER:
+        msg["Reply-To"] = SMTP_USER
         msg["List-Unsubscribe"] = f"<mailto:{SMTP_USER}?subject=unsubscribe>"
         msg["List-Unsubscribe-Post"] = "List-Unsubscribe=One-Click"
 
@@ -605,106 +612,51 @@ def send_email(to_addr, subject, body_text, body_html=None):
         server.sendmail(SMTP_USER, [to_addr], msg.as_string())
 
 def craft_pitch(lead):
-    name = lead.get("name", "Builder")
-    repo = lead.get("repo", "your project")
+    raw_name = (lead.get("name") or lead.get("username") or "there").strip()
+    first_name = raw_name.split()[0] if raw_name else "there"
+    repo_full = lead.get("repo", "your repo")
+    repo_short = repo_full.split("/")[-1]
     track = lead.get("track", "track_agentfuel")
 
     if track == "track_rugshield":
-        subject = f"Dual-Chain Base & Solana Honeypot + Pre-Trade Scan for {repo} (RugShield 402)"
-        text = f"""Hi {name},
-
-Saw your recent commits on {repo}. If you're building automated trading bots, swap routers, or DeFi execution tools on Solana or Base Mainnet, unverified tokens, freeze/mint authorities, and stealth fee-on-transfer honeypots are a constant risk.
-
-RugShield 402 is an autonomous dual-chain DEX pre-trade simulation & safety engine:
-1. Base EVM Execution Simulation: Direct on-chain state-override buy & sell simulation reporting exact fee-on-transfer taxes (bps) and revert traps
-2. Solana SPL Risk Scanning: Mint/freeze authority verification, liquidity pool depth, and Raydium/Orca/Pump.fun safety checks
-3. Liquidity Lock & Pool Depth Analysis: Aerodrome (Slipstream), Uniswap v3, Raydium & Orca pair verification
-4. Sybil Cluster & Dev Concentration Scoring before your bot executes a swap
-
-Integrate directly in seconds (free preview -> instant card API key or ZIP -> Base/Solana x402 USDC):
-- Free Live Pre-Trade Check (`POST /v1/scan/preview`): https://rugshield-402.onrender.com/v1/scan/preview
-- Instant Card Checkout ($9 Self-Hosted TypeScript Source ZIP + 30-day API Key): https://agentfuel402.ak10082247.workers.dev/v1/checkout/bundle?sku=rugshield
-- Dual Security Suite ($15 CanaryGuard + RugShield ZIPs + 60-day API Key): https://agentfuel402.ak10082247.workers.dev/v1/checkout/bundle?sku=dual
-- Starter API Key ($5 / 30d Bearer access — zero crypto wallet needed): https://agentfuel402.ak10082247.workers.dev/v1/checkout/api-key?plan=starter
-- 1-Click Fiat Run on Apify Store ($0.005/scan, free credits available): https://apify.com/kuroxreal/rugshield-402
-- Open-Source MCP Server (Claude Desktop & Cursor): https://rugshield-402.onrender.com/mcp (tools: `rugshield_pre_swap_scan`, `check_honeypot`, `analyze_liquidity`)
-- npm SDKs & CLI: `@kurox_real/rugshield-client`, `@kurox_real/agentkit-rugshield-402`, `@kurox_real/solana-agent-kit-guard`
-- Dual-Chain x402 API ($0.010 USDC on Base & Solana): https://rugshield-402.onrender.com/v1/scan
-
-All products & instant downloads: https://ak10082247-max.github.io/products.html
-Need a custom pre-trade integration? Reply directly to this email (async email/text delivery only — no calls or meetings required).
-
-Best regards,
-Kurox DEX Security Team
-https://github.com/ak10082247-max/rugshield-402
-"""
+        subject = f"Quick pre-trade token safety check for {repo_short}"
+        text = (
+            f"Hey {first_name},\n\n"
+            f"Saw your work on {repo_full}. If you want an external check before your Base/Solana swaps execute "
+            f"(sell-tax simulation, Token-2022 mint/freeze authority, and fail-closed inconclusive checks), "
+            f"you can test our live preview free with no signup here:\n"
+            f"https://rugshield-402.onrender.com/v1/scan/preview\n\n"
+            f"If it saves you time vs maintaining RPC/simulator edge cases yourself, you can grab an instant $5 API key "
+            f"or the full $9 self-hosted TypeScript source pack (.zip, immediate download) here:\n"
+            f"https://ak10082247-max.github.io/products.html\n\n"
+            f"Best,\nArman\n"
+        )
 
     elif track == "track_canaryguard":
-        subject = f"Deterministic Prompt-Injection Firewall & MCP Tool Sanitizer for {repo} (CanaryGuard)"
-        text = f"""Hi {name},
-
-Loved what you're building in {repo}. With LLM agents taking autonomous actions and reading untrusted web data or user inputs, indirect prompt injections, jailbreaks, and tool-poisoning attacks are a critical vulnerability.
-
-CanaryGuard 402 is a deterministic security firewall and honeypot scrubber built specifically for AI agents:
-1. Deterministic prompt-injection detection and instruction override neutralization
-2. Hidden Unicode, zero-width steganography, and malicious script scrubbing
-3. Cryptographic tamper-evident inspection receipts with risk scores (0-100)
-4. Contextual scoring for extracted crypto addresses and wallet-drain commands
-
-Connect it in seconds (free test endpoint -> instant card API key or ZIP -> Base/Solana x402 USDC):
-- Free Live Sandbox (`POST /v1/sanitize/preview`): https://canaryguard-402.onrender.com/v1/sanitize/preview
-- Instant Card Checkout ($9 Self-Hosted Proxy ZIP + 30-day API Key): https://agentfuel402.ak10082247.workers.dev/v1/checkout/bundle?sku=canaryguard
-- Dual Security Suite ($15 CanaryGuard + RugShield ZIPs + 60-day API Key): https://agentfuel402.ak10082247.workers.dev/v1/checkout/bundle?sku=dual
-- Starter API Key ($5 / 30d Bearer access — zero crypto wallet needed): https://agentfuel402.ak10082247.workers.dev/v1/checkout/api-key?plan=starter
-- 1-Click Fiat Run on Apify Store ($0.003/check, free credits available): https://apify.com/kuroxreal/canaryguard-402
-- Claude Desktop & Cursor Remote MCP: https://canaryguard-402.onrender.com/mcp
-- npm SDKs: `@kurox_real/plugin-canaryguard`, `@kurox_real/agentkit-canaryguard-402`, `@kurox_real/canaryguard-client`, `elizaos-plugin-kurox-sentinel`
-- Open-Source Repo: https://github.com/ak10082247-max/canaryguard-402
-
-All products & instant downloads: https://ak10082247-max.github.io/products.html
-Need a bespoke MCP security setup? Reply directly to this email (async email/text delivery only — no calls or meetings required).
-
-Best regards,
-Kurox AI Safety Engineering
-https://github.com/ak10082247-max/canaryguard-402
-"""
+        subject = f"Deterministic prompt-injection guard for {repo_short}"
+        text = (
+            f"Hey {first_name},\n\n"
+            f"Saw what you're building in {repo_full}. If you need a fast deterministic sanitizer in front of untrusted "
+            f"web/tool inputs (role delimiter stripping, zero-width obfuscation, MCP tool-poisoning checks, sub-10ms core engine), "
+            f"you can try it live with zero signup here:\n"
+            f"https://canaryguard-402.onrender.com/v1/sanitize/preview\n\n"
+            f"If it fits your stack, we offer a $5 30-day API key (HTTP + MCP) or a $9 self-hosted Express firewall source .zip "
+            f"with instant checkout download here:\n"
+            f"https://ak10082247-max.github.io/products.html\n\n"
+            f"Best,\nArman\n"
+        )
 
     else:
-        subject = f"Clean Markdown, B2B Leads, E-Com & REA for {repo} (AgentFuel402)"
-        text = f"""Hi {name},
-
-Loved what you're building in {repo}. If you're running web scraping, AI agents, or Clay/n8n workflows, you've probably run into bot blocks (Cloudflare 403s/419s) and high token costs.
-
-We launched AgentFuel402 — a zero-cold-start consumable data factory built specifically for AI agents and automation:
-1. LLM Clean Markdown: Strips noisy ads, scripts, and navigation; enforces strict SSRF and prompt-injection defense
-2. B2B Intent Leads: Live tech product launches, founder discussions, hiring alerts, and tech stacks with Intent Scores (30–100)
-3. E-Commerce Price & Stock: Live Shopify & Schema.org variant, price, discount delta, and inventory tracking
-4. Reverse Engineer Anything (REA): Discovers Next.js hydration APIs, hidden REST/GraphQL routes, and auto-generates OpenAPI 3.1 specs + client code without scraping
-5. Zero-Charge Resilience: We never charge on 404s or dead links under our Verify -> Fetch -> Settle guarantee
-
-Try it right now with zero wallet setup, instant Stripe API key, Apify, or x402:
-- Free Instant Previews (no key/wallet):
-  * B2B Leads: https://agentfuel402.ak10082247.workers.dev/v1/preview/leads
-  * Clean Markdown: https://agentfuel402.ak10082247.workers.dev/v1/preview/llm-clean-markdown
-- Instant Credit Card API Keys (immediate Bearer key — no crypto wallet needed):
-  * Starter Key ($5 / 30 days): https://agentfuel402.ak10082247.workers.dev/v1/checkout/api-key?plan=starter
-  * Pro Key ($19 / 90 days): https://agentfuel402.ak10082247.workers.dev/v1/checkout/api-key?plan=pro
-- Zero-Config CLI & MCP Quickstart: `npx @kurox_real/agentfuel402`
-- 1-Click Credit Card / Free Monthly Credits via Apify Store ($0.003 - $0.015 USD):
-  * Reverse Engineer Anything: https://apify.com/kuroxreal/reverse-engineer-anything
-  * B2B Intent Leads: https://apify.com/kuroxreal/b2b-intent-leads-ppe
-  * Clean Markdown: https://apify.com/kuroxreal/llm-clean-markdown-ppe
-  * E-Com Price & Stock: https://apify.com/kuroxreal/ecom-price-stock-ppe
-- Remote MCP Endpoint (Claude Desktop & Cursor): https://agentfuel402.ak10082247.workers.dev/mcp (Registry: `io.github.ak10082247-max/agentfuel402`)
-- Dual-Chain Pay-per-Call x402 V2 ($0.005-$0.020 USDC on Base & Solana, gas-sponsored): https://agentfuel402.ak10082247.workers.dev
-
-Storefront & self-hosted source packs ($9-$15 instant ZIPs): https://ak10082247-max.github.io/products.html
-Need a bespoke B2B dataset or custom Apify actor ($49-$250 async)? Reply to this email directly — zero calls required.
-
-Cheers and happy building,
-Kurox Real / AgentFuel402
-https://github.com/ak10082247-max/agentfuel402
-"""
+        subject = f"Cutting scrape blocks / token bloat in {repo_short}"
+        text = (
+            f"Hey {first_name},\n\n"
+            f"Saw {repo_full} on GitHub. If you're pulling clean Markdown, Shopify price/stock JSON, or Next.js API schemas "
+            f"without spinning up Playwright, you can test our Cloudflare Edge preview live with zero API key here:\n"
+            f"https://agentfuel402.ak10082247.workers.dev/v1/preview/ecom-price-stock\n\n"
+            f"If you want production API access across all 5 feeds + MCP by card (zero crypto needed), a 30-day Starter key is $5 instant checkout:\n"
+            f"https://agentfuel402.ak10082247.workers.dev/v1/checkout/api-key?plan=starter\n\n"
+            f"Best,\nArman\n"
+        )
 
     return subject, text
 
@@ -807,16 +759,18 @@ def main():
     track_counts = {"track_rugshield": 0, "track_canaryguard": 0, "track_agentfuel": 0}
 
     if not args.digest_only and remaining_today > 0:
-        # Send up to 5 per track (15 per cycle) so dropped GitHub cron slots don't starve the 35/day target
-        per_track = max(1, min(remaining_today // 3, 5))
+        # Spread sends across 3-hourly cron runs (max 3 per run, 12/day) for high inbox placement
+        run_budget = min(remaining_today, MAX_EMAILS_PER_RUN)
+        per_track = max(1, run_budget // 3)
         known_emails = (
             {e.lower().strip() for e in leads_data.get("contacted_emails", [])}
             | {e.lower().strip() for e in leads_data.get("suppressed_emails", [])}
         )
         known_users = {u.lower().strip() for u in leads_data["contacted_users"]}
 
+        sent_this_run = 0
         for track_name in ["track_rugshield", "track_canaryguard", "track_agentfuel"]:
-            if count_sent_today(leads_data["history"]) >= MAX_EMAILS_PER_DAY:
+            if sent_this_run >= run_budget or count_sent_today(leads_data["history"]) >= MAX_EMAILS_PER_DAY:
                 break
             leads = search_github_leads(
                 track_name,
@@ -825,7 +779,7 @@ def main():
                 exclude_users=known_users,
             )
             for lead in leads:
-                if count_sent_today(leads_data["history"]) >= MAX_EMAILS_PER_DAY:
+                if sent_this_run >= run_budget or count_sent_today(leads_data["history"]) >= MAX_EMAILS_PER_DAY:
                     break
                 email = lead["email"].lower().strip()
                 user = lead["username"].lower().strip()
@@ -848,9 +802,10 @@ def main():
                         "sent_date": datetime.now(timezone.utc).isoformat()
                     })
                     track_counts[track_name] += 1
+                    sent_this_run += 1
                     save_leads(leads_data)
                     print(f"  [+] {track_name} pitch delivered to: {email} ({user} on {lead['repo']})")
-                    time.sleep(4)
+                    time.sleep(random.uniform(14, 24))
                 except Exception as e:
                     print(f"  [-] Failed to pitch {email}: {e}")
 

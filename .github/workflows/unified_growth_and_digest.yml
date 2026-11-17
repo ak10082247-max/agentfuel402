@@ -26,6 +26,7 @@ jobs:
           SMTP_USER: ${{ secrets.SMTP_USER }}
           SMTP_PASS: ${{ secrets.SMTP_PASS }}
         run: |
+          python scripts/test_outreach.py
           python scripts/unified_empire_engine.py
 
       - name: Persist Contacted Leads State
