@@ -40,6 +40,14 @@ class OutreachUpgradeTest(unittest.TestCase):
         self.assertNotIn("stars:>=", src)
         self.assertIn("if stars < 1 or stars > 300:", src)
 
+    def test_matches_track_keywords_strict_metadata(self):
+        self.assertFalse(eng.matches_track_keywords("track_canaryguard", "dev/android-mail-client", "Fast email client for database notes", ["android", "kotlin"]))
+        self.assertTrue(eng.matches_track_keywords("track_canaryguard", "dev/mcp-gateway", "LangChain MCP tool bridge", ["mcp", "agent"]))
+        self.assertFalse(eng.matches_track_keywords("track_rugshield", "dev/firebase-notes", "Simple database UI without chains", ["react"]))
+        self.assertTrue(eng.matches_track_keywords("track_rugshield", "dev/aerodrome-router", "Base swap router", ["defi", "base"]))
+        self.assertFalse(eng.matches_track_keywords("track_agentfuel", "dev/rust-kernel", "toy OS kernel", ["rust"]))
+        self.assertTrue(eng.matches_track_keywords("track_agentfuel", "dev/shopify-sync", "Automated Shopify webhook & lead enrichment", ["shopify"]))
+
     def test_concise_deliverable_pitches(self):
         for track in ("track_rugshield", "track_canaryguard", "track_agentfuel"):
             subj, body = eng.craft_pitch({
@@ -47,11 +55,15 @@ class OutreachUpgradeTest(unittest.TestCase):
                 "name": "Alice Founder",
                 "username": "alice",
                 "repo": "acme/agent-router",
+                "diagnostic_summary": "Live check observed 412 clean tokens in 7 ms.",
             })
             self.assertNotIn("`", body)
             self.assertNotIn("sniper", body.lower())
             self.assertLessEqual(body.count("https://"), 2)
             self.assertIn("Hey Alice,", body)
+            self.assertIn("Live check observed 412 clean tokens in 7 ms.", body)
+            self.assertIn("$29", body)
+            self.assertIn("$5", body)
             self.assertIn("Arman", body)
             self.assertTrue(len(subj) < 70)
 

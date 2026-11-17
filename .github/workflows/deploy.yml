@@ -35,6 +35,7 @@ jobs:
           STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
           KUROX_SIGNING_SECRET: ${{ secrets.KUROX_SIGNING_SECRET }}
           STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+          RAPIDAPI_PROXY_SECRET: ${{ secrets.RAPIDAPI_PROXY_SECRET }}
         run: |
           if [ -n "${STRIPE_SECRET_KEY:-}" ]; then
             printf '%s' "$STRIPE_SECRET_KEY" | npx --yes wrangler@3 secret put STRIPE_SECRET_KEY >/dev/null
@@ -44,4 +45,7 @@ jobs:
           fi
           if [ -n "${STRIPE_WEBHOOK_SECRET:-}" ]; then
             printf '%s' "$STRIPE_WEBHOOK_SECRET" | npx --yes wrangler@3 secret put STRIPE_WEBHOOK_SECRET >/dev/null
+          fi
+          if [ -n "${RAPIDAPI_PROXY_SECRET:-}" ]; then
+            printf '%s' "$RAPIDAPI_PROXY_SECRET" | npx --yes wrangler@3 secret put RAPIDAPI_PROXY_SECRET >/dev/null
           fi

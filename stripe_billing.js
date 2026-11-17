@@ -63,6 +63,21 @@ export const BUNDLE_SKUS = {
   },
 };
 
+export const DATA_PACK_PLANS = {
+  "csv-pack": {
+    id: "csv-pack",
+    sku: "b2b-tech-intent-leads-csv-v1",
+    name: "Live B2B Tech Intent & Hiring Leads Pack (.csv)",
+    description:
+      "Fresh, non-cached CSV export of 25 newly launched tech/AI companies, domains, tech stacks, hiring flags & intent scores + 30-day Starter API key.",
+    amountCents: 1900,
+    priceDisplay: "$19 USD",
+    filename: "Kurox_B2B_Tech_Intent_Leads_Live.csv",
+    bonusApiTtlSeconds: 30 * 24 * 60 * 60,
+    tier: "data_pack",
+  },
+};
+
 const PRICE_ID_TO_BUNDLE = Object.fromEntries(
   Object.values(BUNDLE_SKUS).map((b) => [b.priceId, b]),
 );
@@ -260,11 +275,15 @@ export async function createStripeCheckoutSession(options, env) {
 
 function resolveCatalogItemFromSession(session) {
   const metaSku = session.metadata?.sku || "";
+  const metaKind = session.metadata?.kind || "";
   const lineItem = session.line_items?.data?.[0];
   const priceId = lineItem?.price?.id || "";
 
   if (PRICE_ID_TO_BUNDLE[priceId]) {
     return { kind: "bundle", item: PRICE_ID_TO_BUNDLE[priceId] };
+  }
+  for (const d of Object.values(DATA_PACK_PLANS)) {
+    if (metaSku === d.sku) return { kind: "data_pack", item: d };
   }
   for (const b of Object.values(BUNDLE_SKUS)) {
     if (metaSku === b.sku) return { kind: "bundle", item: b };
@@ -272,6 +291,7 @@ function resolveCatalogItemFromSession(session) {
   for (const p of Object.values(API_KEY_PLANS)) {
     if (metaSku === p.sku) return { kind: "api_key", item: p };
   }
+  if (session.amount_total === 1900 && metaKind === "data_pack") return { kind: "data_pack", item: DATA_PACK_PLANS["csv-pack"] };
   if (session.amount_total === 1900) return { kind: "api_key", item: API_KEY_PLANS.pro };
   if (session.amount_total === 500) return { kind: "api_key", item: API_KEY_PLANS.starter };
   if (session.amount_total === 1500) return { kind: "bundle", item: BUNDLE_SKUS.dual };
@@ -310,7 +330,7 @@ export async function verifyCheckoutSessionAndMint(sessionId, origin, env) {
   const now = Math.floor(Date.now() / 1000);
   const resolved = resolveCatalogItemFromSession(session);
   const item = resolved.item;
-  const apiTtl = resolved.kind === "bundle" ? item.bonusApiTtlSeconds : item.ttlSeconds;
+  const apiTtl = resolved.kind === "api_key" ? item.ttlSeconds : item.bonusApiTtlSeconds;
 
   const apiKey = await signKuroxToken(
     {
@@ -326,7 +346,26 @@ export async function verifyCheckoutSessionAndMint(sessionId, origin, env) {
   );
 
   const downloads = [];
-  if (resolved.kind === "bundle") {
+  if (resolved.kind === "data_pack") {
+    const dlToken = await signKuroxToken(
+      {
+        typ: "download",
+        sid: session.id,
+        bundle: item.sku,
+        iat: now,
+        exp: now + 7 * 24 * 60 * 60,
+      },
+      env.KUROX_SIGNING_SECRET,
+      "dl_v1",
+    );
+    downloads.push({
+      sku: item.sku,
+      title: item.name,
+      filename: item.filename,
+      bytes: null,
+      url: `${origin}/v1/stripe/download?token=${encodeURIComponent(dlToken)}`,
+    });
+  } else if (resolved.kind === "bundle") {
     for (const bundleKey of item.zips) {
       const zipMeta = BUNDLE_ZIPS[bundleKey];
       if (!zipMeta) continue;
@@ -372,9 +411,9 @@ export function renderFulfillmentHtml(fulfillment, origin) {
           (d) => `<div class="dl-row">
             <div>
               <strong>${escapeHtml(d.title)}</strong>
-              <div class="meta">${escapeHtml(d.filename)} (${Math.round(d.bytes / 1024)} KB) — Link valid 7 days</div>
+              <div class="meta">${escapeHtml(d.filename)} (${d.bytes ? `${Math.round(d.bytes / 1024)} KB` : "Live CSV Export"}) — Link valid 7 days</div>
             </div>
-            <a class="btn btn-green" href="${escapeHtml(d.url)}">Download ZIP</a>
+            <a class="btn btn-green" href="${escapeHtml(d.url)}">Download</a>
           </div>`,
         )
         .join("")

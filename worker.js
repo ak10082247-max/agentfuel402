@@ -8,11 +8,13 @@ import { BUNDLE_ZIPS } from "./bundles.js";
 import {
   API_KEY_PLANS,
   BUNDLE_SKUS,
+  DATA_PACK_PLANS,
   authenticateBearerApiKey,
   createStripeCheckoutSession,
   verifyCheckoutSessionAndMint,
   verifyKuroxToken,
   decodeBase64ToBytes,
+  escapeHtml,
   renderFulfillmentHtml,
   verifyStripeWebhookSignature,
 } from "./stripe_billing.js";
@@ -165,10 +167,42 @@ function corsHeaders(req) {
   return {
     "Access-Control-Allow-Origin": origin,
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS, HEAD",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization, X-API-Key, PAYMENT-SIGNATURE, X-PAYMENT, X-Payment-Signature, X-Fuel-Session, Mcp-Session-Id",
-    "Access-Control-Expose-Headers": "PAYMENT-REQUIRED, PAYMENT-RESPONSE, X-Payment-Required, X-Payment-Response, X-402-Version, X-402-Amount, X-402-Payment-To, X-402-Network, X-402-Asset, X-Fuel-Calls-Remaining, X-Edge-Cache, Server-Timing, X-Kurox-Auth, X-Kurox-Tier",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization, X-API-Key, X-RapidAPI-Proxy-Secret, PAYMENT-SIGNATURE, X-PAYMENT, X-Payment-Signature, X-Fuel-Session, Mcp-Session-Id",
+    "Access-Control-Expose-Headers": "PAYMENT-REQUIRED, PAYMENT-RESPONSE, X-Payment-Required, X-Payment-Response, X-402-Version, X-402-Amount, X-402-Payment-To, X-402-Network, X-402-Asset, X-Fuel-Calls-Remaining, X-Edge-Cache, Server-Timing, X-Kurox-Auth, X-Kurox-Tier, X-RapidAPI-Bypass",
     "Access-Control-Max-Age": "86400"
   };
+}
+
+function hasValidRapidApiSecret(req, env) {
+  const expected = typeof env?.RAPIDAPI_PROXY_SECRET === "string" ? env.RAPIDAPI_PROXY_SECRET.trim() : "";
+  const provided = req.headers.get("X-RapidAPI-Proxy-Secret") || "";
+  return Boolean(expected && provided === expected);
+}
+
+function csvCell(value) {
+  const str = String(value ?? "");
+  return /[",\r\n]/.test(str) ? `"${str.replace(/"/g, '""')}"` : str;
+}
+
+function renderShieldSvg(leftLabel, rightStatus, rightColor = "#059669") {
+  const lText = String(leftLabel || "Kurox Guard").slice(0, 36);
+  const rText = String(rightStatus || "Verified").slice(0, 42);
+  const lWidth = Math.max(76, lText.length * 7 + 16);
+  const rWidth = Math.max(74, rText.length * 7 + 16);
+  const totalWidth = lWidth + rWidth;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${totalWidth}" height="20" role="img" aria-label="${escapeHtml(lText)}: ${escapeHtml(rText)}">
+  <linearGradient id="s" x2="0" y2="100%"><stop offset="0" stop-color="#bbb" stop-opacity=".1"/><stop offset="1" stop-opacity=".1"/></linearGradient>
+  <clipPath id="r"><rect width="${totalWidth}" height="20" rx="3" fill="#fff"/></clipPath>
+  <g clip-path="url(#r)">
+    <rect width="${lWidth}" height="20" fill="#1e293b"/>
+    <rect x="${lWidth}" width="${rWidth}" height="20" fill="${escapeHtml(rightColor)}"/>
+    <rect width="${totalWidth}" height="20" fill="url(#s)"/>
+  </g>
+  <g fill="#fff" text-anchor="middle" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" text-rendering="geometricPrecision" font-size="11">
+    <text x="${Math.round(lWidth / 2)}" y="14">${escapeHtml(lText)}</text>
+    <text x="${lWidth + Math.round(rWidth / 2)}" y="14">${escapeHtml(rText)}</text>
+  </g>
+</svg>`;
 }
 
 // Helper: Build x402 V2 Challenge
@@ -1520,10 +1554,16 @@ async function handleWorkerFetch(req, env, ctx) {
             dual: {
               price: "$15 USD (Both ZIPs + 60d API Key)",
               checkout_url: `${url.origin}/v1/checkout/bundle?sku=dual`
+            },
+            csv_pack: {
+              price: "$19 USD (Live 25-Row B2B Intent CSV + 30d API Key)",
+              checkout_url: `${url.origin}/v1/checkout/bundle?sku=csv-pack`
             }
           },
-          fulfillment: "Automated instant ZIP download + Bearer API key (sk_kurox_v1.*) at /v1/stripe/success"
+          fulfillment: "Automated instant ZIP/CSV download + Bearer API key (sk_kurox_v1.*) at /v1/stripe/success"
         },
+        badge_endpoint: `${url.origin}/v1/badge/safety`,
+        scanner_portal: "https://ak10082247-max.github.io/scanner.html",
         free_previews: [
           "/v1/preview/leads",
           "/v1/preview/ecom-price-stock",
@@ -1589,9 +1629,11 @@ async function handleWorkerFetch(req, env, ctx) {
     <div class="cta-bar" style="margin:0.75rem 0;">
       <a class="btn btn-green" href="/v1/checkout/api-key?plan=starter">Starter API Key ($5 / 30d)</a>
       <a class="btn btn-blue" href="/v1/checkout/api-key?plan=pro">Pro API Key ($19 / 90d)</a>
+      <a class="btn" href="/v1/checkout/bundle?sku=csv-pack">B2B Leads CSV Pack ($19 Live)</a>
       <a class="btn" href="/v1/checkout/bundle?sku=canaryguard">CanaryGuard Proxy ZIP ($9)</a>
       <a class="btn" href="/v1/checkout/bundle?sku=rugshield">RugShield Scanner ZIP ($9)</a>
       <a class="btn btn-green" href="/v1/checkout/bundle?sku=dual">Dual Security Bundle ($15)</a>
+      <a class="btn" href="https://ak10082247-max.github.io/scanner.html" target="_blank" rel="noopener">Free Safety Scanner &amp; Badge</a>
     </div>
   </div>
 
@@ -1839,6 +1881,45 @@ Endpoints:
     }
 
     // -------------------------------------------------------------------------
+    // VIRAL LIVE SVG BADGE: /v1/badge/safety
+    // -------------------------------------------------------------------------
+    if (path === "/v1/badge/safety") {
+      const targetUrl = (url.searchParams.get("target") || url.searchParams.get("url") || "").trim();
+      let leftLabel = (url.searchParams.get("label") || "Kurox Edge Guard").trim();
+      let rightStatus = (url.searchParams.get("status") || "Verified Live").trim();
+      let rightColor = "#059669";
+
+      if (targetUrl) {
+        try {
+          const clean = await cleanMarkdownEngine(targetUrl, true);
+          const chars = clean?.markdown?.length || 0;
+          const threats = Number(clean?.injections_neutralized || 0);
+          leftLabel = url.searchParams.get("label") || "Kurox Safety";
+          if (threats > 0) {
+            rightStatus = `${threats} sanitized (${chars}c)`;
+            rightColor = "#d97706";
+          } else {
+            rightStatus = `Clean (${chars} chars)`;
+            rightColor = "#059669";
+          }
+        } catch {
+          leftLabel = url.searchParams.get("label") || "Kurox Safety";
+          rightStatus = "Target Unreachable";
+          rightColor = "#dc2626";
+        }
+      }
+
+      return new Response(renderShieldSvg(leftLabel, rightStatus, rightColor), {
+        status: 200,
+        headers: {
+          ...cors,
+          "Content-Type": "image/svg+xml; charset=utf-8",
+          "Cache-Control": targetUrl ? "public, max-age=300" : "public, max-age=600"
+        }
+      });
+    }
+
+    // -------------------------------------------------------------------------
     // STRIPE INSTANT CHECKOUT, FULFILLMENT, DOWNLOAD & WEBHOOK ROUTES
     // -------------------------------------------------------------------------
     if (path === "/v1/checkout/api-key") {
@@ -1902,6 +1983,44 @@ Endpoints:
         try { bodyParams = await req.json(); } catch { bodyParams = {}; }
       }
       const rawSku = String(url.searchParams.get("sku") || bodyParams.sku || "dual").toLowerCase();
+      if (rawSku === "csv-pack" || rawSku === DATA_PACK_PLANS["csv-pack"].sku) {
+        const csvPlan = DATA_PACK_PLANS["csv-pack"];
+        try {
+          const session = await createStripeCheckoutSession({
+            successUrl: `${url.origin}/v1/stripe/success?session_id={CHECKOUT_SESSION_ID}`,
+            cancelUrl: "https://ak10082247-max.github.io/products.html?canceled=1",
+            lineItems: [{
+              price_data: {
+                currency: "usd",
+                unit_amount: csvPlan.amountCents,
+                product_data: {
+                  name: csvPlan.name,
+                  description: csvPlan.description
+                }
+              },
+              quantity: 1
+            }],
+            metadata: { kind: "data_pack", sku: csvPlan.sku }
+          }, env);
+
+          if (req.method === "POST" || url.searchParams.get("format") === "json") {
+            return new Response(JSON.stringify({
+              id: session.id,
+              url: session.url,
+              sku: csvPlan.sku,
+              name: csvPlan.name,
+              price: csvPlan.priceDisplay
+            }, null, 2), { status: 200, headers: { ...cors, "Content-Type": "application/json" } });
+          }
+          return new Response(null, { status: 303, headers: { ...cors, Location: session.url } });
+        } catch (err) {
+          return new Response(JSON.stringify({ error: err.message, charged: false }), {
+            status: err.httpStatus || 502,
+            headers: { ...cors, "Content-Type": "application/json" }
+          });
+        }
+      }
+
       const aliasMap = {
         "canaryguard": BUNDLE_SKUS.canaryguard,
         "canaryguard-firewall-proxy-v1": BUNDLE_SKUS.canaryguard,
@@ -1912,7 +2031,7 @@ Endpoints:
       };
       const bundleCfg = aliasMap[rawSku];
       if (!bundleCfg) {
-        return new Response(JSON.stringify({ error: "invalid_sku", available: Object.keys(BUNDLE_SKUS) }), {
+        return new Response(JSON.stringify({ error: "invalid_sku", available: [...Object.keys(BUNDLE_SKUS), "csv-pack"] }), {
           status: 400,
           headers: { ...cors, "Content-Type": "application/json" }
         });
@@ -1981,6 +2100,41 @@ Endpoints:
         });
       }
       const payload = await verifyKuroxToken(token, env.KUROX_SIGNING_SECRET, "dl_v1");
+      if (payload && payload.typ === "download" && payload.bundle === DATA_PACK_PLANS["csv-pack"].sku) {
+        const b2bResult = await fetchB2BLeads(25, "all");
+        const leadRows = Array.isArray(b2bResult) ? b2bResult : (b2bResult?.leads || []);
+        const header = [
+          "company_name", "launch_headline", "domain", "source_url", "discussion_url",
+          "author", "score", "comments_count", "detected_tech_stack", "hiring_intent",
+          "intent_score", "estimated_stage"
+        ];
+        const rows = [header.join(",")];
+        for (const lead of leadRows) {
+          rows.push([
+            lead.company_name,
+            lead.launch_headline,
+            lead.domain,
+            lead.source_url,
+            lead.discussion_url,
+            lead.author,
+            lead.score,
+            lead.comments_count,
+            Array.isArray(lead.detected_tech_stack) ? lead.detected_tech_stack.join(" | ") : "",
+            lead.hiring_intent,
+            lead.intent_score,
+            lead.estimated_stage
+          ].map(csvCell).join(","));
+        }
+        return new Response(rows.join("\r\n") + "\r\n", {
+          status: 200,
+          headers: {
+            ...cors,
+            "Content-Type": "text/csv; charset=utf-8",
+            "Content-Disposition": `attachment; filename="${DATA_PACK_PLANS["csv-pack"].filename}"`,
+            "Cache-Control": "no-store"
+          }
+        });
+      }
       if (!payload || payload.typ !== "download" || !BUNDLE_ZIPS[payload.bundle]) {
         return new Response(JSON.stringify({ error: "invalid_or_expired_download_token" }), {
           status: 403,
@@ -2124,7 +2278,8 @@ Endpoints:
           return new Response(JSON.stringify({ jsonrpc: "2.0", id, error: { code: -32601, message: `Tool '${toolName}' not found` } }), { status: 200, headers: { ...cors, "Content-Type": "application/json" } });
         }
 
-        const bearerAuth = await authenticateBearerApiKey(req, env);
+        const isRapidApi = hasValidRapidApiSecret(req, env);
+        const bearerAuth = isRapidApi ? { present: false, valid: false } : await authenticateBearerApiKey(req, env);
         if (bearerAuth.present && !bearerAuth.valid) {
           return new Response(JSON.stringify({
             jsonrpc: "2.0",
@@ -2133,9 +2288,9 @@ Endpoints:
           }), { status: bearerAuth.status || 401, headers: { ...cors, "Content-Type": "application/json" } });
         }
 
-        // Step 1: Verify payment authorization BEFORE tool execution (or bypass via verified Kurox Bearer API key)
+        // Step 1: Verify payment authorization BEFORE tool execution (or bypass via verified Kurox Bearer API key or RapidAPI proxy secret)
         let paymentPrep = null;
-        if (!bearerAuth.valid) {
+        if (!isRapidApi && !bearerAuth.valid) {
           const paymentHdr = req.headers.get("PAYMENT-SIGNATURE") || req.headers.get("X-PAYMENT") || params?._meta?.["x402/payment"];
 
           if (!paymentHdr) {
@@ -2186,6 +2341,9 @@ Endpoints:
 
         // Step 3: Settle verified payment AFTER successful execution
         let meta = {};
+        if (isRapidApi) {
+          meta["rapidapi/auth"] = { mode: "proxy-secret" };
+        }
         if (bearerAuth.valid) {
           meta["kurox/auth"] = { mode: "bearer-api-key", tier: bearerAuth.payload.tier, sid: bearerAuth.payload.sid };
         }
@@ -2218,7 +2376,8 @@ Endpoints:
     if (ROUTE_CONFIGS[path]) {
       const cfg = ROUTE_CONFIGS[path];
 
-      const bearerAuth = await authenticateBearerApiKey(req, env);
+      const isRapidApi = hasValidRapidApiSecret(req, env);
+      const bearerAuth = isRapidApi ? { present: false, valid: false } : await authenticateBearerApiKey(req, env);
       if (bearerAuth.present && !bearerAuth.valid) {
         return new Response(JSON.stringify({
           status: "error",
@@ -2231,9 +2390,9 @@ Endpoints:
         });
       }
 
-      // Step 1: Pre-Verify Payment Authorization via PayAI Facilitator (or bypass via verified Kurox Bearer API key)
+      // Step 1: Pre-Verify Payment Authorization via PayAI Facilitator (or bypass via verified Kurox Bearer API key or RapidAPI proxy secret)
       let paymentPrep = null;
-      if (!bearerAuth.valid) {
+      if (!isRapidApi && !bearerAuth.valid) {
         const paymentHdr = req.headers.get("PAYMENT-SIGNATURE") || req.headers.get("X-PAYMENT") || req.headers.get("payment-signature");
 
         if (!paymentHdr) {
@@ -2325,6 +2484,10 @@ Endpoints:
         "Cache-Control": "no-store, max-age=10",
         "X-Fuel-Freshness": "live"
       };
+
+      if (isRapidApi) {
+        outHeaders["X-RapidAPI-Bypass"] = "active";
+      }
 
       if (bearerAuth.valid) {
         outHeaders["X-Kurox-Auth"] = "bearer-api-key";

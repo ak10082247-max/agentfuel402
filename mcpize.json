@@ -1,0 +1,85 @@
+{
+  "$schema": "https://mcpize.com/schemas/v1/mcpize.schema.json",
+  "id": "agentfuel402",
+  "name": "AgentFuel402",
+  "title": "AgentFuel402 - B2B Leads, Clean Markdown, E-Com & Reverse Engineer MCP",
+  "description": "Zero-cold-start Cloudflare Workers consumable data factory: live B2B intent leads, SSRF/prompt-injection-safe Markdown extraction, Shopify price/stock JSON, PyPI/npm live release specs, and Reverse Engineer Anything (REA).",
+  "version": "1.0.0",
+  "author": {
+    "name": "AK Kurox",
+    "email": "ak10082247@gmail.com",
+    "url": "https://github.com/ak10082247-max"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ak10082247-max/agentfuel402"
+  },
+  "homepage": "https://agentfuel402.ak10082247.workers.dev",
+  "category": "data",
+  "tags": [
+    "b2b-leads",
+    "web-scraping",
+    "markdown",
+    "ecommerce",
+    "reverse-engineering",
+    "openapi",
+    "x402"
+  ],
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://agentfuel402.ak10082247.workers.dev/mcp"
+    }
+  ],
+  "monetization": {
+    "enabled": true,
+    "provider": "stripe",
+    "currency": "usd",
+    "pricing": {
+      "type": "subscription",
+      "tiers": [
+        {
+          "id": "starter",
+          "name": "Starter",
+          "price_usd_per_month": 9.99,
+          "quota_requests_per_month": 2500,
+          "features": [
+            "2,500 monthly MCP / REST edge executions",
+            "B2B Intent Leads + Clean RAG Markdown",
+            "Shopify & Schema.org Live Price/Stock",
+            "PyPI & npm live release metadata",
+            "Global Cloudflare Workers edge (<50ms)"
+          ]
+        },
+        {
+          "id": "pro",
+          "name": "Pro (Recommended)",
+          "price_usd_per_month": 19.99,
+          "quota_requests_per_month": 20000,
+          "is_featured": true,
+          "features": [
+            "20,000 monthly edge executions across all 5 tools",
+            "Reverse Engineer Anything (REA) OpenAPI synthesis",
+            "Prompt-injection defense built into Clean Markdown",
+            "Higher rate headroom for n8n, LangGraph & CrewAI"
+          ]
+        },
+        {
+          "id": "enterprise",
+          "name": "Enterprise",
+          "price_usd_per_month": 49.99,
+          "quota_requests_per_month": 100000,
+          "features": [
+            "100,000 monthly requests across all 5 tools",
+            "Priority commercial usage & custom endpoint extraction support",
+            "Direct async engineer support"
+          ]
+        }
+      ],
+      "pay_per_call": {
+        "enabled": true,
+        "price_usd": 0.005
+      }
+    }
+  }
+}

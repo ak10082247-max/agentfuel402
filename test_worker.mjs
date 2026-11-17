@@ -399,3 +399,125 @@ test("Stripe Checkout creation, instant ZIP download fulfillment, Bearer API key
     globalThis.fetch = ORIG_FETCH;
   }
 });
+
+test("SVG Safety Badge, $19 Live CSV Pack checkout/download & RapidAPI bypass work cleanly", async () => {
+  const TEST_SECRET = "test_signing_secret_32_bytes_minimum_ok_12345";
+  const TEST_ENV = {
+    ...ENV,
+    STRIPE_SECRET_KEY: "sk_test_mock_key",
+    KUROX_SIGNING_SECRET: TEST_SECRET,
+    RAPIDAPI_PROXY_SECRET: "rapid_secret_xyz",
+  };
+
+  globalThis.fetch = async (url, init = {}) => {
+    const u = String(url);
+    if (u === "https://api.stripe.com/v1/checkout/sessions" && init.method === "POST") {
+      assert.match(String(init.body || ""), /unit_amount%5D=1900/);
+      assert.match(String(init.body || ""), /kind%5D=data_pack/);
+      return new Response(
+        JSON.stringify({ id: "cs_test_csv_1", url: "https://checkout.stripe.com/c/pay/cs_test_csv_1" }),
+        { status: 200, headers: { "content-type": "application/json" } },
+      );
+    }
+    if (u.startsWith("https://api.stripe.com/v1/checkout/sessions/cs_test_paid_csv")) {
+      return new Response(
+        JSON.stringify({
+          id: "cs_test_paid_csv",
+          payment_status: "paid",
+          amount_total: 1900,
+          currency: "usd",
+          customer_details: { email: "agency@example.com" },
+          metadata: { kind: "data_pack", sku: "b2b-tech-intent-leads-csv-v1" },
+          line_items: { data: [] },
+        }),
+        { status: 200, headers: { "content-type": "application/json" } },
+      );
+    }
+    if (u.startsWith("https://hn.algolia.com/")) {
+      return new Response(
+        JSON.stringify({
+          hits: [{
+            objectID: "42",
+            title: "Show HN: Acme, Inc. — Fast Agent Gateway",
+            url: "https://acme.example.com",
+            author: "founder1",
+            points: 55,
+            num_comments: 12,
+            story_text: "Hiring AI engineers using Next.js and Python"
+          }]
+        }),
+        { status: 200, headers: { "content-type": "application/json" } },
+      );
+    }
+    if (u.startsWith("https://pypi.org/pypi/fastapi/json")) {
+      return new Response(
+        JSON.stringify({ info: { version: "0.115.0", summary: "FastAPI" }, releases: { "0.115.0": [] } }),
+        { status: 200, headers: { "content-type": "application/json" } },
+      );
+    }
+    if (u === "https://example.org/safe") {
+      return new Response("<html><title>Clean Page</title><body><p>Hello safe world</p></body></html>", {
+        status: 200,
+        headers: { "content-type": "text/html" },
+      });
+    }
+    throw new Error(`Unexpected fetch: ${u}`);
+  };
+
+  try {
+    // 1. Live SVG Badge renders cleanly & XML-escapes XSS characters
+    const badgeRes = await worker.fetch(
+      new Request("https://agentfuel402.ak10082247.workers.dev/v1/badge/safety?target=https%3A%2F%2Fexample.org%2Fsafe&label=%3Cbad%3E"),
+      TEST_ENV,
+    );
+    assert.equal(badgeRes.status, 200);
+    assert.match(badgeRes.headers.get("Content-Type"), /image\/svg\+xml/i);
+    const svg = await badgeRes.text();
+    assert.match(svg, /<svg /);
+    assert.doesNotMatch(svg, /<bad>/);
+    assert.match(svg, /&lt;bad&gt;/);
+
+    // 2. CSV Data Pack checkout + fulfillment + RFC-4180 CSV download
+    const coRes = await worker.fetch(
+      new Request("https://agentfuel402.ak10082247.workers.dev/v1/checkout/bundle?sku=csv-pack&format=json"),
+      TEST_ENV,
+    );
+    assert.equal(coRes.status, 200);
+    const succRes = await worker.fetch(
+      new Request("https://agentfuel402.ak10082247.workers.dev/v1/stripe/success?session_id=cs_test_paid_csv&format=json"),
+      TEST_ENV,
+    );
+    assert.equal(succRes.status, 200);
+    const ful = await succRes.json();
+    assert.equal(ful.downloads.length, 1);
+    assert.match(ful.downloads[0].filename, /\.csv$/);
+
+    const csvRes = await worker.fetch(new Request(ful.downloads[0].url), TEST_ENV);
+    assert.equal(csvRes.status, 200);
+    assert.match(csvRes.headers.get("Content-Type"), /text\/csv/);
+    const csvText = await csvRes.text();
+    assert.match(csvText, /^company_name,launch_headline,domain/);
+    assert.match(csvText, /"Acme, Inc\.","Acme, Inc\. — Fast Agent Gateway",acme\.example\.com/);
+    assert.match(csvText, /AI\/LLM \| Next\.js\/React \| Python,true,100,Early Stage \/ Pre-Seed/);
+
+    // 3. RapidAPI proxy secret bypasses 402 cleanly when matching, fails closed when spoofed
+    const rapidOk = await worker.fetch(
+      new Request("https://agentfuel402.ak10082247.workers.dev/v1/fuel/sdk-live-spec?package=fastapi&ecosystem=pypi", {
+        headers: { "X-RapidAPI-Proxy-Secret": "rapid_secret_xyz" },
+      }),
+      TEST_ENV,
+    );
+    assert.equal(rapidOk.status, 200);
+    assert.equal(rapidOk.headers.get("X-RapidAPI-Bypass"), "active");
+
+    const rapidBad = await worker.fetch(
+      new Request("https://agentfuel402.ak10082247.workers.dev/v1/fuel/sdk-live-spec?package=fastapi&ecosystem=pypi", {
+        headers: { "X-RapidAPI-Proxy-Secret": "wrong_secret" },
+      }),
+      TEST_ENV,
+    );
+    assert.equal(rapidBad.status, 402);
+  } finally {
+    globalThis.fetch = ORIG_FETCH;
+  }
+});

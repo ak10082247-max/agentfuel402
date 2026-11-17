@@ -456,6 +456,32 @@ EXCLUDED_VENDOR_ORGS = {
     "activepieces",
 }
 
+REQUIRED_TRACK_KEYWORDS = {
+    "track_rugshield": (
+        "aerodrome", "uniswap", "jupiter", "raydium", "solana", "onchainkit",
+        "agentkit", "defi", "swap", "dex", "token", "base", "web3", "evm", "spl",
+        "trading", "liquidity", "pool",
+    ),
+    "track_canaryguard": (
+        "mcp", "agent", "langchain", "langgraph", "crewai", "anthropic",
+        "openai", "pydantic", "mastra", "llm", "rag", "prompt", "ai",
+        "chatbot", "copilot", "modelcontextprotocol", "tool",
+    ),
+    "track_agentfuel": (
+        "apify", "shopify", "n8n", "firecrawl", "crawl", "scrape", "scraper",
+        "enrichment", "leads", "ecommerce", "e-commerce", "playwright",
+        "webhook", "workflow", "markdown", "automation", "extractor",
+    ),
+}
+
+def matches_track_keywords(track: str, repo_name: str, repo_desc: str, topics=None) -> bool:
+    """Enforce track-relevant domain keywords in repo name, description, or topics (not just README hits)."""
+    keywords = REQUIRED_TRACK_KEYWORDS.get(track, ())
+    if not keywords:
+        return True
+    meta_blob = f"{repo_name or ''} {repo_desc or ''} {' '.join(topics or [])}".lower()
+    return any(re.search(rf"(?<![a-z0-9]){re.escape(kw)}(?![a-z0-9])", meta_blob) for kw in keywords)
+
 def is_spam_repo(owner: str, repo_name: str, repo_desc: str) -> bool:
     """Filters out own repos, official vendor orgs, student/hobby toys, and SEO/malware bot-farm repositories."""
     if not owner or not repo_name:
@@ -577,7 +603,10 @@ def search_github_leads(track="track_rugshield", limit=5, exclude_emails=None, e
                     owner = repo.get("owner", {}).get("login")
                     repo_name = repo.get("full_name")
                     repo_desc = repo.get("description") or "GitHub Project"
+                    topics = repo.get("topics") or []
                     if is_spam_repo(owner, repo_name, repo_desc):
+                        continue
+                    if not matches_track_keywords(track, repo_name, repo_desc, topics):
                         continue
                     if owner.lower().strip() in exclude_users:
                         continue
@@ -614,6 +643,8 @@ def search_github_leads(track="track_rugshield", limit=5, exclude_emails=None, e
                                 "email": norm_email,
                                 "repo": repo_name,
                                 "repo_desc": repo_desc,
+                                "homepage": (repo.get("homepage") or "").strip(),
+                                "topics": topics,
                                 "stars": repo.get("stargazers_count", 0)
                             })
                     except Exception:
@@ -652,23 +683,103 @@ def send_email(to_addr, subject, body_text, body_html=None):
         server.login(SMTP_USER, SMTP_PASS)
         server.sendmail(SMTP_USER, [to_addr], msg.as_string())
 
+def run_live_diagnostic(lead: dict, timeout: int = 4) -> str:
+    """Run a non-blocking live preview check on the prospect's repo/site for factual pitch personalization."""
+    track = lead.get("track", "track_agentfuel")
+    repo_full = (lead.get("repo") or "").strip()
+    homepage = (lead.get("homepage") or "").strip()
+    target_url = homepage if homepage.startswith(("http://", "https://")) else (
+        f"https://github.com/{repo_full}" if "/" in repo_full else ""
+    )
+
+    try:
+        if track == "track_agentfuel" and target_url:
+            q_url = urllib.parse.quote(target_url, safe="")
+            res = fetch_json(
+                f"https://agentfuel402.ak10082247.workers.dev/v1/preview/llm-clean-markdown?url={q_url}",
+                timeout=timeout,
+            )
+            if res.get("status") == "success" and res.get("token_estimate"):
+                engine_name = res.get("engine", "edge-sanitizer")
+                return (
+                    f"Tested {target_url} on AgentFuel402 Clean Markdown just now: extracted "
+                    f"{res['token_estimate']} clean LLM tokens via {engine_name} with scripts and nav stripped."
+                )
+
+        elif track == "track_canaryguard":
+            sample_text = (lead.get("repo_desc") or repo_full or "").strip()
+            scanned_label = repo_full or "your project metadata"
+            if homepage.startswith(("http://", "https://")):
+                try:
+                    q_url = urllib.parse.quote(homepage, safe="")
+                    md_res = fetch_json(
+                        f"https://agentfuel402.ak10082247.workers.dev/v1/preview/llm-clean-markdown?url={q_url}",
+                        timeout=timeout,
+                    )
+                    md_text = (md_res.get("markdown") or "").strip()
+                    if md_text:
+                        sample_text = md_text[:3000]
+                        scanned_label = homepage
+                except Exception:
+                    pass
+            if sample_text:
+                res = fetch_json(
+                    "https://canaryguard-402.onrender.com/v1/sanitize/preview",
+                    timeout=timeout,
+                    headers={"Content-Type": "application/json"},
+                    data={"content": sample_text, "strict_mode": True},
+                )
+                status = res.get("status", "clean")
+                engine_ms = res.get("engine_ms", "<10")
+                threats = res.get("threats_neutralized") or []
+                threat_note = f"{len(threats)} rule trigger(s)" if threats else "0 injection triggers"
+                return (
+                    f"Ran a live CanaryGuard scan on {scanned_label}: {status} in {engine_ms} ms "
+                    f"({threat_note}; checks Unicode Tags, zero-width smuggling, and MCP tool poisoning)."
+                )
+
+        elif track == "track_rugshield":
+            m_addr = re.search(r"0x[a-fA-F0-9]{40}", lead.get("repo_desc") or "")
+            token_addr = m_addr.group(0) if m_addr else "0x4200000000000000000000000000000000000006"
+            t0 = time.monotonic()
+            res = fetch_json(
+                "https://rugshield-402.onrender.com/v1/scan/preview",
+                timeout=timeout,
+                headers={"Content-Type": "application/json"},
+                data={"token_address": token_addr, "chain": "base", "simulate_sell": False},
+            )
+            elapsed_ms = int((time.monotonic() - t0) * 1000)
+            hp = res.get("is_honeypot")
+            check_note = f"is_honeypot={hp}" if hp is not None else f"status={res.get('status', 'ok')}"
+            return (
+                f"Verified RugShield /v1/scan/preview live in {elapsed_ms} ms "
+                f"(Base {check_note}) — ready to guard Base sell taxes & Solana Token-2022 mints."
+            )
+    except Exception:
+        return ""
+    return ""
+
+
 def craft_pitch(lead):
     raw_name = (lead.get("name") or lead.get("username") or "there").strip()
     first_name = raw_name.split()[0] if raw_name else "there"
     repo_full = lead.get("repo", "your repo")
     repo_short = repo_full.split("/")[-1]
     track = lead.get("track", "track_agentfuel")
+    diag = (lead.get("diagnostic_summary") or "").strip()
+    diag_block = f"{diag}\n\n" if diag else ""
 
     if track == "track_rugshield":
         subject = f"Quick pre-trade token safety check for {repo_short}"
         text = (
             f"Hey {first_name},\n\n"
-            f"Saw your work on {repo_full}. If you want an external check before your Base/Solana swaps execute "
+            f"Saw your work on {repo_full}. {diag_block}"
+            f"If you want an external safety gate before Base or Solana swaps execute "
             f"(sell-tax simulation, Token-2022 mint/freeze authority, and fail-closed inconclusive checks), "
-            f"you can test our live preview free with no signup here:\n"
+            f"test the live preview free with zero signup here:\n"
             f"https://rugshield-402.onrender.com/v1/scan/preview\n\n"
-            f"If it saves you time vs maintaining RPC/simulator edge cases yourself, you can grab an instant $5 API key "
-            f"or the full $9 self-hosted TypeScript source pack (.zip, immediate download) here:\n"
+            f"To adopt fast: grab a $5 API key or $9 TypeScript self-hosted .zip (instant card checkout), "
+            f"or reply if you want my $29 fixed-outcome PR wiring it into {repo_short} with tests:\n"
             f"https://ak10082247-max.github.io/products.html\n\n"
             f"Best,\nArman\n"
         )
@@ -677,12 +788,13 @@ def craft_pitch(lead):
         subject = f"Deterministic prompt-injection guard for {repo_short}"
         text = (
             f"Hey {first_name},\n\n"
-            f"Saw what you're building in {repo_full}. If you need a fast deterministic sanitizer in front of untrusted "
-            f"web/tool inputs (role delimiter stripping, zero-width obfuscation, MCP tool-poisoning checks, sub-10ms core engine), "
-            f"you can try it live with zero signup here:\n"
+            f"Saw what you're building in {repo_full}. {diag_block}"
+            f"If you need a deterministic guard in front of untrusted web/tool inputs "
+            f"(role delimiter stripping, Unicode Tag decoding, MCP tool-poisoning checks, sub-10ms engine), "
+            f"try it free on your own snippets in our live inspector:\n"
             f"https://canaryguard-402.onrender.com/v1/sanitize/preview\n\n"
-            f"If it fits your stack, we offer a $5 30-day API key (HTTP + MCP) or a $9 self-hosted Express firewall source .zip "
-            f"with instant checkout download here:\n"
+            f"To ship quickly: grab a $5 30-day API key (HTTP + MCP) or $9 Express firewall .zip, "
+            f"or reply for a $29 fixed-outcome integration PR tailored to {repo_short}:\n"
             f"https://ak10082247-max.github.io/products.html\n\n"
             f"Best,\nArman\n"
         )
@@ -691,11 +803,13 @@ def craft_pitch(lead):
         subject = f"Cutting scrape blocks / token bloat in {repo_short}"
         text = (
             f"Hey {first_name},\n\n"
-            f"Saw {repo_full} on GitHub. If you're pulling clean Markdown, Shopify price/stock JSON, or Next.js API schemas "
-            f"without spinning up Playwright, you can test our Cloudflare Edge preview live with zero API key here:\n"
-            f"https://agentfuel402.ak10082247.workers.dev/v1/preview/ecom-price-stock\n\n"
-            f"If you want production API access across all 5 feeds + MCP by card (zero crypto needed), a 30-day Starter key is $5 instant checkout:\n"
-            f"https://agentfuel402.ak10082247.workers.dev/v1/checkout/api-key?plan=starter\n\n"
+            f"Saw {repo_full} on GitHub. {diag_block}"
+            f"If you need clean Markdown, Shopify price/stock JSON, or Next.js API schemas "
+            f"without maintaining brittle Playwright browsers, test our live Cloudflare Edge preview:\n"
+            f"https://agentfuel402.ak10082247.workers.dev/v1/preview/llm-clean-markdown\n\n"
+            f"You can grab a $5 Starter API key, the $19 live B2B Tech Intent CSV pack, a $9 source .zip, "
+            f"or reply for a $29 fixed-outcome integration PR for {repo_short} here:\n"
+            f"https://ak10082247-max.github.io/products.html\n\n"
             f"Best,\nArman\n"
         )
 
@@ -776,7 +890,26 @@ def main():
     parser = argparse.ArgumentParser(description="Big 3 Empire Engine")
     parser.add_argument("--digest-only", action="store_true", help="Only query treasury & send scorecard without prospecting")
     parser.add_argument("--force-send", type=int, default=0, help="Send an immediate capped batch (1-6) even if today's daily quota was reached")
+    parser.add_argument("--dry-run-leads", action="store_true", help="Discover 1 lead per track, run live diagnostics, and print pitches without sending emails")
     args = parser.parse_args()
+
+    if args.dry_run_leads:
+        leads_data = load_leads()
+        known_emails = (
+            {e.lower().strip() for e in leads_data.get("contacted_emails", [])}
+            | {e.lower().strip() for e in leads_data.get("suppressed_emails", [])}
+        )
+        known_users = {u.lower().strip() for u in leads_data["contacted_users"]}
+        for track_name in ["track_rugshield", "track_canaryguard", "track_agentfuel"]:
+            print(f"\n=== DRY RUN: {track_name} ===")
+            leads = search_github_leads(track_name, limit=1, exclude_emails=known_emails, exclude_users=known_users)
+            for lead in leads:
+                lead["diagnostic_summary"] = run_live_diagnostic(lead)
+                subj, pitch = craft_pitch(lead)
+                print(f"Repo: {lead['repo']} (Stars: {lead.get('stars', 0)}) -> {lead['email']}")
+                print(f"Diag: {lead.get('diagnostic_summary') or '(none)'}")
+                print(f"Subject: {subj}\n{pitch}")
+        return
 
     print(f"[{datetime.now(timezone.utc).isoformat()}] Starting Big 3 Empire Engine...")
 
@@ -831,6 +964,7 @@ def main():
                 if email in known_emails or user in known_users:
                     continue
                 try:
+                    lead["diagnostic_summary"] = run_live_diagnostic(lead)
                     subj, pitch = craft_pitch(lead)
                     send_email(email, subj, pitch)
                     known_emails.add(email)
