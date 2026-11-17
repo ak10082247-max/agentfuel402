@@ -443,11 +443,24 @@ def is_deliverable_personal_email(email: str) -> bool:
     # Allow real startup / company / agency domains when DNS confirms active MX records
     return has_valid_mx_record(domain)
 
+EXCLUDED_VENDOR_ORGS = {
+    "ak10082247-max",
+    "n8n-io",
+    "langchain-ai",
+    "coinbase",
+    "anthropics",
+    "openai",
+    "apify",
+    "modelcontextprotocol",
+    "elizaos",
+    "activepieces",
+}
+
 def is_spam_repo(owner: str, repo_name: str, repo_desc: str) -> bool:
-    """Filters out own repos, student/hobby toys, and SEO/malware bot-farm repositories."""
+    """Filters out own repos, official vendor orgs, student/hobby toys, and SEO/malware bot-farm repositories."""
     if not owner or not repo_name:
         return True
-    if owner.lower() in {"ak10082247-max"}:
+    if owner.lower() in EXCLUDED_VENDOR_ORGS:
         return True
     if repo_name.lower() in {f"{owner.lower()}/{owner.lower()}", f"{owner.lower()}/{owner.lower()}.github.io"}:
         return True
@@ -496,34 +509,34 @@ def search_github_leads(track="track_rugshield", limit=5, exclude_emails=None, e
     exclude_users = set(exclude_users or ())
     track_queries = {
         "track_rugshield": [
-            '"@coinbase/onchainkit" stars:>=15',
-            '"aerodrome" base swap stars:>=15',
-            '"uniswap v3" swap base stars:>=15',
-            '"solana swap" OR "jupiter aggregator" stars:>=15',
-            '"solana-agent-kit" stars:>=15',
-            '"coinbase/agentkit" OR "agentkit" defi stars:>=15',
-            '"dexscreener" solana OR base stars:>=15',
-            '"trading bot" solana OR raydium stars:>=20'
+            '"@coinbase/onchainkit" stars:1..300',
+            '"aerodrome" base swap stars:1..300',
+            '"uniswap v3" swap base stars:1..300',
+            '"solana swap" OR "jupiter aggregator" stars:1..300',
+            '"solana-agent-kit" stars:1..300',
+            '"coinbase/agentkit" OR "agentkit" defi stars:1..300',
+            '"dexscreener" solana OR base stars:1..300',
+            '"trading bot" solana OR raydium stars:1..300'
         ],
         "track_canaryguard": [
-            '"@anthropic-ai/sdk" stars:>=20',
-            '"@langchain/openai" stars:>=20',
-            '"mcp-remote" OR "modelcontextprotocol" stars:>=20',
-            '"mcp server" stars:>=20',
-            '"langchain" agent stars:>=25',
-            '"openai agents" stars:>=15',
-            '"langgraph" OR "crewai" stars:>=25',
-            '"pydantic-ai" OR "mastra" stars:>=20'
+            '"@anthropic-ai/sdk" stars:1..300',
+            '"@langchain/openai" stars:1..300',
+            '"mcp-remote" OR "modelcontextprotocol" stars:1..300',
+            '"mcp server" stars:1..300',
+            '"langchain" agent stars:1..300',
+            '"openai agents" stars:1..300',
+            '"langgraph" OR "crewai" stars:1..300',
+            '"pydantic-ai" OR "mastra" stars:1..300'
         ],
         "track_agentfuel": [
-            '"apify-client" OR "apify" actor stars:>=10',
-            '"shopify-api-node" OR "shopify" webhook stars:>=15',
-            '"n8n-nodes" OR "n8n" workflow stars:>=20',
-            '"firecrawl" OR "crawl4ai" stars:>=20',
-            '"lead enrichment" OR "b2b leads" stars:>=15',
-            '"price monitor" OR "ecommerce scraper" stars:>=15',
-            '"playwright" scraper stars:>=20',
-            '"clay" enrichment OR pipeline stars:>=15'
+            '"apify-client" OR "apify" actor stars:1..300',
+            '"shopify-api-node" OR "shopify" webhook stars:1..300',
+            '"n8n-nodes" OR "n8n" workflow stars:1..300',
+            '"firecrawl" OR "crawl4ai" stars:1..300',
+            '"lead enrichment" OR "b2b leads" stars:1..300',
+            '"price monitor" OR "ecommerce scraper" stars:1..300',
+            '"playwright" scraper stars:1..300',
+            '"clay" enrichment OR pipeline stars:1..300'
         ]
     }
 
@@ -555,7 +568,8 @@ def search_github_leads(track="track_rugshield", limit=5, exclude_emails=None, e
                         break
                     if repo.get("fork") or repo.get("archived"):
                         continue
-                    if (repo.get("stargazers_count") or 0) < 15:
+                    stars = repo.get("stargazers_count") or 0
+                    if stars < 1 or stars > 300:
                         continue
                     pushed_at = repo.get("pushed_at") or ""
                     if pushed_at and pushed_at < "2026-08-01":

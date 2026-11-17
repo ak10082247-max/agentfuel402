@@ -30,6 +30,16 @@ class OutreachUpgradeTest(unittest.TestCase):
         self.assertTrue(eng.has_commercial_builder_signal({"company": "", "blog": "", "public_repos": 2, "followers": 1}, "cto@acme.dev"))
         self.assertTrue(eng.has_commercial_builder_signal({"company": "", "blog": "", "public_repos": 12, "followers": 25}, "dev@gmail.com"))
 
+    def test_blocks_official_vendor_orgs(self):
+        for org in ("n8n-io", "langchain-ai", "coinbase", "anthropics", "openai", "apify", "modelcontextprotocol", "elizaOS", "activepieces"):
+            self.assertTrue(eng.is_spam_repo(org, f"{org}/sdk", "Official SDK repository"))
+
+    def test_star_band_limits(self):
+        src = Path(__file__).resolve().with_name("unified_empire_engine.py").read_text(encoding="utf-8")
+        self.assertIn("stars:1..300", src)
+        self.assertNotIn("stars:>=", src)
+        self.assertIn("if stars < 1 or stars > 300:", src)
+
     def test_concise_deliverable_pitches(self):
         for track in ("track_rugshield", "track_canaryguard", "track_agentfuel"):
             subj, body = eng.craft_pitch({
