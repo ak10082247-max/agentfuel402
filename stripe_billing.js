@@ -100,13 +100,18 @@ export function escapeHtml(value) {
     .replace(/'/g, "&#39;");
 }
 
+function cleanSecret(value) {
+  return typeof value === "string" ? value.replace(/[\uFEFF\x00-\x20\x7F]+/g, "") : "";
+}
+
 async function importHmacKey(secret) {
-  if (!secret || typeof secret !== "string" || secret.length < 16) {
+  const normalized = cleanSecret(secret);
+  if (!normalized || normalized.length < 16) {
     throw new Error("KUROX_SIGNING_SECRET is not configured.");
   }
   return await crypto.subtle.importKey(
     "raw",
-    enc.encode(secret),
+    enc.encode(normalized),
     { name: "HMAC", hash: "SHA-256" },
     false,
     ["sign", "verify"],
@@ -220,7 +225,8 @@ function appendFormParams(params, obj, prefix = "") {
 }
 
 export async function createStripeCheckoutSession(options, env) {
-  if (!env?.STRIPE_SECRET_KEY) {
+  const stripeKey = cleanSecret(env?.STRIPE_SECRET_KEY);
+  if (!stripeKey) {
     throw Object.assign(new Error("Stripe checkout not configured on worker"), { httpStatus: 503 });
   }
   const form = new URLSearchParams();
@@ -236,7 +242,7 @@ export async function createStripeCheckoutSession(options, env) {
   const res = await fetch("https://api.stripe.com/v1/checkout/sessions", {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${env.STRIPE_SECRET_KEY}`,
+      Authorization: `Bearer ${stripeKey}`,
       "Content-Type": "application/x-www-form-urlencoded",
     },
     body: form.toString(),
@@ -273,7 +279,9 @@ function resolveCatalogItemFromSession(session) {
 }
 
 export async function verifyCheckoutSessionAndMint(sessionId, origin, env) {
-  if (!env?.STRIPE_SECRET_KEY || !env?.KUROX_SIGNING_SECRET) {
+  const stripeKey = cleanSecret(env?.STRIPE_SECRET_KEY);
+  const signingSecret = cleanSecret(env?.KUROX_SIGNING_SECRET);
+  if (!stripeKey || !signingSecret) {
     throw Object.assign(new Error("Stripe fulfillment secrets not configured on worker"), { httpStatus: 503 });
   }
   if (!/^cs_(test|live)_[A-Za-z0-9_]+$/.test(sessionId || "")) {
@@ -283,7 +291,7 @@ export async function verifyCheckoutSessionAndMint(sessionId, origin, env) {
   const res = await fetch(
     `https://api.stripe.com/v1/checkout/sessions/${encodeURIComponent(sessionId)}?expand[]=line_items`,
     {
-      headers: { Authorization: `Bearer ${env.STRIPE_SECRET_KEY}` },
+      headers: { Authorization: `Bearer ${stripeKey}` },
       signal: AbortSignal.timeout(15000),
     },
   );
