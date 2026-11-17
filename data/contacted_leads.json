@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-16T06:41:44.828422+00:00",
+  "updated_at": "2026-11-17T03:58:47.981697+00:00",
   "suppressed_emails": [
     "paulalexeev10@gmail.com",
     "serge.lopes.94@free.fr",
@@ -208,7 +208,22 @@
     "anandanairaan@gmail.com",
     "ayyoub.ag@gmail.com",
     "miguelbatistasilva32@gmail.com",
-    "rcspence96@gmail.com"
+    "rcspence96@gmail.com",
+    "lbillingh@gmail.com",
+    "hello@blockrun.ai",
+    "nicksarano@proton.me",
+    "contact@bugnet.org",
+    "chinesedragon6@outlook.com",
+    "tjcrims0n420@gmail.com",
+    "contact@prismor.dev",
+    "i1see1you@gmail.com",
+    "24bq1a05p6@vvit.net",
+    "hello@protolabs.consulting",
+    "spbotdel@gmail.com",
+    "jeremylongshore@gmail.com",
+    "mar.kostrz@onet.pl",
+    "yrc602@gmail.com",
+    "soumyadeeproychowdhury101@gmail.com"
   ],
   "contacted_users": [
     "bennyjo",
@@ -406,7 +421,22 @@
     "anandanair",
     "ayyouboss0011",
     "miguelbatistasilva",
-    "rcspence1"
+    "rcspence1",
+    "larynab",
+    "blockrunai",
+    "0xnickdev",
+    "bugnet-sh",
+    "niri7981",
+    "tjcrims0nx",
+    "prismorsec",
+    "i1see1you",
+    "rxmna8502",
+    "protolabsai",
+    "spbotdel",
+    "jeremylongshore",
+    "marekk13",
+    "ryq99",
+    "soumyadeep-rc"
   ],
   "history": [
     {
@@ -1780,6 +1810,111 @@
       "track": "track_agentfuel",
       "repo": "rcspence1/skool-scraper",
       "sent_date": "2026-11-16T06:41:44.828401+00:00"
+    },
+    {
+      "username": "larynab",
+      "email": "lbillingh@gmail.com",
+      "track": "track_rugshield",
+      "repo": "LarynaB/arcanumfleet-mcp-server",
+      "sent_date": "2026-11-17T03:57:16.290477+00:00"
+    },
+    {
+      "username": "blockrunai",
+      "email": "hello@blockrun.ai",
+      "track": "track_rugshield",
+      "repo": "BlockRunAI/ClawRouter",
+      "sent_date": "2026-11-17T03:57:21.198205+00:00"
+    },
+    {
+      "username": "0xnickdev",
+      "email": "nicksarano@proton.me",
+      "track": "track_rugshield",
+      "repo": "0xNickdev/aiagentzoo",
+      "sent_date": "2026-11-17T03:57:25.896374+00:00"
+    },
+    {
+      "username": "bugnet-sh",
+      "email": "contact@bugnet.org",
+      "track": "track_rugshield",
+      "repo": "bugnet-sh/bugnet",
+      "sent_date": "2026-11-17T03:57:30.543080+00:00"
+    },
+    {
+      "username": "niri7981",
+      "email": "chinesedragon6@outlook.com",
+      "track": "track_rugshield",
+      "repo": "Niri7981/Yosh",
+      "sent_date": "2026-11-17T03:57:35.310998+00:00"
+    },
+    {
+      "username": "tjcrims0nx",
+      "email": "tjcrims0n420@gmail.com",
+      "track": "track_canaryguard",
+      "repo": "tjcrims0nx/OpenMind-Jailbreak-Lab",
+      "sent_date": "2026-11-17T03:57:45.851486+00:00"
+    },
+    {
+      "username": "prismorsec",
+      "email": "contact@prismor.dev",
+      "track": "track_canaryguard",
+      "repo": "PrismorSec/prismor",
+      "sent_date": "2026-11-17T03:57:50.711670+00:00"
+    },
+    {
+      "username": "i1see1you",
+      "email": "i1see1you@gmail.com",
+      "track": "track_canaryguard",
+      "repo": "i1see1you/VirbiusAgent",
+      "sent_date": "2026-11-17T03:57:55.673327+00:00"
+    },
+    {
+      "username": "rxmna8502",
+      "email": "24bq1a05p6@vvit.net",
+      "track": "track_canaryguard",
+      "repo": "rxmna8502/vybe-intelligence-vault",
+      "sent_date": "2026-11-17T03:58:00.608710+00:00"
+    },
+    {
+      "username": "protolabsai",
+      "email": "hello@protolabs.consulting",
+      "track": "track_canaryguard",
+      "repo": "protoLabsAI/protoAgent",
+      "sent_date": "2026-11-17T03:58:05.217863+00:00"
+    },
+    {
+      "username": "spbotdel",
+      "email": "spbotdel@gmail.com",
+      "track": "track_agentfuel",
+      "repo": "spbotdel/facebook-group-posts-all-photos-scraper",
+      "sent_date": "2026-11-17T03:58:28.816478+00:00"
+    },
+    {
+      "username": "jeremylongshore",
+      "email": "jeremylongshore@gmail.com",
+      "track": "track_agentfuel",
+      "repo": "jeremylongshore/intent-outreach",
+      "sent_date": "2026-11-17T03:58:33.536900+00:00"
+    },
+    {
+      "username": "marekk13",
+      "email": "mar.kostrz@onet.pl",
+      "track": "track_agentfuel",
+      "repo": "marekk13/PKP-Intercity-Train-Delay-Scraper",
+      "sent_date": "2026-11-17T03:58:38.449098+00:00"
+    },
+    {
+      "username": "ryq99",
+      "email": "yrc602@gmail.com",
+      "track": "track_agentfuel",
+      "repo": "ryq99/linkedin-jobs-scraper",
+      "sent_date": "2026-11-17T03:58:43.230101+00:00"
+    },
+    {
+      "username": "soumyadeep-rc",
+      "email": "soumyadeeproychowdhury101@gmail.com",
+      "track": "track_agentfuel",
+      "repo": "soumyadeep-rc/RAG-CRAW",
+      "sent_date": "2026-11-17T03:58:47.981687+00:00"
     }
   ]
 }
