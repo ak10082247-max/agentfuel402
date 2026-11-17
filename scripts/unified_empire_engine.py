@@ -248,18 +248,36 @@ def get_active_apify_stats():
     total_runs = 0
     total_succeeded = 0
     total_ppe_events = 0
+    total_est_usd = 0.0
 
     for aid, name, desc in ACTIVE_APIFY_ACTORS:
+        event_prices = {}
+        try:
+            actor_meta = fetch_json(
+                f"https://api.apify.com/v2/acts/{aid}",
+                timeout=8,
+                headers={"Authorization": f"Bearer {APIFY_TOKEN}"} if APIFY_TOKEN else None,
+            )
+            pricing_infos = actor_meta.get("data", {}).get("pricingInfos") or []
+            if pricing_infos:
+                charge_events = (pricing_infos[-1].get("pricingPerEvent") or {}).get("actorChargeEvents") or {}
+                for ev_name, ev_cfg in charge_events.items():
+                    if isinstance(ev_cfg, dict) and isinstance(ev_cfg.get("eventPriceUsd"), (int, float)):
+                        event_prices[ev_name] = float(ev_cfg["eventPriceUsd"])
+        except Exception:
+            event_prices = {}
+
         url = f"https://api.apify.com/v2/acts/{aid}/runs?limit=25&desc=true"
         try:
             res_data = fetch_json(url, timeout=8, headers={"Authorization": f"Bearer {APIFY_TOKEN}"})
             items = res_data.get("data", {}).get("items", [])
             succeeded = [run for run in items if run.get("status") == "SUCCEEDED"]
             ppe_charges = 0
+            est_usd = 0.0
             detail_checks = 0
             for run in succeeded:
                 counts = run.get("chargedEventCounts")
-                if counts is None and run.get("id") and detail_checks < 15:
+                if counts is None and run.get("id") and detail_checks < 25:
                     detail_checks += 1
                     try:
                         run_detail = fetch_json(
@@ -270,27 +288,33 @@ def get_active_apify_stats():
                         counts = run_detail.get("data", {}).get("chargedEventCounts") or {}
                     except Exception:
                         counts = {}
-                ppe_charges += sum((counts or {}).values())
+                for ev_name, ev_count in (counts or {}).items():
+                    ev_num = int(ev_count or 0)
+                    ppe_charges += ev_num
+                    est_usd += ev_num * event_prices.get(ev_name, 0.0)
 
             total_runs += len(items)
             total_succeeded += len(succeeded)
             total_ppe_events += ppe_charges
+            total_est_usd += est_usd
             stats.append({
                 "id": aid,
                 "name": name,
                 "description": desc,
                 "runs": len(items),
                 "succeeded": len(succeeded),
-                "ppe_charges": ppe_charges
+                "ppe_charges": ppe_charges,
+                "est_usd": round(est_usd, 4),
             })
         except Exception as e:
-            stats.append({"id": aid, "name": name, "description": desc, "runs": 0, "succeeded": 0, "ppe_charges": 0, "error": str(e)})
+            stats.append({"id": aid, "name": name, "description": desc, "runs": 0, "succeeded": 0, "ppe_charges": 0, "est_usd": 0.0, "error": str(e)})
 
     return {
         "actors": stats,
         "total_runs": total_runs,
         "total_succeeded": total_succeeded,
-        "total_ppe_events": total_ppe_events
+        "total_ppe_events": total_ppe_events,
+        "total_est_usd": round(total_est_usd, 4),
     }
 
 # -----------------------------------------------------------------------------
@@ -434,6 +458,9 @@ def is_spam_repo(owner: str, repo_name: str, repo_desc: str) -> bool:
         "homework", "assignment", "coursework", "capstone", "bootcamp", "university",
         "college", "student", "semester", "cs50", "100-days", "tutorial", "ctf",
         "jailbreak-lab", "train-delay", "facebook-group", "interview", "resume", "thesis",
+        "self-hosted alternative", "open-source alternative", "free alternative", "no paid tiers",
+        "polymarket", "prediction-market", "betting", "gambling", "casino", "sportsbook",
+        "arbitrage-bot", "mev-bot", "sniper-bot", "pumpfun-sniper",
         "practice", "learning", "my-first", "todo-app", "hello-world", "leetcode",
         "portfolio", "clone-app", "final-project", "mini-project", "mini_project",
         "class-project", "test-repo", "demo-app", "sample-app", "workshop", "awesome-"
@@ -469,30 +496,30 @@ def search_github_leads(track="track_rugshield", limit=5, exclude_emails=None, e
     exclude_users = set(exclude_users or ())
     track_queries = {
         "track_rugshield": [
-            '"solana swap" stars:>=15',
-            '"jupiter aggregator" solana stars:>=15',
+            '"@coinbase/onchainkit" stars:>=15',
+            '"aerodrome" base swap stars:>=15',
+            '"uniswap v3" swap base stars:>=15',
+            '"solana swap" OR "jupiter aggregator" stars:>=15',
             '"solana-agent-kit" stars:>=15',
             '"coinbase/agentkit" OR "agentkit" defi stars:>=15',
             '"dexscreener" solana OR base stars:>=15',
-            '"trading bot" solana OR raydium stars:>=20',
-            '"uniswap v3" OR "aerodrome" base stars:>=15',
-            '"x402" defi OR swap stars:>=10'
+            '"trading bot" solana OR raydium stars:>=20'
         ],
         "track_canaryguard": [
+            '"@anthropic-ai/sdk" stars:>=20',
+            '"@langchain/openai" stars:>=20',
+            '"mcp-remote" OR "modelcontextprotocol" stars:>=20',
             '"mcp server" stars:>=20',
-            '"modelcontextprotocol" stars:>=20',
             '"langchain" agent stars:>=25',
             '"openai agents" stars:>=15',
             '"langgraph" OR "crewai" stars:>=25',
-            '"pydantic-ai" OR "mastra" stars:>=20',
-            '"ai agent" llm stars:>=25',
-            '"dify" workflow OR plugin stars:>=20'
+            '"pydantic-ai" OR "mastra" stars:>=20'
         ],
         "track_agentfuel": [
-            '"n8n" workflow stars:>=20',
+            '"apify-client" OR "apify" actor stars:>=10',
+            '"shopify-api-node" OR "shopify" webhook stars:>=15',
+            '"n8n-nodes" OR "n8n" workflow stars:>=20',
             '"firecrawl" OR "crawl4ai" stars:>=20',
-            '"shopify" scraper OR webhook stars:>=15',
-            '"apify" actor OR scraper stars:>=10',
             '"lead enrichment" OR "b2b leads" stars:>=15',
             '"price monitor" OR "ecommerce scraper" stars:>=15',
             '"playwright" scraper stars:>=20',
@@ -691,12 +718,12 @@ Solana Merchant ATA (DD3A...):    {treasury['solana'][0]['usdc']:.6f} USDC (DD3A
 -----------------------------------------------------------------------------
 Total Actor Runs:       {apify_stats['total_runs']}
 Successful Runs:        {apify_stats['total_succeeded']}
-Total PPE Charged:      {apify_stats['total_ppe_events']} events
+Total PPE Charged:      {apify_stats['total_ppe_events']} events (~${apify_stats.get('total_est_usd', 0.0):.4f} USD est.)
 
 Breakdown across Active Actors:
 """
     for a in apify_stats["actors"]:
-        body += f"- {a['name']:25}: {a['runs']:2} runs | {a['succeeded']:2} succeeded | {a['ppe_charges']:2} PPE events\n"
+        body += f"- {a['name']:25}: {a['runs']:2} runs | {a['succeeded']:2} succeeded | {a['ppe_charges']:2} PPE (~${a.get('est_usd', 0.0):.4f})\n"
 
     body += f"""
 4. 3-TRACK OUTBOUND PROSPECTING & GROWTH:

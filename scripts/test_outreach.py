@@ -19,6 +19,9 @@ class OutreachUpgradeTest(unittest.TestCase):
         self.assertTrue(eng.is_spam_repo("tjcrims0nx", "tjcrims0nx/OpenMind-Jailbreak-Lab", "jailbreak prompt testing"))
         self.assertTrue(eng.is_spam_repo("marekk13", "marekk13/PKP-Intercity-Train-Delay-Scraper", "train delay scraper"))
         self.assertTrue(eng.is_spam_repo("student1", "student1/capstone-llm-agent", "university project"))
+        self.assertTrue(eng.is_spam_repo("aiqadam", "aiqadam/qadam-flow", "An open-source alternative to paid SaaS"))
+        self.assertTrue(eng.is_spam_repo("selfhost", "selfhost/tool", "Free self-hosted alternative with no paid tiers"))
+        self.assertTrue(eng.is_spam_repo("botdev", "botdev/polymarket-arbitrage-bot", "Polymarket prediction market bot"))
         self.assertFalse(eng.is_spam_repo("protoLabsAI", "protoLabsAI/protoAgent", "Production autonomous AI agent orchestration"))
 
     def test_commercial_builder_signal(self):
