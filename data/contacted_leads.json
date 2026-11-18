@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-18T16:24:33.421651+00:00",
+  "updated_at": "2026-11-18T21:08:48.335375+00:00",
   "suppressed_emails": [
     "paulalexeev10@gmail.com",
     "serge.lopes.94@free.fr",
@@ -253,7 +253,13 @@
     "syedjafri06193@gmail.com",
     "shardyms@gmail.com",
     "nazar.plokhuta.dev@gmail.com",
-    "ainganimrode@gmail.com"
+    "ainganimrode@gmail.com",
+    "timothymycompc@gmail.com",
+    "mail@kacm1network.org",
+    "hi@hyoban.cc",
+    "takalele@konnex.me",
+    "tummalamohanaditya119@gmail.com",
+    "signallayerops@gmail.com"
   ],
   "contacted_users": [
     "bennyjo",
@@ -496,7 +502,13 @@
     "syedjafri06193",
     "manveen07",
     "nazar-plokhuta",
-    "nim-tech-arch"
+    "nim-tech-arch",
+    "timothymycompc",
+    "kacmnetworkk",
+    "hyoban",
+    "takalele",
+    "adityajai119",
+    "signallayerops"
   ],
   "history": [
     {
@@ -2185,6 +2197,60 @@
       "track": "track_agentfuel",
       "repo": "Nim-tech-arch/ADL-SignalForge",
       "sent_date": "2026-11-18T16:24:33.421651+00:00"
+    },
+    {
+      "username": "timothymycompc",
+      "email": "timothymycompc@gmail.com",
+      "track": "track_rugshield",
+      "lead_source": "issue_poach",
+      "ecosystem_repo": "coinbase/agentkit",
+      "repo": "coinbase/agentkit",
+      "sent_date": "2026-11-18T21:07:06.414475+00:00"
+    },
+    {
+      "username": "kacmnetworkk",
+      "email": "mail@kacm1network.org",
+      "track": "track_rugshield",
+      "lead_source": "recent_fork",
+      "ecosystem_repo": "sendaifun/solana-agent-kit",
+      "repo": "Kacmnetworkk/solana-agent-kit",
+      "sent_date": "2026-11-18T21:07:21.589960+00:00"
+    },
+    {
+      "username": "hyoban",
+      "email": "hi@hyoban.cc",
+      "track": "track_canaryguard",
+      "lead_source": "issue_poach",
+      "ecosystem_repo": "langgenius/dify",
+      "repo": "langgenius/dify",
+      "sent_date": "2026-11-18T21:08:01.522994+00:00"
+    },
+    {
+      "username": "takalele",
+      "email": "takalele@konnex.me",
+      "track": "track_canaryguard",
+      "lead_source": "recent_fork",
+      "ecosystem_repo": "BerriAI/litellm",
+      "repo": "Takalele/litellm",
+      "sent_date": "2026-11-18T21:08:15.207944+00:00"
+    },
+    {
+      "username": "adityajai119",
+      "email": "tummalamohanaditya119@gmail.com",
+      "track": "track_agentfuel",
+      "lead_source": "issue_poach",
+      "ecosystem_repo": "unclecode/crawl4ai",
+      "repo": "unclecode/crawl4ai",
+      "sent_date": "2026-11-18T21:08:34.484872+00:00"
+    },
+    {
+      "username": "signallayerops",
+      "email": "signallayerops@gmail.com",
+      "track": "track_agentfuel",
+      "lead_source": "recent_fork",
+      "ecosystem_repo": "enescingoz/awesome-n8n-templates",
+      "repo": "signallayerops/awesome-n8n-templates",
+      "sent_date": "2026-11-18T21:08:48.335375+00:00"
     }
   ]
 }
