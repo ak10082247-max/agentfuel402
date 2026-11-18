@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-17T16:56:33.778672+00:00",
+  "updated_at": "2026-11-18T01:00:32.066798+00:00",
   "suppressed_emails": [
     "paulalexeev10@gmail.com",
     "serge.lopes.94@free.fr",
@@ -229,7 +229,10 @@
     "info@rbjglobal.com",
     "mr.aungthiha@gmail.com",
     "ericy.song@mail.utoronto.ca",
-    "hello@gros.farm"
+    "hello@gros.farm",
+    "info@apievangelist.com",
+    "ankur.halder12345@gmail.com",
+    "sanjay@recodehive.com"
   ],
   "contacted_users": [
     "bennyjo",
@@ -448,7 +451,10 @@
     "rbjglobal",
     "aungthiha",
     "chardxbt",
-    "gros-farm"
+    "gros-farm",
+    "api-evangelist",
+    "ankurhalder",
+    "sanjay-kv"
   ],
   "history": [
     {
@@ -1969,6 +1975,27 @@
       "track": "track_agentfuel",
       "repo": "Gros-farm/Price_Monitoring",
       "sent_date": "2026-11-17T16:56:33.778672+00:00"
+    },
+    {
+      "username": "api-evangelist",
+      "email": "info@apievangelist.com",
+      "track": "track_rugshield",
+      "repo": "api-evangelist/coinbase-onchain-kit",
+      "sent_date": "2026-11-18T00:59:46.913656+00:00"
+    },
+    {
+      "username": "ankurhalder",
+      "email": "ankur.halder12345@gmail.com",
+      "track": "track_canaryguard",
+      "repo": "ankurhalder/codebase-snapshot",
+      "sent_date": "2026-11-18T01:00:07.168851+00:00"
+    },
+    {
+      "username": "sanjay-kv",
+      "email": "sanjay@recodehive.com",
+      "track": "track_agentfuel",
+      "repo": "sanjay-kv/github-card-template",
+      "sent_date": "2026-11-18T01:00:32.066775+00:00"
     }
   ]
 }
