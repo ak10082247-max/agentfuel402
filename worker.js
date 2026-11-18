@@ -11,6 +11,8 @@ import {
   DATA_PACK_PLANS,
   authenticateBearerApiKey,
   createStripeCheckoutSession,
+  hasSigningSecretConfigured,
+  signStatelessPassToken,
   verifyCheckoutSessionAndMint,
   verifyKuroxToken,
   decodeBase64ToBytes,
@@ -159,7 +161,23 @@ const ROUTE_CONFIGS = {
   }
 };
 
-// Stateless Cloudflare Worker — prepaid stateful passes are disabled.
+// Stateless Cloudflare Worker — $5.00 USDC pass issues a 30-day HMAC-SHA256 Bearer token.
+const PASS_PREPAY_CONFIG = {
+  name: "AgentFuel402 30-Day Agency Pass",
+  amountMicro: 5000000, // $5.000 USDC
+  priceDisplay: "$5.000 USDC",
+  description: "Settle $5.00 USDC once on Base or Solana to mint a stateless 30-day HMAC-SHA256 Bearer pass valid across all 5 AgentFuel402 /v1/fuel/* routes and /mcp.",
+  inputSchema: { type: "object", properties: {} },
+  outputSchema: {
+    type: "object",
+    properties: {
+      status: { type: "string" },
+      api_key: { type: "string" },
+      expires_at: { type: "string" },
+      tx_hash: { type: "string" }
+    }
+  }
+};
 
 // Helper: Common CORS headers
 function corsHeaders(req) {
@@ -275,11 +293,20 @@ const ROUTE_BAZAAR_EXAMPLES = {
       openapi_spec: { openapi: "3.1.0" },
       bypass_code: { curl: "curl -s https://example.com/api/v1/items" }
     }
+  },
+  "/v1/pass/prepay": {
+    input: {},
+    output: {
+      status: "active",
+      api_key: "af402_live_1797628800_abc123def456.0123456789abcdef",
+      expires_at: "2026-12-18T21:15:00.000Z",
+      tx_hash: "0xabc123"
+    }
   }
 };
 
-function buildChallengePayload(req, routePath, details) {
-  const cfg = ROUTE_CONFIGS[routePath] || {
+function buildChallengePayload(req, routePath, details, cfgOverride = null) {
+  const cfg = cfgOverride || ROUTE_CONFIGS[routePath] || {
     amountMicro: 10000,
     priceDisplay: "$0.010 USDC",
     description: "AgentFuel402 Consumable Data",
@@ -445,8 +472,8 @@ function mcpPaymentRequiredResponse(cors, id, req, toolRoute, reason) {
   }), { status: 200, headers: { ...cors, "Content-Type": "application/json" } });
 }
 
-function build402Challenge(req, routePath, details) {
-  const { cfg, challengeObj } = buildChallengePayload(req, routePath, details);
+function build402Challenge(req, routePath, details, cfgOverride = null) {
+  const { cfg, challengeObj } = buildChallengePayload(req, routePath, details, cfgOverride);
   const b64Invoice = btoa(JSON.stringify(challengeObj));
 
   const headers = {
@@ -1325,8 +1352,8 @@ queryBypass();
 // -----------------------------------------------------------------------------
 // Facilitator Settlement Verification (PayAI) — Verify -> Fetch -> Settle
 // -----------------------------------------------------------------------------
-async function preparePayAIRequirements(req, routePath, rawPaymentHeader) {
-  const cfg = ROUTE_CONFIGS[routePath];
+async function preparePayAIRequirements(req, routePath, rawPaymentHeader, cfgOverride = null) {
+  const cfg = cfgOverride || ROUTE_CONFIGS[routePath];
   if (!cfg) throw new Error("Route not configured for payment settlement.");
 
   let parsed;
@@ -1351,7 +1378,12 @@ async function preparePayAIRequirements(req, routePath, rawPaymentHeader) {
 
   const url = new URL(req.url);
   const resourceUrl = `${url.origin}${routePath}`;
-  const { challengeObj } = buildChallengePayload(req, routePath);
+  const { challengeObj } = buildChallengePayload(req, routePath, undefined, cfg);
+
+  const rawAcceptedAmt = parsed.accepted?.amount;
+  if (rawAcceptedAmt !== undefined && BigInt(String(rawAcceptedAmt)) < BigInt(cfg.amountMicro)) {
+    throw new Error(`Payment amount too low: expected at least ${cfg.amountMicro} atomic USDC units.`);
+  }
 
   const incomingNetwork = (parsed.accepted?.network || parsed.network || "").toString();
   const isSolana = incomingNetwork.startsWith("solana") || Boolean(parsed.payload?.transaction);
@@ -1420,8 +1452,8 @@ async function preparePayAIRequirements(req, routePath, rawPaymentHeader) {
   return { relayBody, isSolana, cfg, resourceUrl };
 }
 
-async function validateAndVerifyPayAI(req, routePath, rawPaymentHeader) {
-  const prep = await preparePayAIRequirements(req, routePath, rawPaymentHeader);
+async function validateAndVerifyPayAI(req, routePath, rawPaymentHeader, cfgOverride = null) {
+  const prep = await preparePayAIRequirements(req, routePath, rawPaymentHeader, cfgOverride);
 
   // 1. Verify via PayAI Facilitator (DO NOT settle yet)
   const verifyRes = await fetch(`${PAYAI_FACILITATOR}/verify`, {
@@ -2190,16 +2222,77 @@ Endpoints:
       });
     }
 
-    // $5.00 Agency Pass: disabled on stateless edge isolates (never settle $5 for volatile memory)
+    // Stateless $5.00 USDC Agency Pass Issuance: settles 5000000 atomic USDC -> mints 30-day HMAC-SHA256 Bearer key
     if (path === "/v1/pass/prepay") {
+      if (req.method !== "POST") {
+        return new Response(JSON.stringify({ error: "Method not allowed", charged: false }), {
+          status: 405,
+          headers: { ...cors, "Content-Type": "application/json" }
+        });
+      }
+
+      const paymentHdr = req.headers.get("PAYMENT-SIGNATURE") || req.headers.get("X-PAYMENT") || req.headers.get("payment-signature");
+      if (!paymentHdr) {
+        return build402Challenge(req, "/v1/pass/prepay", undefined, PASS_PREPAY_CONFIG);
+      }
+
+      if (!hasSigningSecretConfigured(env)) {
+        return new Response(JSON.stringify({
+          status: "error",
+          error: "signing_secret_not_configured",
+          charged: false,
+          message: "Pass signing key is not configured on this worker isolate."
+        }, null, 2), {
+          status: 503,
+          headers: { ...cors, "Content-Type": "application/json" }
+        });
+      }
+
+      let paymentPrep;
+      try {
+        paymentPrep = await validateAndVerifyPayAI(req, "/v1/pass/prepay", paymentHdr, PASS_PREPAY_CONFIG);
+      } catch (verifyErr) {
+        return build402Challenge(req, "/v1/pass/prepay", `Payment validation rejected: ${verifyErr.message}`, PASS_PREPAY_CONFIG);
+      }
+
+      let receipt;
+      try {
+        receipt = await settlePayAI(paymentPrep);
+      } catch (settleErr) {
+        return new Response(JSON.stringify({
+          status: "error",
+          error: "settlement_failed",
+          charged: false,
+          message: `On-chain settlement could not be completed: ${settleErr.message}`
+        }, null, 2), {
+          status: 502,
+          headers: { ...cors, "Content-Type": "application/json" }
+        });
+      }
+
+      const expiryTs = Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60;
+      const apiKey = await signStatelessPassToken(receipt.transaction, expiryTs, env.KUROX_SIGNING_SECRET);
+      const b64Receipt = btoa(JSON.stringify(receipt));
+
       return new Response(JSON.stringify({
-        status: "error",
-        error: "agency_pass_disabled",
-        charged: false,
-        message: "Prepaid in-memory Agency Pass sessions are disabled on stateless Cloudflare Workers isolates. Use pay-per-request x402 V2 (Base or Solana USDC) on /v1/fuel/* or Credit Card billing on Apify Store (https://apify.com/kuroxreal)."
+        status: "active",
+        api_key: apiKey,
+        expires_at: new Date(expiryTs * 1000).toISOString(),
+        expires_unix: expiryTs,
+        tx_hash: receipt.transaction,
+        network: receipt.network,
+        payer: receipt.payer,
+        amount_micro: PASS_PREPAY_CONFIG.amountMicro.toString(),
+        usage: "Send Authorization: Bearer <api_key> or X-API-Key: <api_key> on /v1/fuel/* and /mcp"
       }, null, 2), {
-        status: 503,
-        headers: { ...cors, "Content-Type": "application/json" }
+        status: 200,
+        headers: {
+          ...cors,
+          "Content-Type": "application/json",
+          "Cache-Control": "no-store",
+          "PAYMENT-RESPONSE": b64Receipt,
+          "X-Payment-Response": b64Receipt
+        }
       });
     }
 

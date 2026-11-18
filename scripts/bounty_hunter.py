@@ -177,27 +177,52 @@ def _count_linked_prs_and_claims(repo_full: str, issue_num: int, token: str) -> 
     return open_prs, attempts, comments_blob
 
 
+BAD_BOUNTY_LABELS = ("rewarded", "paid", "completed", "claimed", "closed")
+
+
+def is_eligible_bounty_candidate(item: dict, since_dt: datetime) -> bool:
+    """Reject pull requests, stale pre-window issues, and rewarded/paid/claimed tickets."""
+    if not isinstance(item, dict) or item.get("pull_request"):
+        return False
+    created_raw = (item.get("created_at") or "").strip()
+    if not created_raw:
+        return False
+    try:
+        created_dt = datetime.fromisoformat(created_raw.replace("Z", "+00:00"))
+    except ValueError:
+        return False
+    if created_dt < since_dt:
+        return False
+
+    labels = [
+        (lb.get("name", "") if isinstance(lb, dict) else str(lb)).lower()
+        for lb in (item.get("labels") or [])
+    ]
+    return not any(bad in lb for lb in labels for bad in BAD_BOUNTY_LABELS)
+
+
 def scan_open_cash_bounties(days: int = 14, top_n: int = 5, token: str = "") -> list[dict]:
-    """Discover, filter, verify, and rank top unclaimed $50-$500 GitHub bounties."""
+    """Discover, filter, verify, and rank top unclaimed $50-$500 GitHub bounties created in the last 14 days."""
     gh_token = token or resolve_gh_token()
-    since_recent = (datetime.now(timezone.utc) - timedelta(days=days)).strftime("%Y-%m-%d")
-    since_algora = (datetime.now(timezone.utc) - timedelta(days=max(days, 90))).strftime("%Y-%m-%d")
+    lookback_days = max(1, min(int(days), 14))
+    since_dt = datetime.now(timezone.utc) - timedelta(days=lookback_days)
+    since_14d = since_dt.strftime("%Y-%m-%d")
 
     queries = [
-        f'is:issue is:open "algora-pbc" "$" updated:>={since_algora}',
-        f'is:issue is:open "algora-pbc" language:TypeScript updated:>={since_algora}',
-        f'is:issue is:open "algora-pbc" language:Python updated:>={since_algora}',
-        f'is:issue is:open label:"💎 Bounty" language:TypeScript -repo:UnsafeLabs/Bounty-Hunters updated:>={since_algora}',
-        f'is:issue is:open label:"💎 Bounty" language:Python updated:>={since_algora}',
-        f'is:issue is:open label:"💎 Bounty" language:JavaScript updated:>={since_algora}',
-        f'is:issue is:open label:bounty language:TypeScript updated:>={since_algora}',
-        f'is:issue is:open "bounty" "USDC" language:TypeScript updated:>={since_recent}',
+        f'is:issue is:open "algora-pbc" "$" created:>{since_14d}',
+        f'is:issue is:open "algora-pbc" language:TypeScript created:>{since_14d}',
+        f'is:issue is:open "algora-pbc" language:Python created:>{since_14d}',
+        f'is:issue is:open label:"💎 Bounty" language:TypeScript -repo:UnsafeLabs/Bounty-Hunters created:>{since_14d}',
+        f'is:issue is:open label:"💎 Bounty" language:Python created:>{since_14d}',
+        f'is:issue is:open label:"💎 Bounty" language:JavaScript created:>{since_14d}',
+        f'is:issue is:open label:bounty language:TypeScript created:>{since_14d}',
+        f'is:issue is:open "bounty" "USDC" language:TypeScript created:>{since_14d}',
     ]
 
     raw_items = {}
     def _run_search(q: str):
         try:
-            url = f"https://api.github.com/search/issues?q={urllib.parse.quote(q)}&sort=updated&order=desc&per_page=25"
+            url = f"https://api.github.com/search/issues?q={urllib.parse.quote(q)}&sort=created&order=desc&per_page=25"
             return _gh_get(url, token=gh_token, timeout=8).get("items") or []
         except Exception:
             return []
@@ -213,6 +238,8 @@ def scan_open_cash_bounties(days: int = 14, top_n: int = 5, token: str = "") -> 
     repo_lock = threading.Lock()
 
     def _inspect_candidate(item: dict) -> dict | None:
+        if not is_eligible_bounty_candidate(item, since_dt):
+            return None
         html_url = item.get("html_url") or ""
         repo_url = item.get("repository_url") or ""
         if "/repos/" not in repo_url:
@@ -286,6 +313,7 @@ def scan_open_cash_bounties(days: int = 14, top_n: int = 5, token: str = "") -> 
             "open_prs": open_prs,
             "attempts": attempts,
             "algora": has_algora,
+            "created_at": (item.get("created_at") or ""),
             "updated_at": item.get("updated_at") or "",
             "ease_score": round(score, 1),
             "solve_instruction": f"gh issue view {issue_num} --repo {repo_full} && clone, fix, test, and open PR referencing #{issue_num}",
@@ -304,7 +332,7 @@ def format_bounty_scorecard_section(bounties: list[dict]) -> str:
         return (
             "\n6. TOP OPEN GITHUB CASH BOUNTIES ($50-$500, UNCLAIMED):\n"
             "-----------------------------------------------------------------------------\n"
-            "No verified unclaimed $50-$500 bounties matched right now.\n"
+            "No verified unclaimed $50-$500 bounties created in the last 14 days matched right now.\n"
         )
     lines = [
         "\n6. TOP OPEN GITHUB CASH BOUNTIES ($50-$500, UNCLAIMED):",

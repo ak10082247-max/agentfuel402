@@ -122,6 +122,77 @@ class OutreachUpgradeTest(unittest.TestCase):
         self.assertEqual(bh.parse_bounty_amount_usd("/bounty $5"), 5)
         self.assertEqual(bh.parse_bounty_amount_usd("Reward: 150 USDC"), 150)
 
+    def test_bounty_hunter_rejects_stale_and_rewarded_issues(self):
+        from datetime import datetime, timedelta, timezone
+        from unittest.mock import patch
+        import bounty_hunter as bh
+
+        now = datetime.now(timezone.utc)
+        since_dt = now - timedelta(days=14)
+        fresh_ts = (now - timedelta(days=2)).strftime("%Y-%m-%dT%H:%M:%SZ")
+        stale_ts = "2023-04-21T10:00:00Z"
+
+        # 1. Pre-14d created_at and rewarded/paid/claimed labels must be rejected
+        self.assertFalse(bh.is_eligible_bounty_candidate({"created_at": stale_ts, "labels": [{"name": "💎 Bounty"}]}, since_dt))
+        self.assertFalse(bh.is_eligible_bounty_candidate({"created_at": fresh_ts, "labels": [{"name": "💰 Rewarded"}]}, since_dt))
+        self.assertFalse(bh.is_eligible_bounty_candidate({"created_at": fresh_ts, "labels": [{"name": "paid"}]}, since_dt))
+        self.assertFalse(bh.is_eligible_bounty_candidate({"created_at": fresh_ts, "pull_request": {"url": "x"}, "labels": []}, since_dt))
+        self.assertTrue(bh.is_eligible_bounty_candidate({"created_at": fresh_ts, "labels": [{"name": "💎 Bounty"}]}, since_dt))
+
+        # 2. scan_open_cash_bounties uses created:> lookback queries and excludes old/rewarded hits
+        captured_urls = []
+        fresh_issue = {
+            "html_url": "https://github.com/acme/ts-sdk/issues/42",
+            "repository_url": "https://api.github.com/repos/acme/ts-sdk",
+            "number": 42,
+            "title": "Fix Zod timeout bug [$250]",
+            "body": "Repro steps in TypeScript runtime: " + ("x" * 130),
+            "labels": [{"name": "💎 Bounty"}],
+            "created_at": fresh_ts,
+            "updated_at": fresh_ts,
+        }
+        stale_issue = {
+            **fresh_issue,
+            "html_url": "https://github.com/highlight/highlight/issues/5082",
+            "number": 5082,
+            "created_at": stale_ts,
+        }
+        rewarded_issue = {
+            **fresh_issue,
+            "html_url": "https://github.com/acme/ts-sdk/issues/43",
+            "number": 43,
+            "labels": [{"name": "💎 Bounty"}, {"name": "💰 Rewarded"}],
+        }
+        too_big_issue = {
+            **fresh_issue,
+            "html_url": "https://github.com/acme/ts-sdk/issues/44",
+            "number": 44,
+            "title": "[ Bounty $8k ] Rewrite compiler",
+        }
+
+        def fake_gh_get(url, token="", timeout=8):
+            captured_urls.append(url)
+            if "/search/issues?" in url:
+                return {"items": [stale_issue, rewarded_issue, too_big_issue, fresh_issue]}
+            if url == "https://api.github.com/repos/acme/ts-sdk":
+                return {"stargazers_count": 320, "language": "TypeScript", "archived": False, "fork": False}
+            if url.endswith("/comments"):
+                return []
+            if url.endswith("/timeline"):
+                return []
+            return {}
+
+        with patch.object(bh, "_gh_get", side_effect=fake_gh_get):
+            results = bh.scan_open_cash_bounties(days=14, top_n=5, token="test-tok")
+
+        search_urls = [u for u in captured_urls if "/search/issues?" in u]
+        self.assertTrue(search_urls)
+        self.assertTrue(all("created%3A%3E" in u or "created:>" in u for u in search_urls))
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0]["number"], 42)
+        self.assertEqual(results[0]["amount_usd"], 250)
+        self.assertIn("last 14 days", bh.format_bounty_scorecard_section([]))
+
 
 if __name__ == "__main__":
     unittest.main()

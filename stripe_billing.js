@@ -119,6 +119,25 @@ function cleanSecret(value) {
   return typeof value === "string" ? value.replace(/[\uFEFF\x00-\x20\x7F]+/g, "") : "";
 }
 
+export function hasSigningSecretConfigured(env) {
+  return cleanSecret(env?.KUROX_SIGNING_SECRET).length >= 16;
+}
+
+function bytesToHex(bytes) {
+  return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+function hexToBytes(hex) {
+  if (!hex || typeof hex !== "string" || hex.length % 2 !== 0 || !/^[0-9a-f]+$/i.test(hex)) {
+    return null;
+  }
+  const out = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < out.length; i += 1) {
+    out[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
+  }
+  return out;
+}
+
 async function importHmacKey(secret) {
   const normalized = cleanSecret(secret);
   if (!normalized || normalized.length < 16) {
@@ -131,6 +150,42 @@ async function importHmacKey(secret) {
     false,
     ["sign", "verify"],
   );
+}
+
+export async function signStatelessPassToken(txHash, expiryUnixTs, secret) {
+  const key = await importHmacKey(secret);
+  const cleanTx = String(txHash || "tx000000").replace(/^0x/i, "").replace(/[^A-Za-z0-9]/g, "");
+  const txPrefix = (cleanTx.slice(0, 12) || "000000").padEnd(6, "0");
+  const body = `af402_live_${Math.floor(Number(expiryUnixTs))}_${txPrefix}`;
+  const sig = await crypto.subtle.sign("HMAC", key, enc.encode(body));
+  return `${body}.${bytesToHex(new Uint8Array(sig))}`;
+}
+
+export async function verifyStatelessPassToken(token, secret) {
+  if (!token || typeof token !== "string" || !secret) return null;
+  const m = /^((?:af402_live)_(\d{10,13})_([A-Za-z0-9]{6,32}))\.([0-9a-f]{64})$/.exec(token.trim());
+  if (!m) return null;
+  const [, body, expiryStr, txPrefix, hmacHex] = m;
+  const expiryTs = Number(expiryStr);
+  if (!Number.isSafeInteger(expiryTs) || expiryTs <= Math.floor(Date.now() / 1000)) {
+    return null;
+  }
+  const sigBytes = hexToBytes(hmacHex);
+  if (!sigBytes) return null;
+
+  try {
+    const key = await importHmacKey(secret);
+    const ok = await crypto.subtle.verify("HMAC", key, sigBytes, enc.encode(body));
+    if (!ok) return null;
+    return {
+      typ: "x402_pass",
+      tier: "agency_pass_30d",
+      exp: expiryTs,
+      sid: txPrefix,
+    };
+  } catch {
+    return null;
+  }
 }
 
 export async function signKuroxToken(payload, secret, prefix = "sk_kurox_v1") {
@@ -163,9 +218,8 @@ export async function verifyKuroxToken(token, secret, expectedPrefix = "sk_kurox
 }
 
 /**
- * Inspects Authorization: Bearer sk_kurox_v1... or X-API-Key: sk_kurox_v1...
- * Returns { present: false } if absent, { present: true, valid: true, payload } if valid,
- * or { present: true, valid: false, error } if malformed/expired/unconfigured.
+ * Inspects Authorization: Bearer <token> or X-API-Key: <token>
+ * Supports both sk_kurox_v1.* (Stripe) and af402_live_* (stateless $5 x402 pass).
  */
 export async function authenticateBearerApiKey(req, env) {
   const auth = req.headers.get("Authorization") || req.headers.get("authorization") || "";
@@ -173,10 +227,20 @@ export async function authenticateBearerApiKey(req, env) {
   const rawToken = auth.startsWith("Bearer ") ? auth.slice(7).trim() : xApiKey.trim();
 
   if (!rawToken) return { present: false, valid: false };
-  if (!rawToken.startsWith("sk_kurox_v1.")) {
-    return { present: true, valid: false, error: "Unsupported API key prefix. Expected sk_kurox_v1.*" };
+  if (rawToken.startsWith("af402_live_")) {
+    if (!hasSigningSecretConfigured(env)) {
+      return { present: true, valid: false, error: "API key verification temporarily unavailable", status: 503 };
+    }
+    const payload = await verifyStatelessPassToken(rawToken, env.KUROX_SIGNING_SECRET);
+    if (!payload) {
+      return { present: true, valid: false, error: "Invalid or expired AgentFuel pass token", status: 401 };
+    }
+    return { present: true, valid: true, payload };
   }
-  if (!env?.KUROX_SIGNING_SECRET) {
+  if (!rawToken.startsWith("sk_kurox_v1.")) {
+    return { present: true, valid: false, error: "Unsupported API key prefix. Expected sk_kurox_v1.* or af402_live_*" };
+  }
+  if (!hasSigningSecretConfigured(env)) {
     return { present: true, valid: false, error: "API key verification temporarily unavailable", status: 503 };
   }
   const payload = await verifyKuroxToken(rawToken, env.KUROX_SIGNING_SECRET, "sk_kurox_v1");

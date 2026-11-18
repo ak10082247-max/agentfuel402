@@ -45,26 +45,223 @@ test("agentfuel402 landing, pricing, openapi, skill.md, llms.txt & agent-card ha
   assert.ok(card.capabilities.includes("reverse_engineer"));
 });
 
-test("POST /v1/pass/prepay fails closed with 503 and charged:false even with a payment header", async () => {
-  const res1 = await worker.fetch(
+test("POST /v1/pass/prepay enforces 402/503 fail-closed and mints 30-day af402_live pass usable on /v1/fuel/* and /mcp", async () => {
+  const PASS_TEST_SECRET = "test-pass-signing-secret-0123456789abcdef";
+  const PASS_ENV = { ...ENV, KUROX_SIGNING_SECRET: PASS_TEST_SECRET };
+  const getRes = await worker.fetch(
+    new Request("https://agentfuel402.ak10082247.workers.dev/v1/pass/prepay", { method: "GET" }),
+    ENV,
+  );
+  assert.equal(getRes.status, 405);
+
+  // 1. Unpaid request returns x402 V2 402 challenge for $5.00 USDC (5000000 atomic units) on Base + Solana
+  const unpaidRes = await worker.fetch(
     new Request("https://agentfuel402.ak10082247.workers.dev/v1/pass/prepay", { method: "POST" }),
     ENV,
   );
-  assert.equal(res1.status, 503);
-  const body1 = await res1.json();
-  assert.equal(body1.error, "agency_pass_disabled");
-  assert.equal(body1.charged, false);
+  assert.equal(unpaidRes.status, 402);
+  const reqHeader = unpaidRes.headers.get("PAYMENT-REQUIRED");
+  assert.ok(reqHeader, "Expected PAYMENT-REQUIRED header on 402 /v1/pass/prepay");
+  const challenge = JSON.parse(Buffer.from(reqHeader, "base64").toString("utf8"));
+  assert.equal(challenge.x402Version, 2);
 
-  const res2 = await worker.fetch(
-    new Request("https://agentfuel402.ak10082247.workers.dev/v1/pass/prepay", {
-      method: "POST",
-      headers: { "PAYMENT-SIGNATURE": "dummy-header" },
-    }),
-    ENV,
-  );
-  assert.equal(res2.status, 503);
-  const body2 = await res2.json();
-  assert.equal(body2.charged, false);
+  const baseOpt = challenge.accepts.find((a) => a.network === "eip155:8453");
+  const solOpt = challenge.accepts.find((a) => a.network === "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp");
+  assert.ok(baseOpt && solOpt, "Expected both Base and Solana accept options");
+  assert.equal(baseOpt.amount, "5000000");
+  assert.equal(baseOpt.payTo, "0x80E0Ae84679b7f11bE171DaADd492FBECf628cd6");
+  assert.equal(solOpt.amount, "5000000");
+  assert.equal(solOpt.payTo, "9wuMysgXwNhtQeqJgGByAiMYc4EjzZ5wUSmnjrrt3ffh");
+  assert.equal(solOpt.extra?.recipientAta, "DD3A7jaXFeHcif9eYj6Vhomuxypat5Yxi8ow6wxz27yL");
+
+  const mkPaidSig = (acceptedOpt, valueStr) =>
+    Buffer.from(
+      JSON.stringify({
+        x402Version: 2,
+        resource: challenge.resource,
+        accepted: acceptedOpt,
+        payload: {
+          signature: `0x${"11".repeat(65)}`,
+          authorization: {
+            from: "0x1111111111111111111111111111111111111111",
+            to: acceptedOpt.payTo,
+            value: valueStr,
+            validAfter: "0",
+            validBefore: "9999999999",
+            nonce: `0x${"22".repeat(32)}`,
+          },
+        },
+      }),
+    ).toString("base64");
+
+  const origFetch = globalThis.fetch;
+  let verifyCalls = 0;
+  let settleCalls = 0;
+  globalThis.fetch = async (url) => {
+    const u = String(url);
+    if (u === "https://facilitator.payai.network/verify") {
+      verifyCalls += 1;
+      return new Response(JSON.stringify({ isValid: true }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    }
+    if (u === "https://facilitator.payai.network/settle") {
+      settleCalls += 1;
+      return new Response(
+        JSON.stringify({
+          success: true,
+          payer: "0x1111111111111111111111111111111111111111",
+          transaction: "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
+        }),
+        { status: 200, headers: { "content-type": "application/json" } },
+      );
+    }
+    if (u.startsWith("https://pypi.org/pypi/fastapi/json")) {
+      return new Response(
+        JSON.stringify({
+          info: {
+            version: "0.115.0",
+            summary: "FastAPI framework",
+            requires_python: ">=3.8",
+            license: "MIT",
+            author: "Tiangolo",
+            requires_dist: ["starlette>=0.40.0", "pydantic>=2.0"],
+            project_urls: { Homepage: "https://fastapi.tiangolo.com/" },
+          },
+          releases: { "0.115.0": [{ upload_time: "2026-10-01T00:00:00Z" }] },
+        }),
+        { status: 200, headers: { "content-type": "application/json" } },
+      );
+    }
+    throw new Error(`Unexpected fetch in prepay test: ${u}`);
+  };
+
+  try {
+    // 2. Fail closed with 503 BEFORE PayAI /verify or /settle when KUROX_SIGNING_SECRET is missing
+    const noSecretPrepay = await worker.fetch(
+      new Request("https://agentfuel402.ak10082247.workers.dev/v1/pass/prepay", {
+        method: "POST",
+        headers: { "PAYMENT-SIGNATURE": mkPaidSig(baseOpt, "5000000") },
+      }),
+      ENV,
+    );
+    assert.equal(noSecretPrepay.status, 503);
+    const noSecretBody = await noSecretPrepay.json();
+    assert.equal(noSecretBody.error, "signing_secret_not_configured");
+    assert.equal(noSecretBody.charged, false);
+    assert.equal(verifyCalls, 0);
+    assert.equal(settleCalls, 0);
+
+    // 3. Reject underpaid x402 payload (e.g. $0.01 instead of $5.00) with 402 without calling PayAI
+    const underpaidRes = await worker.fetch(
+      new Request("https://agentfuel402.ak10082247.workers.dev/v1/pass/prepay", {
+        method: "POST",
+        headers: { "PAYMENT-SIGNATURE": mkPaidSig({ ...baseOpt, amount: "10000" }, "10000") },
+      }),
+      PASS_ENV,
+    );
+    assert.equal(underpaidRes.status, 402);
+    assert.equal(verifyCalls, 0);
+    assert.equal(settleCalls, 0);
+
+    // 4. Valid $5.00 settlement mints 30-day af402_live_... pass + PAYMENT-RESPONSE header
+    const mintRes = await worker.fetch(
+      new Request("https://agentfuel402.ak10082247.workers.dev/v1/pass/prepay", {
+        method: "POST",
+        headers: { "PAYMENT-SIGNATURE": mkPaidSig(baseOpt, "5000000") },
+      }),
+      PASS_ENV,
+    );
+    assert.equal(mintRes.status, 200);
+    assert.equal(verifyCalls, 1);
+    assert.equal(settleCalls, 1);
+    const mintBody = await mintRes.json();
+    assert.equal(mintBody.status, "active");
+    assert.match(mintBody.api_key, /^af402_live_\d+_[A-Za-z0-9]+\.[0-9a-f]{64}$/);
+    const payRespHdr = mintRes.headers.get("PAYMENT-RESPONSE");
+    assert.ok(payRespHdr, "Expected PAYMENT-RESPONSE header on 200 /v1/pass/prepay");
+    const payResp = JSON.parse(Buffer.from(payRespHdr, "base64").toString("utf8"));
+    assert.equal(payResp.success, true);
+    assert.equal(payResp.transaction, "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890");
+
+    // 5. Issued af402_live_... token works via Authorization: Bearer AND X-API-Key on /v1/fuel/* and /mcp
+    const bearerFuel = await worker.fetch(
+      new Request("https://agentfuel402.ak10082247.workers.dev/v1/fuel/sdk-live-spec?package=fastapi&ecosystem=pypi", {
+        headers: { Authorization: `Bearer ${mintBody.api_key}` },
+      }),
+      PASS_ENV,
+    );
+    assert.equal(bearerFuel.status, 200);
+    assert.equal(bearerFuel.headers.get("X-Kurox-Auth"), "bearer-api-key");
+
+    const xApiFuel = await worker.fetch(
+      new Request("https://agentfuel402.ak10082247.workers.dev/v1/fuel/sdk-live-spec?package=fastapi&ecosystem=pypi", {
+        headers: { "X-API-Key": mintBody.api_key },
+      }),
+      PASS_ENV,
+    );
+    assert.equal(xApiFuel.status, 200);
+
+    const mcpPassRes = await worker.fetch(
+      new Request("https://agentfuel402.ak10082247.workers.dev/mcp", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${mintBody.api_key}`,
+        },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          id: 77,
+          method: "tools/call",
+          params: { name: "fuel_sdk_spec", arguments: { package: "fastapi", ecosystem: "pypi" } },
+        }),
+      }),
+      PASS_ENV,
+    );
+    assert.equal(mcpPassRes.status, 200);
+    const mcpPassBody = await mcpPassRes.json();
+    assert.equal(mcpPassBody.result.isError, false);
+    assert.equal(mcpPassBody.result._meta["kurox/auth"].mode, "bearer-api-key");
+    assert.equal(mcpPassBody.result._meta["kurox/auth"].tier, "agency_pass_30d");
+
+    // 6. Tampered, malformed, and expired af402_live tokens fail closed with 401 on /v1/fuel/* and /mcp
+    const tamperedPass = await worker.fetch(
+      new Request("https://agentfuel402.ak10082247.workers.dev/v1/fuel/sdk-live-spec?package=fastapi", {
+        headers: { Authorization: `Bearer ${mintBody.api_key.slice(0, -1)}0` },
+      }),
+      PASS_ENV,
+    );
+    assert.equal(tamperedPass.status, 401);
+
+    const malformedMcp = await worker.fetch(
+      new Request("https://agentfuel402.ak10082247.workers.dev/mcp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-API-Key": "af402_live_badformat" },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          id: 78,
+          method: "tools/call",
+          params: { name: "fuel_sdk_spec", arguments: { package: "fastapi" } },
+        }),
+      }),
+      PASS_ENV,
+    );
+    assert.equal(malformedMcp.status, 401);
+
+    const cryptoNode = await import("node:crypto");
+    const expiredCore = "af402_live_1000000000_0xabcdef1234";
+    const expiredHmac = cryptoNode.createHmac("sha256", PASS_TEST_SECRET).update(expiredCore).digest("hex");
+    const expiredPass = await worker.fetch(
+      new Request("https://agentfuel402.ak10082247.workers.dev/v1/fuel/sdk-live-spec?package=fastapi", {
+        headers: { Authorization: `Bearer ${expiredCore}.${expiredHmac}` },
+      }),
+      PASS_ENV,
+    );
+    assert.equal(expiredPass.status, 401);
+  } finally {
+    globalThis.fetch = origFetch;
+  }
 });
 
 test("unpaid /v1/fuel/b2b-intent-leads ignores disabled X-Fuel-Session and returns 402 dual-chain challenge", async () => {
