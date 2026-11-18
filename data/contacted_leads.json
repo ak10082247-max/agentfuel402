@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-18T01:00:32.066798+00:00",
+  "updated_at": "2026-11-18T11:52:07.831909+00:00",
   "suppressed_emails": [
     "paulalexeev10@gmail.com",
     "serge.lopes.94@free.fr",
@@ -232,7 +232,10 @@
     "hello@gros.farm",
     "info@apievangelist.com",
     "ankur.halder12345@gmail.com",
-    "sanjay@recodehive.com"
+    "sanjay@recodehive.com",
+    "gitdigitalproducts232@manus.bot",
+    "emma@redditapis.com",
+    "hello.boriskas@gmail.com"
   ],
   "contacted_users": [
     "bennyjo",
@@ -454,7 +457,10 @@
     "gros-farm",
     "api-evangelist",
     "ankurhalder",
-    "sanjay-kv"
+    "sanjay-kv",
+    "gitdigital-products",
+    "redditapis",
+    "danilqa"
   ],
   "history": [
     {
@@ -1996,6 +2002,27 @@
       "track": "track_agentfuel",
       "repo": "sanjay-kv/github-card-template",
       "sent_date": "2026-11-18T01:00:32.066775+00:00"
+    },
+    {
+      "username": "gitdigital-products",
+      "email": "gitdigitalproducts232@manus.bot",
+      "track": "track_rugshield",
+      "repo": "Gitdigital-products/solana-kyc-compliance-sdk",
+      "sent_date": "2026-11-18T11:51:26.063058+00:00"
+    },
+    {
+      "username": "redditapis",
+      "email": "emma@redditapis.com",
+      "track": "track_canaryguard",
+      "repo": "redditapis/redditapis-mcp",
+      "sent_date": "2026-11-18T11:51:43.127691+00:00"
+    },
+    {
+      "username": "danilqa",
+      "email": "hello.boriskas@gmail.com",
+      "track": "track_agentfuel",
+      "repo": "Danilqa/kombinat",
+      "sent_date": "2026-11-18T11:52:07.831889+00:00"
     }
   ]
 }
