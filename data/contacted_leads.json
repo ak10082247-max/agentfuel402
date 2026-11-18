@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-18T11:52:07.831909+00:00",
+  "updated_at": "2026-11-18T16:24:33.421651+00:00",
   "suppressed_emails": [
     "paulalexeev10@gmail.com",
     "serge.lopes.94@free.fr",
@@ -235,7 +235,25 @@
     "sanjay@recodehive.com",
     "gitdigitalproducts232@manus.bot",
     "emma@redditapis.com",
-    "hello.boriskas@gmail.com"
+    "hello.boriskas@gmail.com",
+    "relivs1337@gmail.com",
+    "braynerssj26@gmail.com",
+    "vincentkoc@ieee.org",
+    "artur.hnat@gmail.com",
+    "codex199201@gmail.com",
+    "otseclinton60@gmail.com",
+    "jaka@x-truder.net",
+    "asponceg@gmail.com",
+    "artur8118@gmail.com",
+    "claudio.grasso@yahoo.com",
+    "hexanomicon@mechanimous.ai",
+    "hello@veloceai.in",
+    "ghosttheuser1881@gmail.com",
+    "3goldenlotusroots@gmail.com",
+    "syedjafri06193@gmail.com",
+    "shardyms@gmail.com",
+    "nazar.plokhuta.dev@gmail.com",
+    "ainganimrode@gmail.com"
   ],
   "contacted_users": [
     "bennyjo",
@@ -460,7 +478,25 @@
     "sanjay-kv",
     "gitdigital-products",
     "redditapis",
-    "danilqa"
+    "danilqa",
+    "l1vsun",
+    "caos-ssj",
+    "vincentkoc",
+    "rtunazzz",
+    "codex2124",
+    "dhanteyud",
+    "xtruder",
+    "andrepg-dev",
+    "artui",
+    "clod",
+    "hexanomicon",
+    "veloceai",
+    "manav1824",
+    "sntl84",
+    "syedjafri06193",
+    "manveen07",
+    "nazar-plokhuta",
+    "nim-tech-arch"
   ],
   "history": [
     {
@@ -2023,6 +2059,132 @@
       "track": "track_agentfuel",
       "repo": "Danilqa/kombinat",
       "sent_date": "2026-11-18T11:52:07.831889+00:00"
+    },
+    {
+      "username": "l1vsun",
+      "email": "relivs1337@gmail.com",
+      "track": "track_rugshield",
+      "repo": "L1vsun/EDGERUN",
+      "sent_date": "2026-11-18T16:20:16.192867+00:00"
+    },
+    {
+      "username": "caos-ssj",
+      "email": "braynerssj26@gmail.com",
+      "track": "track_rugshield",
+      "repo": "caos-ssj/Crypto.Bot",
+      "sent_date": "2026-11-18T16:20:28.709307+00:00"
+    },
+    {
+      "username": "vincentkoc",
+      "email": "vincentkoc@ieee.org",
+      "track": "track_rugshield",
+      "repo": "vincentkoc/dexscraper",
+      "sent_date": "2026-11-18T16:20:42.121290+00:00"
+    },
+    {
+      "username": "rtunazzz",
+      "email": "artur.hnat@gmail.com",
+      "track": "track_rugshield",
+      "repo": "rtunazzz/qt",
+      "sent_date": "2026-11-18T16:20:55.926722+00:00"
+    },
+    {
+      "username": "codex2124",
+      "email": "codex199201@gmail.com",
+      "track": "track_rugshield",
+      "repo": "CodeX2124/Dexscreener_Scraping_Tool",
+      "sent_date": "2026-11-18T16:21:12.940107+00:00"
+    },
+    {
+      "username": "dhanteyud",
+      "email": "otseclinton60@gmail.com",
+      "track": "track_rugshield",
+      "repo": "DhanteyUD/Mainstay",
+      "sent_date": "2026-11-18T16:21:26.025127+00:00"
+    },
+    {
+      "username": "xtruder",
+      "email": "jaka@x-truder.net",
+      "track": "track_canaryguard",
+      "repo": "xtruder/opencode-claude-max-plugin",
+      "sent_date": "2026-11-18T16:21:45.400608+00:00"
+    },
+    {
+      "username": "andrepg-dev",
+      "email": "asponceg@gmail.com",
+      "track": "track_canaryguard",
+      "repo": "andrepg-dev/hopta-backend",
+      "sent_date": "2026-11-18T16:21:59.203065+00:00"
+    },
+    {
+      "username": "artui",
+      "email": "artur8118@gmail.com",
+      "track": "track_canaryguard",
+      "repo": "Artui/django-ag-ui",
+      "sent_date": "2026-11-18T16:22:13.612968+00:00"
+    },
+    {
+      "username": "clod",
+      "email": "claudio.grasso@yahoo.com",
+      "track": "track_canaryguard",
+      "repo": "Clod/llmwiki-marimo",
+      "sent_date": "2026-11-18T16:22:28.574122+00:00"
+    },
+    {
+      "username": "hexanomicon",
+      "email": "hexanomicon@mechanimous.ai",
+      "track": "track_canaryguard",
+      "repo": "hexanomicon/lychd",
+      "sent_date": "2026-11-18T16:22:43.322738+00:00"
+    },
+    {
+      "username": "veloceai",
+      "email": "hello@veloceai.in",
+      "track": "track_canaryguard",
+      "repo": "VeloceAI/agent-adapter",
+      "sent_date": "2026-11-18T16:23:01.222582+00:00"
+    },
+    {
+      "username": "manav1824",
+      "email": "ghosttheuser1881@gmail.com",
+      "track": "track_agentfuel",
+      "repo": "Manav1824/AI-Lead-Enrichment-Pipeline",
+      "sent_date": "2026-11-18T16:23:26.439537+00:00"
+    },
+    {
+      "username": "sntl84",
+      "email": "3goldenlotusroots@gmail.com",
+      "track": "track_agentfuel",
+      "repo": "SNTL84/ai-lead-enrichment-agent-lead-generation-service-9727413309",
+      "sent_date": "2026-11-18T16:23:39.171947+00:00"
+    },
+    {
+      "username": "syedjafri06193",
+      "email": "syedjafri06193@gmail.com",
+      "track": "track_agentfuel",
+      "repo": "syedjafri06193/Lead-Enrichment-Pipeline-proj",
+      "sent_date": "2026-11-18T16:23:53.461355+00:00"
+    },
+    {
+      "username": "manveen07",
+      "email": "shardyms@gmail.com",
+      "track": "track_agentfuel",
+      "repo": "Manveen07/Qualilead",
+      "sent_date": "2026-11-18T16:24:06.452278+00:00"
+    },
+    {
+      "username": "nazar-plokhuta",
+      "email": "nazar.plokhuta.dev@gmail.com",
+      "track": "track_agentfuel",
+      "repo": "Nazar-Plokhuta/lead-enrichment-agent",
+      "sent_date": "2026-11-18T16:24:19.768441+00:00"
+    },
+    {
+      "username": "nim-tech-arch",
+      "email": "ainganimrode@gmail.com",
+      "track": "track_agentfuel",
+      "repo": "Nim-tech-arch/ADL-SignalForge",
+      "sent_date": "2026-11-18T16:24:33.421651+00:00"
     }
   ]
 }

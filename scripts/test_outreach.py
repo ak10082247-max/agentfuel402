@@ -14,6 +14,9 @@ class OutreachUpgradeTest(unittest.TestCase):
         self.assertFalse(eng.is_deliverable_personal_email("bob@cam.ac.uk"))
         self.assertFalse(eng.is_deliverable_personal_email("mar.kostrz@onet.pl"))
         self.assertFalse(eng.is_deliverable_personal_email("user@users.noreply.github.com"))
+        self.assertFalse(eng.is_deliverable_personal_email("gitdigitalproducts232@manus.bot"))
+        self.assertFalse(eng.is_deliverable_personal_email("info@hookdeck.com"))
+        self.assertFalse(eng.is_deliverable_personal_email("ericy.song@mail.utoronto.ca"))
 
     def test_filters_low_intent_hobby_repos(self):
         self.assertTrue(eng.is_spam_repo("tjcrims0nx", "tjcrims0nx/OpenMind-Jailbreak-Lab", "jailbreak prompt testing"))
@@ -22,6 +25,9 @@ class OutreachUpgradeTest(unittest.TestCase):
         self.assertTrue(eng.is_spam_repo("aiqadam", "aiqadam/qadam-flow", "An open-source alternative to paid SaaS"))
         self.assertTrue(eng.is_spam_repo("selfhost", "selfhost/tool", "Free self-hosted alternative with no paid tiers"))
         self.assertTrue(eng.is_spam_repo("botdev", "botdev/polymarket-arbitrage-bot", "Polymarket prediction market bot"))
+        self.assertTrue(eng.is_spam_repo("srivtx", "srivtx/sports-workbench", "Sports analytics and player pool database"))
+        self.assertTrue(eng.is_spam_repo("sanjay-kv", "sanjay-kv/github-card-template", "Automated profile card"))
+        self.assertTrue(eng.is_spam_repo("henryoman", "henryoman/pump-kit", "Pump.fun memecoin launcher kit"))
         self.assertFalse(eng.is_spam_repo("protoLabsAI", "protoLabsAI/protoAgent", "Production autonomous AI agent orchestration"))
 
     def test_commercial_builder_signal(self):
@@ -59,6 +65,8 @@ class OutreachUpgradeTest(unittest.TestCase):
             })
             self.assertNotIn("`", body)
             self.assertNotIn("sniper", body.lower())
+            self.assertNotIn("rugshield-402.onrender.com/v1/scan/preview", body.lower())
+            self.assertIn("https://ak10082247-max.github.io/scanner.html", body)
             self.assertLessEqual(body.count("https://"), 2)
             self.assertIn("Hey Alice,", body)
             self.assertIn("Live check observed 412 clean tokens in 7 ms.", body)

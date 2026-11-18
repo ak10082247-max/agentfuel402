@@ -68,8 +68,8 @@ SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 587
 DIGEST_RECIPIENTS = ["ak10082247@gmail.com", "armkhan18@gmail.com"]
 
-MAX_EMAILS_PER_DAY = 12
-MAX_EMAILS_PER_RUN = 3
+MAX_EMAILS_PER_DAY = 24
+MAX_EMAILS_PER_RUN = 6
 DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
 CONTACTED_FILE = os.path.join(DATA_DIR, "contacted_leads.json")
 
@@ -339,13 +339,15 @@ TRUSTED_EMAIL_DOMAINS = {
 DISALLOWED_PREFIXES = {
     "support", "billing", "admin", "press", "media", "jobs", "careers",
     "security", "abuse", "postmaster", "hostmaster", "webmaster", "bounce",
-    "git", "noreply", "no-reply", "donotreply", "mailer-daemon"
+    "git", "noreply", "no-reply", "donotreply", "mailer-daemon",
+    "info", "help", "sales", "marketing", "osscore", "newsletter", "community", "events"
 }
 
 BLOCKED_EMAIL_DOMAINS = {
     "users.noreply.github.com",
     "noreply.github.com",
     "github.com",
+    "manus.bot",
     "localhost",
     "localdomain",
     "example.com",
@@ -362,6 +364,7 @@ DISPOSABLE_OR_STUDENT_DOMAINS = {
     "qq.com", "163.com", "126.com", "yeah.net", "sina.com", "sohu.com", "foxmail.com",
     "vvit.net", "onet.pl", "mail.ru", "yandex.ru", "bk.ru", "list.ru", "inbox.ru",
     "guerrillamail.com", "mailinator.com", "tempmail.com", "10minutemail.com",
+    "mail.utoronto.ca", "utoronto.ca", "uwaterloo.ca", "student.ubc.ca",
 }
 SPAM_REPO_PATTERN = re.compile(
     r"(?:how-to-(?:create|launch|configure|understand|build|run|deploy|set-up)-|"
@@ -411,7 +414,7 @@ def is_deliverable_personal_email(email: str) -> bool:
 
     if not EMAIL_PREFIX_PATTERN.match(prefix) or not EMAIL_DOMAIN_PATTERN.match(domain):
         return False
-    if domain in BLOCKED_EMAIL_DOMAINS or domain.endswith((".noreply.github.com", ".local", ".internal", ".test", ".invalid", ".arpa")):
+    if domain in BLOCKED_EMAIL_DOMAINS or domain.endswith((".noreply.github.com", ".local", ".internal", ".test", ".invalid", ".arpa", ".bot")):
         return False
 
     # Exclude automated, bounce-trap, student roll-number, or generic helpdesk mailboxes
@@ -454,23 +457,25 @@ EXCLUDED_VENDOR_ORGS = {
     "modelcontextprotocol",
     "elizaos",
     "activepieces",
+    "api-evangelist",
+    "hookdeck",
 }
 
 REQUIRED_TRACK_KEYWORDS = {
     "track_rugshield": (
         "aerodrome", "uniswap", "jupiter", "raydium", "solana", "onchainkit",
-        "agentkit", "defi", "swap", "dex", "token", "base", "web3", "evm", "spl",
-        "trading", "liquidity", "pool",
+        "agentkit", "defi", "dex", "web3", "evm", "spl", "honeypot",
+        "erc20", "erc-20", "dexscreener", "token-2022", "rugpull", "rug-pull",
     ),
     "track_canaryguard": (
-        "mcp", "agent", "langchain", "langgraph", "crewai", "anthropic",
-        "openai", "pydantic", "mastra", "llm", "rag", "prompt", "ai",
-        "chatbot", "copilot", "modelcontextprotocol", "tool",
+        "mcp", "modelcontextprotocol", "agent", "agents", "langchain", "langgraph",
+        "crewai", "anthropic", "openai", "pydantic-ai", "mastra", "llm", "rag",
+        "chatbot", "copilot", "prompt-injection", "guardrail", "sandbox",
     ),
     "track_agentfuel": (
-        "apify", "shopify", "n8n", "firecrawl", "crawl", "scrape", "scraper",
-        "enrichment", "leads", "ecommerce", "e-commerce", "playwright",
-        "webhook", "workflow", "markdown", "automation", "extractor",
+        "apify", "shopify", "firecrawl", "crawl4ai", "crawl", "crawler", "scrape",
+        "scraper", "scraping", "enrichment", "leads", "ecommerce", "e-commerce",
+        "playwright", "puppeteer", "extractor", "price-monitor", "markdown",
     ),
 }
 
@@ -499,10 +504,13 @@ def is_spam_repo(owner: str, repo_name: str, repo_desc: str) -> bool:
         "jailbreak-lab", "train-delay", "facebook-group", "interview", "resume", "thesis",
         "self-hosted alternative", "open-source alternative", "free alternative", "no paid tiers",
         "polymarket", "prediction-market", "betting", "gambling", "casino", "sportsbook",
-        "arbitrage-bot", "mev-bot", "sniper-bot", "pumpfun-sniper",
+        "arbitrage-bot", "mev-bot", "sniper-bot", "pumpfun", "pump.fun", "pump-kit", "memecoin",
         "practice", "learning", "my-first", "todo-app", "hello-world", "leetcode",
         "portfolio", "clone-app", "final-project", "mini-project", "mini_project",
-        "class-project", "test-repo", "demo-app", "sample-app", "workshop", "awesome-"
+        "class-project", "test-repo", "demo-app", "sample-app", "workshop", "awesome-",
+        "sports-workbench", "fantasy-sports", "sportsbook", "cs2-", "github-card",
+        "profile-card", "readme-card", "cheatsheet", "study-notes", "roadmap",
+        "onlyfridge", "codebase-snapshot"
     )
     if any(tok in blob for tok in low_intent_tokens):
         return True
@@ -776,9 +784,9 @@ def craft_pitch(lead):
             f"Saw your work on {repo_full}. {diag_block}"
             f"If you want an external safety gate before Base or Solana swaps execute "
             f"(sell-tax simulation, Token-2022 mint/freeze authority, and fail-closed inconclusive checks), "
-            f"test the live preview free with zero signup here:\n"
-            f"https://rugshield-402.onrender.com/v1/scan/preview\n\n"
-            f"To adopt fast: grab a $5 API key or $9 TypeScript self-hosted .zip (instant card checkout), "
+            f"run any Base or Solana token in the live browser scanner free with zero signup:\n"
+            f"https://ak10082247-max.github.io/scanner.html\n\n"
+            f"To adopt fast: grab a $5 API key or $9 TypeScript self-hosted .zip (instant Stripe checkout), "
             f"or reply if you want my $29 fixed-outcome PR wiring it into {repo_short} with tests:\n"
             f"https://ak10082247-max.github.io/products.html\n\n"
             f"Best,\nArman\n"
@@ -791,8 +799,8 @@ def craft_pitch(lead):
             f"Saw what you're building in {repo_full}. {diag_block}"
             f"If you need a deterministic guard in front of untrusted web/tool inputs "
             f"(role delimiter stripping, Unicode Tag decoding, MCP tool-poisoning checks, sub-10ms engine), "
-            f"try it free on your own snippets in our live inspector:\n"
-            f"https://canaryguard-402.onrender.com/v1/sanitize/preview\n\n"
+            f"test your own snippets free in our interactive inspector:\n"
+            f"https://ak10082247-max.github.io/scanner.html\n\n"
             f"To ship quickly: grab a $5 30-day API key (HTTP + MCP) or $9 Express firewall .zip, "
             f"or reply for a $29 fixed-outcome integration PR tailored to {repo_short}:\n"
             f"https://ak10082247-max.github.io/products.html\n\n"
@@ -804,9 +812,9 @@ def craft_pitch(lead):
         text = (
             f"Hey {first_name},\n\n"
             f"Saw {repo_full} on GitHub. {diag_block}"
-            f"If you need clean Markdown, Shopify price/stock JSON, or Next.js API schemas "
-            f"without maintaining brittle Playwright browsers, test our live Cloudflare Edge preview:\n"
-            f"https://agentfuel402.ak10082247.workers.dev/v1/preview/llm-clean-markdown\n\n"
+            f"If you need clean Markdown, Shopify price/stock JSON, or live B2B intent data "
+            f"without maintaining brittle Playwright browsers, test it live at Cloudflare Edge:\n"
+            f"https://ak10082247-max.github.io/scanner.html\n\n"
             f"You can grab a $5 Starter API key, the $19 live B2B Tech Intent CSV pack, a $9 source .zip, "
             f"or reply for a $29 fixed-outcome integration PR for {repo_short} here:\n"
             f"https://ak10082247-max.github.io/products.html\n\n"
@@ -889,7 +897,8 @@ Emails Sent Today:                {leads_summary['sent_today']} / {MAX_EMAILS_PE
 def main():
     parser = argparse.ArgumentParser(description="Big 3 Empire Engine")
     parser.add_argument("--digest-only", action="store_true", help="Only query treasury & send scorecard without prospecting")
-    parser.add_argument("--force-send", type=int, default=0, help="Send an immediate capped batch (1-6) even if today's daily quota was reached")
+    parser.add_argument("--force-send", type=int, default=0, help="Send an immediate capped batch (1-18) even if today's daily quota was reached")
+    parser.add_argument("--fill-daily-cap", action="store_true", help="Send all remaining emails up to MAX_EMAILS_PER_DAY in this run")
     parser.add_argument("--dry-run-leads", action="store_true", help="Discover 1 lead per track, run live diagnostics, and print pitches without sending emails")
     args = parser.parse_args()
 
@@ -929,14 +938,19 @@ def main():
     leads_data = load_leads()
     sent_today = count_sent_today(leads_data["history"])
     remaining_today = max(0, MAX_EMAILS_PER_DAY - sent_today)
-    force_budget = max(0, min(int(args.force_send or 0), 6))
-    print(f"[+] Outbound Sent Today: {sent_today}/{MAX_EMAILS_PER_DAY} (Remaining capacity: {remaining_today}, Force batch: {force_budget})")
+    force_budget = max(0, min(int(args.force_send or 0), 18))
+    print(f"[+] Outbound Sent Today: {sent_today}/{MAX_EMAILS_PER_DAY} (Remaining capacity: {remaining_today}, Force batch: {force_budget}, Fill cap: {args.fill_daily_cap})")
 
     track_counts = {"track_rugshield": 0, "track_canaryguard": 0, "track_agentfuel": 0}
 
     if not args.digest_only and (remaining_today > 0 or force_budget > 0):
-        # Spread sends across 3-hourly cron runs (max 3 per run, 12/day) for high inbox placement
-        run_budget = force_budget if force_budget > 0 else min(remaining_today, MAX_EMAILS_PER_RUN)
+        # Spread sends across 3-hourly cron runs (max 6 per run, 24/day) unless --fill-daily-cap or --force-send
+        if force_budget > 0:
+            run_budget = force_budget
+        elif args.fill_daily_cap:
+            run_budget = remaining_today
+        else:
+            run_budget = min(remaining_today, MAX_EMAILS_PER_RUN)
         per_track = max(1, (run_budget + 2) // 3)
         known_emails = (
             {e.lower().strip() for e in leads_data.get("contacted_emails", [])}
@@ -982,7 +996,7 @@ def main():
                     sent_this_run += 1
                     save_leads(leads_data)
                     print(f"  [+] {track_name} pitch delivered to: {email} ({user} on {lead['repo']})")
-                    time.sleep(random.uniform(14, 24))
+                    time.sleep(random.uniform(9, 14))
                 except Exception as e:
                     print(f"  [-] Failed to pitch {email}: {e}")
 
