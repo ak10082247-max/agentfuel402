@@ -1827,6 +1827,14 @@ Endpoints:
       }, null, 2), { status: 200, headers: { ...cors, "Content-Type": "application/json" } });
     }
 
+    // .well-known/x402-trust.txt
+    if (path === "/.well-known/x402-trust.txt") {
+      return new Response(
+        "x402-trust-verification=v1:MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE2N_3Jb0vfMBJWvh0u-3aCVoALmiFZ135i3FgSDB7n2Ib-v6V_5CNH83Mv9Q_1ZR5UwXWotHyUEZ_0m2kcQqgsQ\n",
+        { status: 200, headers: { ...cors, "Content-Type": "text/plain; charset=utf-8" } }
+      );
+    }
+
     // .well-known/agent-card.json
     if (path === "/.well-known/agent-card.json") {
       return new Response(JSON.stringify({
