@@ -3,18 +3,23 @@
   "events": {
     "lead-signal-fetch": {
       "eventTitle": "Lead Signal Fetch",
-      "eventDescription": "Real-time B2B buying intent signal extraction from newly launched tech companies, hiring alerts, and tech stacks.",
+      "eventDescription": "Real-time B2B buying intent signal extraction per delivered company lead (up to 500 leads per batch run).",
       "eventPriceUsd": 0.01
     },
     "clean-markdown-fetch": {
       "eventTitle": "Clean Markdown Fetch",
-      "eventDescription": "SSRF-protected, ad-free clean Markdown conversion with deterministic prompt-injection defense.",
+      "eventDescription": "SSRF-protected, ad-free clean Markdown conversion per extracted URL (up to 100 URLs per batch run).",
       "eventPriceUsd": 0.003
     },
     "ecom-product-check": {
       "eventTitle": "E-Commerce Product Check",
-      "eventDescription": "Live price, in-stock availability, SKU variants, and discount delta extraction for Shopify and Schema.org products.",
+      "eventDescription": "Live price, in-stock availability, SKU variants, and discount delta per checked product URL (up to 100 URLs per batch run).",
       "eventPriceUsd": 0.003
+    },
+    "reverse-engineer-target": {
+      "eventTitle": "Reverse Engineer Anything (REA) Target",
+      "eventDescription": "Deep reverse-engineering of target web platform: hidden internal REST/GraphQL endpoints, hydration state, OpenAPI 3.1 spec, and bypass snippets per target URL.",
+      "eventPriceUsd": 0.015
     }
   }
 }

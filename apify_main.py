@@ -8,12 +8,31 @@ Publishes billable PPE events only on valid extracted data:
 4. reverse-engineer-target ($0.015 USD)
 """
 import asyncio
+from datetime import datetime, timedelta, timezone
 import os
 import re
 import time
+from urllib.parse import quote_plus
 from apify import Actor
 import httpx
 from bs4 import BeautifulSoup
+
+MAX_B2B_LEADS = 500
+DEFAULT_B2B_LEADS = 50
+MAX_BATCH_URLS = 100
+SHARED_HOST_DOMAINS = {
+    "github.com",
+    "news.ycombinator.com",
+    "linkedin.com",
+    "x.com",
+    "twitter.com",
+    "youtube.com",
+    "medium.com",
+    "substack.com",
+    "unknown",
+    "",
+}
+
 
 def sanitize_prompt(text: str) -> str:
     clean = re.sub(r"[\u200B-\u200D\uFEFF]", "", text)
@@ -22,97 +41,319 @@ def sanitize_prompt(text: str) -> str:
     clean = re.sub(r"\b(jailbreak|DAN\s+mode|unrestricted\s+ai|do\s+anything\s+now)\b", "[SANITIZED: JAILBREAK_PATTERN]", clean, flags=re.IGNORECASE)
     return clean
 
-async def run_b2b_leads(limit=10, category="all"):
-    leads = []
-    # 1. Primary: High-speed HackerNews Algolia API
+
+def _extract_host(url: str) -> str:
+    if not url:
+        return "unknown"
     try:
-        async with httpx.AsyncClient(timeout=6.0) as client:
-            algolia_url = f"https://hn.algolia.com/api/v1/search_by_date?tags=show_hn&hitsPerPage={min(limit * 2, 30)}"
-            res = await client.get(algolia_url, headers={"User-Agent": "AgentFuel402-B2B/1.0"})
-            if res.status_code == 200:
-                hits = res.json().get("hits", [])
-                for story in hits:
-                    title = story.get("title", "")
-                    if not title: continue
-                    clean_title = re.sub(r"^Show HN:\s*", "", title, flags=re.IGNORECASE).strip()
-                    url = story.get("url", "")
-                    domain = "unknown"
-                    if url:
-                        try: domain = httpx.URL(url).host
-                        except: pass
-                    score = story.get("points") or 1
-                    comments = story.get("num_comments") or 0
-                    hiring = "hiring" in title.lower() or "job" in title.lower() or score > 25
-                    intent_score = min(100, max(30, score * 2 + comments * 3 + (20 if hiring else 0)))
+        host = (httpx.URL(url).host or "").lower().strip()
+        if host.startswith("www."):
+            host = host[4:]
+        return host or "unknown"
+    except Exception:
+        return "unknown"
 
-                    lower = f"{title} {story.get('story_text', '')}".lower()
-                    tech_tags = []
-                    if "ai" in lower or "llm" in lower or "agent" in lower: tech_tags.append("AI/LLM")
-                    if "react" in lower or "next" in lower: tech_tags.append("Next.js/React")
-                    if "python" in lower or "fastapi" in lower: tech_tags.append("Python")
-                    if "rust" in lower: tech_tags.append("Rust")
-                    if "database" in lower or "sql" in lower: tech_tags.append("Database")
-                    if not tech_tags: tech_tags = ["SaaS", "Developer Tools"]
 
-                    leads.append({
-                        "company_name": clean_title.split("-")[0].split(":")[0].strip(),
-                        "launch_headline": clean_title,
-                        "domain": domain,
-                        "source_url": url or f"https://news.ycombinator.com/item?id={story.get('objectID')}",
-                        "discussion_url": f"https://news.ycombinator.com/item?id={story.get('objectID')}",
-                        "author": story.get("author"),
-                        "score": score,
-                        "comments_count": comments,
-                        "detected_tech_stack": tech_tags,
-                        "hiring_intent": hiring,
-                        "intent_score": intent_score,
-                        "estimated_stage": "Seed/Series A" if score > 80 else "Early Stage / Pre-Seed",
-                        "signals": [
-                            "Recent public product launch verified via Algolia HN API",
-                            "Active talent acquisition footprint" if hiring else "Community engagement spike",
-                            f"Intent Score: {intent_score}/100 based on founder momentum and response velocity"
-                        ]
-                    })
-                    if len(leads) >= limit: break
-    except Exception as e:
-        Actor.log.warning(f"Algolia HN fetch failed, falling back: {e}")
+def _detect_tech_stack(text_blob: str) -> list:
+    lower = (text_blob or "").lower()
+    tags = []
+    if any(k in lower for k in ("ai", "llm", "agent", "openai", "anthropic", "rag", "ml")):
+        tags.append("AI/LLM")
+    if any(k in lower for k in ("react", "next.js", "nextjs", "typescript", "node")):
+        tags.append("TypeScript/React")
+    if any(k in lower for k in ("python", "fastapi", "django", "pytorch")):
+        tags.append("Python")
+    if any(k in lower for k in ("shopify", "woocommerce", "ecommerce", "e-commerce", "checkout")):
+        tags.append("E-Commerce")
+    if any(k in lower for k in ("rust", "go ", "golang")):
+        tags.append("Systems/Rust/Go")
+    if any(k in lower for k in ("postgres", "database", "sql", "redis", "clickhouse")):
+        tags.append("Database")
+    return tags or ["SaaS", "Developer Tools"]
 
-    # 2. Fallback: Firebase API if Algolia returned nothing
-    if not leads:
-        try:
-            async with httpx.AsyncClient(timeout=6.0) as client:
+
+def _matches_lead_category(category: str, lead: dict, text_blob: str = "") -> bool:
+    cat = (category or "all").lower().strip()
+    if not cat or cat == "all":
+        return True
+    hay = f"{lead.get('company_name', '')} {lead.get('launch_headline', '')} {' '.join(lead.get('detected_tech_stack', []))} {text_blob}".lower()
+    cat_keywords = {
+        "ai": ("ai", "llm", "agent", "rag", "ml", "openai", "anthropic", "gpt", "claude"),
+        "devtools": ("api", "sdk", "cli", "devtools", "developer", "github", "mcp", "database", "typescript", "python", "rust"),
+        "saas": ("saas", "b2b", "crm", "workflow", "automation", "analytics", "platform", "hiring"),
+        "ecommerce": ("ecommerce", "e-commerce", "shopify", "woocommerce", "retail", "store", "commerce", "checkout"),
+    }
+    return any(tok in hay for tok in cat_keywords.get(cat, (cat,)))
+
+
+def _build_lead_record(
+    company_name: str,
+    headline: str,
+    source_url: str,
+    discussion_url: str,
+    author: str,
+    score: int,
+    comments: int,
+    hiring: bool,
+    tech_tags: list,
+    source_feed: str,
+) -> dict:
+    domain = _extract_host(source_url)
+    intent_score = min(100, max(30, int(score or 1) * 2 + int(comments or 0) * 3 + (20 if hiring else 0)))
+    signals = [
+        f"Verified live commercial signal via {source_feed}",
+        "Active talent acquisition footprint" if hiring else "Community/launch engagement spike",
+        f"Intent Score: {intent_score}/100 based on founder momentum and activity",
+    ]
+    return {
+        "company_name": (company_name or "Startup")[:120],
+        "launch_headline": (headline or company_name or "Startup Launch")[:240],
+        "domain": domain,
+        "source_url": source_url or discussion_url,
+        "discussion_url": discussion_url or source_url,
+        "author": author or "founder",
+        "score": int(score or 1),
+        "comments_count": int(comments or 0),
+        "detected_tech_stack": tech_tags,
+        "hiring_intent": bool(hiring),
+        "intent_score": intent_score,
+        "estimated_stage": "Seed/Series A" if (score or 0) > 80 or hiring else "Early Stage / Pre-Seed",
+        "source_feed": source_feed,
+        "signals": signals,
+    }
+
+
+async def run_b2b_leads(limit=DEFAULT_B2B_LEADS, category="all"):
+    target_limit = max(1, min(MAX_B2B_LEADS, int(limit or DEFAULT_B2B_LEADS)))
+    cat = (category or "all").lower().strip()
+    leads = []
+    seen_keys = set()
+
+    def try_add(lead: dict, raw_blob: str = "") -> bool:
+        if not lead or not lead.get("company_name"):
+            return False
+        if not _matches_lead_category(cat, lead, raw_blob):
+            return False
+        comp_key = re.sub(r"[^a-z0-9]+", "", lead["company_name"].lower())
+        dom = (lead.get("domain") or "unknown").lower()
+        src = (lead.get("source_url") or "").lower().split("?")[0]
+        dedup_dom = dom if dom not in SHARED_HOST_DOMAINS else src
+        if (comp_key and comp_key in seen_keys) or (dedup_dom and dedup_dom in seen_keys):
+            return False
+        if comp_key:
+            seen_keys.add(comp_key)
+        if dedup_dom:
+            seen_keys.add(dedup_dom)
+        leads.append(lead)
+        return len(leads) >= target_limit
+
+    async with httpx.AsyncClient(timeout=8.0, follow_redirects=True) as client:
+        # 1. Primary multi-page HackerNews Algolia feeds (Show HN, Jobs, Ask HN)
+        algolia_specs = []
+        if cat != "all":
+            algolia_specs.append(("show_hn", cat, 2))
+        algolia_specs.extend([
+            ("show_hn", None, 4 if target_limit > 50 else 1),
+            ("job", None, 2 if target_limit > 50 else 1),
+            ("ask_hn", "hiring", 2 if target_limit > 50 else 1),
+        ])
+        for tag, query, pages in algolia_specs:
+            if len(leads) >= target_limit:
+                break
+            for page in range(pages):
+                if len(leads) >= target_limit:
+                    break
+                try:
+                    q_part = f"&query={quote_plus(query)}" if query else ""
+                    algolia_url = f"https://hn.algolia.com/api/v1/search_by_date?tags={tag}{q_part}&hitsPerPage=100&page={page}"
+                    res = await client.get(algolia_url, headers={"User-Agent": "AgentFuel402-B2B/2.0"})
+                    if res.status_code != 200:
+                        break
+                    hits = res.json().get("hits", [])
+                    if not hits:
+                        break
+                    for story in hits:
+                        title = (story.get("title") or "").strip()
+                        if not title:
+                            continue
+                        clean_title = re.sub(r"^(?:Show HN|Ask HN|Launch HN):\s*", "", title, flags=re.IGNORECASE).strip()
+                        raw_url = (story.get("url") or "").strip()
+                        disc_url = f"https://news.ycombinator.com/item?id={story.get('objectID')}"
+                        blob = f"{title} {story.get('story_text') or ''}"
+                        hiring = tag == "job" or any(w in blob.lower() for w in ("hiring", "is hiring", "yc", "careers", "job")) or (story.get("points") or 0) > 25
+                        if tag == "job":
+                            m_co = re.match(r"^([^(\n]+?)\s+(?:\(|is\s+hiring\b|hiring\b|-)", clean_title, re.IGNORECASE)
+                            comp_name = m_co.group(1).strip() if m_co else clean_title.split(" is ")[0].split("(")[0].strip()
+                        else:
+                            comp_name = clean_title.split(" - ")[0].split(" — ")[0].split(":")[0].strip()
+                        lead = _build_lead_record(
+                            company_name=comp_name,
+                            headline=clean_title,
+                            source_url=raw_url or disc_url,
+                            discussion_url=disc_url,
+                            author=story.get("author") or "founder",
+                            score=story.get("points") or 1,
+                            comments=story.get("num_comments") or 0,
+                            hiring=hiring,
+                            tech_tags=_detect_tech_stack(blob),
+                            source_feed=f"HN Algolia ({tag})",
+                        )
+                        if try_add(lead, blob):
+                            break
+                except Exception as e:
+                    Actor.log.warning(f"Algolia {tag} page {page} failed: {e}")
+                    break
+
+        # 2. Remote Tech Job Boards (Arbeitnow & Remotive — actively hiring tech companies)
+        if len(leads) < target_limit:
+            for page in (1, 2, 3):
+                if len(leads) >= target_limit:
+                    break
+                try:
+                    res = await client.get(f"https://www.arbeitnow.com/api/job-board-api?page={page}", headers={"User-Agent": "AgentFuel402-B2B/2.0"})
+                    if res.status_code != 200:
+                        break
+                    jobs = res.json().get("data") or []
+                    if not jobs:
+                        break
+                    for job in jobs:
+                        company = (job.get("company_name") or "").strip()
+                        title = (job.get("title") or "").strip()
+                        j_url = (job.get("url") or "").strip()
+                        tags = job.get("tags") or []
+                        blob = f"{company} {title} {' '.join(tags)} {job.get('description', '')[:400]}"
+                        if not company or not j_url:
+                            continue
+                        lead = _build_lead_record(
+                            company_name=company,
+                            headline=f"{company} hiring {title}" if title else f"{company} remote hiring",
+                            source_url=j_url,
+                            discussion_url=j_url,
+                            author=company,
+                            score=30 if job.get("remote") else 20,
+                            comments=len(tags),
+                            hiring=True,
+                            tech_tags=_detect_tech_stack(blob),
+                            source_feed="Arbeitnow Job Board",
+                        )
+                        if try_add(lead, blob):
+                            break
+                except Exception as e:
+                    Actor.log.warning(f"Arbeitnow fetch failed: {e}")
+                    break
+
+        if len(leads) < target_limit:
+            try:
+                res = await client.get("https://remotive.com/api/remote-jobs?limit=100", headers={"User-Agent": "AgentFuel402-B2B/2.0"})
+                if res.status_code == 200:
+                    for job in res.json().get("jobs") or []:
+                        company = (job.get("company_name") or "").strip()
+                        title = (job.get("title") or "").strip()
+                        j_url = (job.get("url") or "").strip()
+                        blob = f"{company} {title} {job.get('category', '')} {' '.join(job.get('tags') or [])}"
+                        if not company or not j_url:
+                            continue
+                        lead = _build_lead_record(
+                            company_name=company,
+                            headline=f"{company} hiring {title}" if title else company,
+                            source_url=j_url,
+                            discussion_url=j_url,
+                            author=company,
+                            score=35,
+                            comments=2,
+                            hiring=True,
+                            tech_tags=_detect_tech_stack(blob),
+                            source_feed="Remotive Tech Jobs",
+                        )
+                        if try_add(lead, blob):
+                            break
+            except Exception as e:
+                Actor.log.warning(f"Remotive fetch failed: {e}")
+
+        # 3. GitHub Newly Created Commercial Orgs & SaaS/AI Launches (last 30 days)
+        if len(leads) < target_limit:
+            try:
+                since_30d = (datetime.now(timezone.utc) - timedelta(days=30)).strftime("%Y-%m-%d")
+                gh_q = f"created:>={since_30d} stars:>=5"
+                if cat != "all":
+                    gh_q = f"{cat} " + gh_q
+                gh_headers = {"Accept": "application/vnd.github.v3+json", "User-Agent": "AgentFuel402-B2B/2.0"}
+                gh_pat = os.environ.get("GH_PAT") or os.environ.get("GITHUB_TOKEN") or ""
+                if gh_pat:
+                    gh_headers["Authorization"] = f"Bearer {gh_pat}"
+                for page in (1, 2):
+                    if len(leads) >= target_limit:
+                        break
+                    res = await client.get(
+                        f"https://api.github.com/search/repositories?q={quote_plus(gh_q)}&sort=stars&order=desc&per_page=100&page={page}",
+                        headers=gh_headers,
+                    )
+                    if res.status_code != 200:
+                        break
+                    items = res.json().get("items") or []
+                    if not items:
+                        break
+                    for repo in items:
+                        if repo.get("fork") or repo.get("archived"):
+                            continue
+                        homepage = (repo.get("homepage") or "").strip()
+                        html_url = (repo.get("html_url") or "").strip()
+                        owner_name = (repo.get("owner") or {}).get("login") or ""
+                        desc = (repo.get("description") or "").strip()
+                        topics = repo.get("topics") or []
+                        blob = f"{repo.get('full_name', '')} {desc} {' '.join(topics)} {repo.get('language') or ''}"
+                        lead = _build_lead_record(
+                            company_name=owner_name or repo.get("name") or "GitHub Launch",
+                            headline=desc or repo.get("full_name") or owner_name,
+                            source_url=homepage if homepage.startswith(("http://", "https://")) else html_url,
+                            discussion_url=html_url,
+                            author=owner_name,
+                            score=min(100, (repo.get("stargazers_count") or 5)),
+                            comments=repo.get("open_issues_count") or 0,
+                            hiring=False,
+                            tech_tags=_detect_tech_stack(blob),
+                            source_feed="GitHub New Launches (30d)",
+                        )
+                        if try_add(lead, blob):
+                            break
+            except Exception as e:
+                Actor.log.warning(f"GitHub launches fetch failed: {e}")
+
+        # 4. Firebase fallback if still empty
+        if not leads:
+            try:
                 res = await client.get("https://hacker-news.firebaseio.com/v0/showstories.json")
                 if res.status_code == 200:
-                    story_ids = res.json()[:limit]
-                    for sid in story_ids:
+                    for sid in res.json()[:target_limit]:
+                        if len(leads) >= target_limit:
+                            break
                         try:
                             s_res = await client.get(f"https://hacker-news.firebaseio.com/v0/item/{sid}.json")
                             if s_res.status_code == 200:
                                 s = s_res.json()
-                                if not s or "title" not in s: continue
+                                if not s or "title" not in s:
+                                    continue
                                 title = re.sub(r"^Show HN:\s*", "", s.get("title", ""), flags=re.IGNORECASE).strip()
-                                url = s.get("url", "")
-                                domain = "unknown"
-                                if url:
-                                    try: domain = httpx.URL(url).host
-                                    except: pass
+                                raw_url = (s.get("url") or "").strip()
+                                disc_url = f"https://news.ycombinator.com/item?id={sid}"
                                 score = s.get("score", 1)
-                                leads.append({
-                                    "company_name": title.split("-")[0].split(":")[0].strip(),
-                                    "launch_headline": title,
-                                    "domain": domain,
-                                    "source_url": url or f"https://news.ycombinator.com/item?id={sid}",
-                                    "discussion_url": f"https://news.ycombinator.com/item?id={sid}",
-                                    "author": s.get("by"),
-                                    "score": score,
-                                    "comments_count": s.get("descendants", 0),
-                                    "detected_tech_stack": ["AI/LLM", "Next.js", "Python"],
-                                    "hiring_intent": score > 30,
-                                    "intent_score": min(100, 35 + score * 2)
-                                })
-                        except: pass
-        except Exception as e:
-            Actor.log.warning(f"Firebase fallback failed: {e}")
+                                lead = _build_lead_record(
+                                    company_name=title.split("-")[0].split(":")[0].strip(),
+                                    headline=title,
+                                    source_url=raw_url or disc_url,
+                                    discussion_url=disc_url,
+                                    author=s.get("by") or "founder",
+                                    score=score,
+                                    comments=s.get("descendants", 0),
+                                    hiring=score > 30,
+                                    tech_tags=_detect_tech_stack(title),
+                                    source_feed="HN Firebase ShowStories",
+                                )
+                                try_add(lead, title)
+                        except Exception:
+                            pass
+            except Exception as e:
+                Actor.log.warning(f"Firebase fallback failed: {e}")
 
     if not leads:
         return {
@@ -159,7 +400,8 @@ async def run_clean_markdown(target_url: str):
                         "token_estimate": max(1, len(sanitized) // 4),
                         "sanitized": True,
                         "engine": "hn-algolia-reader",
-                        "markdown": sanitized
+                        "markdown": sanitized,
+                        "timestamp_ms": int(time.time() * 1000)
                     }
         except Exception as e:
             Actor.log.warning(f"HN Algolia reader failed: {e}")
@@ -202,7 +444,8 @@ async def run_clean_markdown(target_url: str):
                         "token_estimate": max(1, len(sanitized) // 4),
                         "sanitized": True,
                         "engine": "jina-stealth-reader",
-                        "markdown": sanitized[:100000]
+                        "markdown": sanitized[:100000],
+                        "timestamp_ms": int(time.time() * 1000)
                     }
         except Exception as e:
             Actor.log.warning(f"Jina reader fallback failed: {e}")
@@ -232,7 +475,8 @@ async def run_clean_markdown(target_url: str):
         "token_estimate": max(1, len(sanitized) // 4),
         "sanitized": True,
         "engine": "native-html-sanitizer",
-        "markdown": sanitized[:100000]
+        "markdown": sanitized[:100000],
+        "timestamp_ms": int(time.time() * 1000)
     }
 
 async def run_ecom_price(target_url: str):
@@ -526,6 +770,89 @@ ACTOR_ID_TO_MODE = {
     "2AbJGn42avqlwZo5V": "b2b-intent-leads",         # kuroxreal/b2b-intent-leads-ppe
 }
 
+
+def _extract_max_leads(actor_input: dict) -> int:
+    raw = actor_input.get("maxLeads")
+    if raw is None:
+        raw = actor_input.get("limit")
+    if raw is None:
+        return DEFAULT_B2B_LEADS
+    try:
+        return max(1, min(MAX_B2B_LEADS, int(raw)))
+    except Exception:
+        return DEFAULT_B2B_LEADS
+
+
+def _parse_batch_urls(actor_input: dict) -> list:
+    raw_urls = actor_input.get("urls")
+    if not isinstance(raw_urls, list):
+        return []
+    cleaned = []
+    seen = set()
+    for entry in raw_urls:
+        if not isinstance(entry, str):
+            continue
+        u = entry.strip()
+        if not u.startswith(("http://", "https://")) or u in seen:
+            continue
+        seen.add(u)
+        cleaned.append(u)
+        if len(cleaned) >= MAX_BATCH_URLS:
+            break
+    return cleaned
+
+
+async def _run_url_batch_mode(
+    urls_to_run: list,
+    is_batch_input: bool,
+    worker_fn,
+    event_name: str,
+    valid_fn,
+    unit_price_usd: float,
+    error_code: str,
+    url_field: str = "target_url",
+):
+    sem = asyncio.Semaphore(5)
+
+    async def run_one(target: str):
+        async with sem:
+            try:
+                return target, await worker_fn(target)
+            except Exception as exc:
+                return target, {"status": "error", "error": str(exc), url_field: target}
+
+    pairs = await asyncio.gather(*(run_one(u) for u in urls_to_run))
+    succeeded = []
+    failed_urls = []
+    for target, res in pairs:
+        if isinstance(res, dict) and valid_fn(res):
+            if "timestamp_ms" not in res:
+                res["timestamp_ms"] = int(time.time() * 1000)
+            succeeded.append(res)
+        else:
+            failed_urls.append(target)
+
+    if not succeeded:
+        Actor.log.error("All %d URL(s) failed for %s (Not charged)", len(urls_to_run), event_name)
+        await Actor.set_status_message(f"Failed all {len(urls_to_run)} URL(s) — Buyer NOT charged.")
+        payload = {"status": "error", "error": error_code, "charged": False, url_field: urls_to_run[0]}
+        if is_batch_input:
+            payload["failed_urls"] = failed_urls
+        await Actor.push_data(payload)
+        return
+
+    charge_count = len(succeeded)
+    Actor.log.info(
+        "Batch %s completed: %d succeeded, %d skipped. Charging %d x %s ($%.3f USD)",
+        event_name, charge_count, len(failed_urls), charge_count, event_name, charge_count * unit_price_usd,
+    )
+    await Actor.charge(event_name, count=charge_count)
+    await Actor.set_status_message(
+        f"Completed {charge_count}/{len(urls_to_run)} URLs (billed {charge_count} x {event_name})."
+    )
+    await Actor.push_data(succeeded if is_batch_input else succeeded[0])
+
+
 async def main():
     async with Actor:
         actor_input = await Actor.get_input() or {}
@@ -544,62 +871,81 @@ async def main():
             else:
                 raw_url = "https://news.ycombinator.com"
         target_url = raw_url
-        limit = int(actor_input.get("limit") or 10)
+        batch_urls = _parse_batch_urls(actor_input)
+        is_batch_urls = len(batch_urls) > 0
+        urls_to_run = batch_urls if is_batch_urls else [target_url]
+        max_leads = _extract_max_leads(actor_input)
         category = actor_input.get("category") or "all"
 
         Actor.log.info("AgentFuel402 Starting run in mode: %s (actor_id=%s)", mode, actor_id or "local")
 
-        result = None
-        event_name = ""
-
         if "markdown" in mode.lower():
-            event_name = "clean-markdown-fetch"
-            result = await run_clean_markdown(target_url)
-            # Verify result is valid before charging
-            if not result or result.get("status") != "success" or not result.get("markdown"):
-                Actor.log.error("Failed to extract markdown from target: %s (Not charged)", target_url)
-                await Actor.set_status_message(f"Failed to fetch {target_url} — Buyer NOT charged.")
-                await Actor.push_data({"error": "upstream_target_unreachable", "charged": False, "target_url": target_url})
-                return
-            Actor.log.info("Markdown successfully extracted (%d chars). Charging PPE: %s ($0.003 USD)", len(result["markdown"]), event_name)
-            await Actor.charge(event_name, count=1)
+            await _run_url_batch_mode(
+                urls_to_run=urls_to_run,
+                is_batch_input=is_batch_urls,
+                worker_fn=run_clean_markdown,
+                event_name="clean-markdown-fetch",
+                valid_fn=lambda r: r.get("status") == "success" and bool(r.get("markdown")),
+                unit_price_usd=0.003,
+                error_code="upstream_target_unreachable",
+                url_field="target_url",
+            )
+            return
 
-        elif "ecom" in mode.lower() or "price" in mode.lower():
-            event_name = "ecom-product-check"
-            result = await run_ecom_price(target_url)
-            if not result or result.get("status") != "success":
-                Actor.log.error("Failed to check product: %s (Not charged)", target_url)
-                await Actor.set_status_message(f"Product page unreachable — Buyer NOT charged.")
-                await Actor.push_data({"error": "upstream_target_unreachable", "charged": False, "product_url": target_url})
-                return
-            Actor.log.info("Product data confirmed. Charging PPE: %s ($0.003 USD)", event_name)
-            await Actor.charge(event_name, count=1)
+        if "ecom" in mode.lower() or "price" in mode.lower():
+            await _run_url_batch_mode(
+                urls_to_run=urls_to_run,
+                is_batch_input=is_batch_urls,
+                worker_fn=run_ecom_price,
+                event_name="ecom-product-check",
+                valid_fn=lambda r: r.get("status") == "success",
+                unit_price_usd=0.003,
+                error_code="upstream_target_unreachable",
+                url_field="product_url",
+            )
+            return
 
-        elif "reverse" in mode.lower() or "rea" in mode.lower():
-            event_name = "reverse-engineer-target"
-            result = await run_reverse_engineer(target_url)
-            if not result or result.get("status") != "success":
-                Actor.log.error("Failed to reverse engineer target: %s (Not charged)", target_url)
-                await Actor.set_status_message(f"Failed to reverse engineer {target_url} — Buyer NOT charged.")
-                await Actor.push_data({"error": "reverse_engineering_failed", "charged": False, "target_url": target_url})
-                return
-            Actor.log.info("Target successfully reverse-engineered. Charging PPE: %s ($0.015 USD)", event_name)
-            await Actor.charge(event_name, count=1)
+        if "reverse" in mode.lower() or "rea" in mode.lower():
+            await _run_url_batch_mode(
+                urls_to_run=urls_to_run,
+                is_batch_input=is_batch_urls,
+                worker_fn=run_reverse_engineer,
+                event_name="reverse-engineer-target",
+                valid_fn=lambda r: r.get("status") == "success",
+                unit_price_usd=0.015,
+                error_code="reverse_engineering_failed",
+                url_field="target_url",
+            )
+            return
 
-        else:
-            # Default: B2B Intent Leads
-            event_name = "lead-signal-fetch"
-            result = await run_b2b_leads(limit, category)
-            if not result or result.get("status") != "success" or not result.get("leads"):
-                Actor.log.error("Failed to fetch B2B leads (Not charged)")
-                await Actor.set_status_message("B2B lead generation failed — Buyer NOT charged.")
-                await Actor.push_data({"error": "lead_generation_failed", "charged": False})
-                return
-            Actor.log.info("B2B leads generated (%d leads). Charging PPE: %s ($0.010 USD)", len(result["leads"]), event_name)
-            await Actor.charge(event_name, count=1)
+        # Default: B2B Intent Leads Batch Engine (default 50, max 500; 1 PPE per delivered lead)
+        event_name = "lead-signal-fetch"
+        result = await run_b2b_leads(max_leads, category)
+        delivered_leads = (result.get("leads") or [])[:max_leads] if result else []
+        if not result or result.get("status") != "success" or not delivered_leads:
+            Actor.log.error("Failed to fetch B2B leads (Not charged)")
+            await Actor.set_status_message("B2B lead generation failed — Buyer NOT charged.")
+            await Actor.push_data({"error": "lead_generation_failed", "charged": False})
+            return
 
-        await Actor.push_data(result)
-        Actor.log.info("Successfully pushed data and settled PPE event %s", event_name)
+        charge_count = len(delivered_leads)
+        Actor.log.info("B2B leads generated (%d leads). Charging %d x %s ($%.2f USD)", charge_count, charge_count, event_name, charge_count * 0.01)
+        await Actor.charge(event_name, count=charge_count)
+        ts = result.get("timestamp_ms") or int(time.time() * 1000)
+        rows = [
+            {
+                "status": "success",
+                "event_name": event_name,
+                "feed": "/v1/fuel/b2b-intent-leads",
+                "timestamp_ms": ts,
+                "count": 1,
+                **lead,
+            }
+            for lead in delivered_leads
+        ]
+        await Actor.push_data(rows)
+        await Actor.set_status_message(f"Delivered {charge_count} B2B leads (billed {charge_count} x {event_name}).")
+        Actor.log.info("Successfully pushed %d lead rows and settled %d x %s", len(rows), charge_count, event_name)
 
 if __name__ == "__main__":
     asyncio.run(main())

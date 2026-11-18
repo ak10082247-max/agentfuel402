@@ -31,10 +31,34 @@
       "example": 1730000000000,
       "nullable": false
     },
+    "company_name": {
+      "type": "string",
+      "title": "Company Name",
+      "description": "Extracted B2B company or startup name",
+      "nullable": true
+    },
+    "domain": {
+      "type": "string",
+      "title": "Domain",
+      "description": "Company domain or host",
+      "nullable": true
+    },
+    "intent_score": {
+      "type": "number",
+      "title": "Intent Score",
+      "description": "Calculated buying/launch intent score (0-100)",
+      "nullable": true
+    },
+    "target_url": {
+      "type": "string",
+      "title": "Target URL",
+      "description": "Extracted page or product URL",
+      "nullable": true
+    },
     "leads": {
       "type": "array",
       "title": "B2B Leads",
-      "description": "Array of extracted buying intent signals",
+      "description": "Array of extracted buying intent signals (legacy summary field)",
       "nullable": true
     },
     "markdown": {

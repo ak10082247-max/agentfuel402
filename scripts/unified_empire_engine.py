@@ -14,12 +14,17 @@ import ssl
 import smtplib
 import argparse
 import subprocess
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import urllib.request
 import urllib.error
 import urllib.parse
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+
+try:
+    import bounty_hunter
+except ImportError:
+    from scripts import bounty_hunter
 
 # Create SSL context resilient to missing local CA cert bundles
 try:
@@ -531,16 +536,407 @@ def has_commercial_builder_signal(u_data: dict, email: str) -> bool:
     return is_custom_domain or has_company_or_site or (public_repos >= 5 and followers >= 10)
 
 # -----------------------------------------------------------------------------
-# 3-TRACK COMMERCIAL BUILDER PROSPECTING ENGINE
+# HIGH-INTENT COMMERCIAL PROSPECTING ENGINE (ISSUE POACHERS + RECENT FORKERS)
 # -----------------------------------------------------------------------------
+POACH_ISSUE_REPOS = {
+    "track_agentfuel": [
+        "mendableai/firecrawl",
+        "unclecode/crawl4ai",
+        "jina-ai/reader",
+        "apify/crawlee",
+        "browserbase/stagehand",
+    ],
+    "track_rugshield": [
+        "coinbase/agentkit",
+        "coinbase/onchainkit",
+        "sendaifun/solana-agent-kit",
+        "goat-sdk/goat",
+    ],
+    "track_canaryguard": [
+        "langgenius/dify",
+        "BerriAI/litellm",
+        "labring/FastGPT",
+    ],
+}
+
+FORK_ECOSYSTEM_REPOS = {
+    "track_agentfuel": [
+        "enescingoz/awesome-n8n-templates",
+        "mendableai/firecrawl",
+        "oxbshw/ultimate-n8n-ai-workflows",
+        "browserbase/stagehand",
+        "skyfire-xyz/skyfire",
+    ],
+    "track_rugshield": [
+        "coinbase/agentkit",
+        "coinbase/onchainkit",
+        "sendaifun/solana-agent-kit",
+        "goat-sdk/goat",
+    ],
+    "track_canaryguard": [
+        "langgenius/dify",
+        "BerriAI/litellm",
+        "labring/FastGPT",
+    ],
+}
+
+IGNORED_ISSUE_HOSTS = {
+    "github.com", "gist.github.com", "user-images.githubusercontent.com",
+    "raw.githubusercontent.com", "objects.githubusercontent.com",
+    "shields.io", "img.shields.io", "youtube.com", "youtu.be",
+    "x.com", "twitter.com", "discord.gg", "discord.com", "t.me",
+    "npmjs.com", "pypi.org", "localhost", "127.0.0.1", "example.com",
+}
+
+_USER_LOOKUP_CACHE = {}
+_B2B_SAMPLE_CACHE = None
+
+
+def _gh_headers():
+    headers = {
+        "Accept": "application/vnd.github.v3+json",
+        "User-Agent": UA,
+    }
+    if GH_PAT:
+        headers["Authorization"] = f"Bearer {GH_PAT}"
+    return headers
+
+
+def resolve_github_user_email(login: str, headers: dict, candidate_repos=None):
+    """Resolve user metadata and deliverable email via profile, repo commits, or public push events."""
+    norm = (login or "").lower().strip()
+    if not norm or "[bot]" in norm or norm in EXCLUDED_VENDOR_ORGS:
+        return None, None
+    if norm in _USER_LOOKUP_CACHE:
+        return _USER_LOOKUP_CACHE[norm]
+
+    u_data = {}
+    found_email = None
+    try:
+        u_data = fetch_json(f"https://api.github.com/users/{urllib.parse.quote(login)}", timeout=4, headers=headers)
+        if (u_data.get("type") or "").lower() == "bot":
+            _USER_LOOKUP_CACHE[norm] = (u_data, None)
+            return u_data, None
+        cand = u_data.get("email")
+        if is_deliverable_personal_email(cand):
+            found_email = cand.lower().strip()
+    except Exception:
+        _USER_LOOKUP_CACHE[norm] = ({}, None)
+        return {}, None
+
+    repos_to_check = list(candidate_repos or [])
+    if not found_email:
+        try:
+            user_repos = fetch_json(
+                f"https://api.github.com/users/{urllib.parse.quote(login)}/repos?sort=pushed&per_page=3",
+                timeout=4,
+                headers=headers,
+            )
+            if isinstance(user_repos, list):
+                user_repos.sort(key=lambda r: bool(r.get("fork")))
+                for ur in user_repos:
+                    fn = ur.get("full_name")
+                    if fn and fn not in repos_to_check:
+                        repos_to_check.append(fn)
+        except Exception:
+            pass
+
+    for repo_full in repos_to_check[:4]:
+        if found_email:
+            break
+        try:
+            commits = fetch_json(
+                f"https://api.github.com/repos/{repo_full}/commits?author={urllib.parse.quote(login)}&per_page=3",
+                timeout=4,
+                headers=headers,
+            )
+            if isinstance(commits, list):
+                for c in commits:
+                    cand = (c.get("commit") or {}).get("author", {}).get("email")
+                    if is_deliverable_personal_email(cand):
+                        found_email = cand.lower().strip()
+                        break
+        except Exception:
+            pass
+
+    if not found_email:
+        try:
+            events = fetch_json(
+                f"https://api.github.com/users/{urllib.parse.quote(login)}/events/public?per_page=15",
+                timeout=4,
+                headers=headers,
+            )
+            if isinstance(events, list):
+                for ev in events:
+                    if ev.get("type") != "PushEvent":
+                        continue
+                    for c in (ev.get("payload") or {}).get("commits") or []:
+                        cand = (c.get("author") or {}).get("email")
+                        if is_deliverable_personal_email(cand):
+                            found_email = cand.lower().strip()
+                            break
+                    if found_email:
+                        break
+        except Exception:
+            pass
+
+    _USER_LOOKUP_CACHE[norm] = (u_data, found_email)
+    return u_data, found_email
+
+
+def extract_target_url_from_issue(text: str) -> str:
+    """Extract the first real external webpage/product URL posted in a scraping issue."""
+    if not text:
+        return ""
+    for m in re.finditer(r"https?://[^\s<>\"')\]`]+", text):
+        cand = m.group(0).rstrip(".,;:!?")
+        try:
+            parsed = urllib.parse.urlparse(cand)
+            host = (parsed.netloc or "").lower().split(":")[0]
+            if not host or any(host == ig or host.endswith("." + ig) for ig in IGNORED_ISSUE_HOSTS):
+                continue
+            if parsed.path.lower().endswith((".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp", ".ico", ".mp4", ".pdf")):
+                continue
+            return cand
+        except Exception:
+            continue
+    return ""
+
+
+def rescue_issue_target_url(target_url: str, timeout: int = 5) -> dict:
+    """Run a failing issue target URL through AgentFuel402 Clean Markdown for live email proof."""
+    if not target_url:
+        return {}
+    try:
+        q_url = urllib.parse.quote(target_url, safe="")
+        res = fetch_json(
+            f"https://agentfuel402.ak10082247.workers.dev/v1/preview/llm-clean-markdown?url={q_url}",
+            timeout=timeout,
+        )
+        md = (res.get("markdown") or "").strip()
+        if res.get("status") == "success" and md:
+            excerpt = re.sub(r"[`\r\n\t]+", " ", md)
+            excerpt = re.sub(r"\s{2,}", " ", excerpt).strip()[:200]
+            return {
+                "target_url": target_url,
+                "tokens": int(res.get("token_estimate") or max(1, len(md) // 4)),
+                "engine": res.get("engine") or "edge-sanitizer",
+                "excerpt": excerpt,
+            }
+    except Exception:
+        pass
+    return {}
+
+
+def fetch_live_b2b_sample(limit: int = 5) -> list:
+    """Fetch 5 fresh live B2B startup/hiring leads once per engine run for Track 3 proof."""
+    global _B2B_SAMPLE_CACHE
+    if isinstance(_B2B_SAMPLE_CACHE, list) and len(_B2B_SAMPLE_CACHE) >= min(3, limit):
+        return _B2B_SAMPLE_CACHE[:limit]
+
+    rows = []
+    seen = set()
+    skip_hosts = {"claude.ai", "news.ycombinator.com", "chatgpt.com", "youtube.com", "x.com"}
+    skip_prefixes = ("why ", "how i ", "i turned ", "i built ", "what ", "ask hn:")
+    try:
+        data = fetch_json("https://hn.algolia.com/api/v1/search_by_date?tags=show_hn&hitsPerPage=40", timeout=6)
+        for s in data.get("hits") or []:
+            title = (s.get("title") or "").strip()
+            if not title:
+                continue
+            clean_title = re.sub(r"^(?:Show HN|Launch HN):\s*", "", title, flags=re.IGNORECASE).strip()
+            if clean_title.lower().startswith(skip_prefixes):
+                continue
+            raw_url = (s.get("url") or "").strip()
+            if not raw_url.startswith(("http://", "https://")):
+                continue
+            host = urllib.parse.urlparse(raw_url).netloc.lower()
+            if host.startswith("www."):
+                host = host[4:]
+            if not host or any(host == ig or host.endswith("." + ig) for ig in skip_hosts):
+                continue
+            company = re.split(r"\s+[–—\-|:]\s+|:\s+", clean_title, maxsplit=1)[0].strip()[:36]
+            if not company or len(company.split()) > 5:
+                company = host.split(".")[0].capitalize()
+            score = s.get("points") or 1
+            comments = s.get("num_comments") or 0
+            intent = min(100, max(40, int(score) * 2 + int(comments) * 3))
+            if company.lower() in seen or host in seen:
+                continue
+            seen.add(company.lower())
+            seen.add(host)
+            rows.append({
+                "company": company,
+                "domain": host,
+                "headline": clean_title[:85],
+                "intent_score": intent,
+            })
+            if len(rows) >= limit:
+                break
+    except Exception:
+        pass
+
+    if len(rows) < limit:
+        try:
+            data = fetch_json("https://remotive.com/api/remote-jobs?limit=25", timeout=6)
+            for j in data.get("jobs") or []:
+                co = (j.get("company_name") or "").strip()[:36]
+                if not co or co.lower() in seen:
+                    continue
+                seen.add(co.lower())
+                rows.append({
+                    "company": co,
+                    "domain": "remotive.com",
+                    "headline": f"Hiring {j.get('title', 'Engineer')}"[:85],
+                    "intent_score": 68,
+                })
+                if len(rows) >= limit:
+                    break
+        except Exception:
+            pass
+
+    _B2B_SAMPLE_CACHE = rows
+    return rows[:limit]
+
+
+def discover_issue_poaching_leads(track: str, limit: int, exclude_emails: set, exclude_users: set) -> list:
+    """Stream A: Intercept developers opening recent issues on competitor/ecosystem repos."""
+    repos = list(POACH_ISSUE_REPOS.get(track, []))
+    if not repos:
+        return []
+    random.shuffle(repos)
+    headers = _gh_headers()
+    since_14d = (datetime.now(timezone.utc) - timedelta(days=14)).strftime("%Y-%m-%d")
+    found = []
+
+    for eco_repo in repos:
+        if len(found) >= limit:
+            break
+        eco_owner = eco_repo.split("/")[0].lower()
+        q = f"repo:{eco_repo} is:issue is:open updated:>={since_14d}"
+        try:
+            res = fetch_json(
+                f"https://api.github.com/search/issues?q={urllib.parse.quote(q)}&sort=updated&order=desc&per_page=15",
+                timeout=6,
+                headers=headers,
+            )
+            for issue in res.get("items") or []:
+                if len(found) >= limit:
+                    break
+                login = ((issue.get("user") or {}).get("login") or "").strip()
+                norm_user = login.lower()
+                if not login or norm_user == eco_owner or norm_user in exclude_users or "[bot]" in norm_user:
+                    continue
+                u_data, email = resolve_github_user_email(login, headers)
+                if not email or email in exclude_emails:
+                    continue
+                exclude_emails.add(email)
+                exclude_users.add(norm_user)
+
+                issue_body = issue.get("body") or ""
+                issue_title = (issue.get("title") or "").strip()
+                broken_url = extract_target_url_from_issue(f"{issue_title}\n{issue_body}") if track == "track_agentfuel" else ""
+                rescue = rescue_issue_target_url(broken_url) if broken_url else {}
+
+                found.append({
+                    "track": track,
+                    "lead_source": "issue_poach",
+                    "username": login,
+                    "name": (u_data or {}).get("name") or login,
+                    "email": email,
+                    "repo": eco_repo,
+                    "ecosystem_repo": eco_repo,
+                    "repo_desc": issue_title or f"Issue on {eco_repo}",
+                    "homepage": broken_url,
+                    "stars": 0,
+                    "issue_number": issue.get("number"),
+                    "issue_title": issue_title,
+                    "issue_url": issue.get("html_url") or "",
+                    "broken_target_url": broken_url,
+                    "rescue_result": rescue,
+                })
+                time.sleep(0.2)
+        except Exception:
+            continue
+    return found
+
+
+def discover_recent_fork_leads(track: str, limit: int, exclude_emails: set, exclude_users: set) -> list:
+    """Stream B: Intercept builders who forked commercial agent/automation repos in the last 14 days."""
+    repos = list(FORK_ECOSYSTEM_REPOS.get(track, []))
+    if not repos:
+        return []
+    random.shuffle(repos)
+    headers = _gh_headers()
+    cutoff_iso = (datetime.now(timezone.utc) - timedelta(days=14)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    found = []
+
+    for eco_repo in repos:
+        if len(found) >= limit:
+            break
+        eco_owner = eco_repo.split("/")[0].lower()
+        try:
+            forks = fetch_json(
+                f"https://api.github.com/repos/{eco_repo}/forks?sort=newest&per_page=20",
+                timeout=6,
+                headers=headers,
+            )
+            if not isinstance(forks, list):
+                continue
+            for fork in forks:
+                if len(found) >= limit:
+                    break
+                if (fork.get("created_at") or "") < cutoff_iso:
+                    break
+                owner = fork.get("owner") or {}
+                login = (owner.get("login") or "").strip()
+                norm_user = login.lower()
+                fork_full = fork.get("full_name") or eco_repo
+                if not login or norm_user == eco_owner or norm_user in exclude_users or "[bot]" in norm_user:
+                    continue
+                u_data, email = resolve_github_user_email(login, headers, candidate_repos=[fork_full])
+                if not email or email in exclude_emails:
+                    continue
+                exclude_emails.add(email)
+                exclude_users.add(norm_user)
+
+                found.append({
+                    "track": track,
+                    "lead_source": "recent_fork",
+                    "username": login,
+                    "name": (u_data or {}).get("name") or login,
+                    "email": email,
+                    "repo": fork_full,
+                    "ecosystem_repo": eco_repo,
+                    "repo_desc": fork.get("description") or f"Recent fork of {eco_repo}",
+                    "homepage": (fork.get("homepage") or "").strip(),
+                    "stars": fork.get("stargazers_count") or 0,
+                })
+                time.sleep(0.2)
+        except Exception:
+            continue
+    return found
+
+
 def search_github_leads(track="track_rugshield", limit=5, exclude_emails=None, exclude_users=None):
     """
-    Track 1: DeFi, Solana & Base Production Builders -> Pitch RugShield 402
-    Track 2: Commercial AI Agent & MCP Server Maintainers -> Pitch CanaryGuard 402
-    Track 3: Automation, SaaS, Shopify & Data Enrichment Teams -> Pitch AgentFuel402
+    High-intent prospecting across Streams A (Competitor Issue Poaching),
+    B (Recent Framework Forkers), and targeted stars:1..300 fallback.
     """
     exclude_emails = set(exclude_emails or ())
     exclude_users = set(exclude_users or ())
+    headers = _gh_headers()
+
+    discovered = []
+    # Mix Streams A (issue poaching) and B (recent forkers)
+    issue_quota = max(1, (limit + 1) // 2) if track == "track_agentfuel" else max(1, limit // 2)
+    discovered.extend(discover_issue_poaching_leads(track, issue_quota, exclude_emails, exclude_users))
+    if len(discovered) < limit:
+        discovered.extend(discover_recent_fork_leads(track, limit - len(discovered), exclude_emails, exclude_users))
+
+    if len(discovered) >= limit:
+        return discovered[:limit]
+
     track_queries = {
         "track_rugshield": [
             '"@coinbase/onchainkit" stars:1..300',
@@ -574,14 +970,6 @@ def search_github_leads(track="track_rugshield", limit=5, exclude_emails=None, e
         ]
     }
 
-    headers = {
-        "Accept": "application/vnd.github.v3+json",
-        "User-Agent": UA
-    }
-    if GH_PAT:
-        headers["Authorization"] = f"Bearer {GH_PAT}"
-
-    discovered = []
     queries = list(track_queries.get(track, track_queries["track_agentfuel"]))
     random.shuffle(queries)
 
@@ -619,49 +1007,31 @@ def search_github_leads(track="track_rugshield", limit=5, exclude_emails=None, e
                     if owner.lower().strip() in exclude_users:
                         continue
 
-                    # Fetch user details for email (with public commit fallback)
-                    try:
-                        u_url = f"https://api.github.com/users/{owner}"
-                        u_data = fetch_json(u_url, timeout=4, headers=headers)
-                        email = u_data.get("email")
-                        name = u_data.get("name") or owner
-
-                        # If user profile email is absent or undeliverable, inspect recent public commits
-                        if not email or not is_deliverable_personal_email(email):
-                            c_url = f"https://api.github.com/repos/{repo_name}/commits?author={owner}&per_page=3"
-                            c_data = fetch_json(c_url, timeout=4, headers=headers)
-                            if isinstance(c_data, list):
-                                for c in c_data:
-                                    cand = c.get("commit", {}).get("author", {}).get("email")
-                                    if is_deliverable_personal_email(cand):
-                                        email = cand
-                                        break
-
-                        if email and is_deliverable_personal_email(email) and has_commercial_builder_signal(u_data, email):
-                            norm_email = email.lower().strip()
-                            norm_user = owner.lower().strip()
-                            if norm_email in exclude_emails or norm_user in exclude_users:
-                                continue
-                            exclude_emails.add(norm_email)
-                            exclude_users.add(norm_user)
-                            discovered.append({
-                                "track": track,
-                                "username": owner,
-                                "name": name,
-                                "email": norm_email,
-                                "repo": repo_name,
-                                "repo_desc": repo_desc,
-                                "homepage": (repo.get("homepage") or "").strip(),
-                                "topics": topics,
-                                "stars": repo.get("stargazers_count", 0)
-                            })
-                    except Exception:
-                        pass
+                    u_data, email = resolve_github_user_email(owner, headers, candidate_repos=[repo_name])
+                    if email and has_commercial_builder_signal(u_data or {}, email):
+                        norm_email = email.lower().strip()
+                        norm_user = owner.lower().strip()
+                        if norm_email in exclude_emails or norm_user in exclude_users:
+                            continue
+                        exclude_emails.add(norm_email)
+                        exclude_users.add(norm_user)
+                        discovered.append({
+                            "track": track,
+                            "lead_source": "repo_search",
+                            "username": owner,
+                            "name": (u_data or {}).get("name") or owner,
+                            "email": norm_email,
+                            "repo": repo_name,
+                            "repo_desc": repo_desc,
+                            "homepage": (repo.get("homepage") or "").strip(),
+                            "topics": topics,
+                            "stars": repo.get("stargazers_count", 0)
+                        })
                 time.sleep(0.4)
             except Exception:
                 break
 
-    return discovered
+    return discovered[:limit]
 
 # -----------------------------------------------------------------------------
 # EMAIL OUTBOUND SENDER & PITCH GENERATOR
@@ -693,6 +1063,13 @@ def send_email(to_addr, subject, body_text, body_html=None):
 
 def run_live_diagnostic(lead: dict, timeout: int = 4) -> str:
     """Run a non-blocking live preview check on the prospect's repo/site for factual pitch personalization."""
+    rescue = lead.get("rescue_result") or {}
+    if rescue.get("target_url") and rescue.get("excerpt"):
+        return (
+            f"Ran {rescue['target_url']} through AgentFuel402 edge extractor just now: "
+            f"{rescue['tokens']} clean LLM tokens via {rescue['engine']}."
+        )
+
     track = lead.get("track", "track_agentfuel")
     repo_full = (lead.get("repo") or "").strip()
     homepage = (lead.get("homepage") or "").strip()
@@ -768,56 +1145,124 @@ def run_live_diagnostic(lead: dict, timeout: int = 4) -> str:
     return ""
 
 
+def _clean_first_name(raw_name: str, username: str) -> str:
+    candidate = (raw_name or "").strip().split()[0] if (raw_name or "").strip() else ""
+    if (
+        candidate
+        and candidate.lower() != (username or "").lower()
+        and len(candidate) >= 2
+        and re.fullmatch(r"[A-Za-z][A-Za-z\-']+", candidate)
+    ):
+        return candidate
+    if username and re.fullmatch(r"[A-Za-z]{3,14}", username.strip()):
+        return username.strip().capitalize()
+    return "there"
+
+
+def format_live_b2b_sample_block(limit: int = 5) -> str:
+    leads = fetch_live_b2b_sample(limit=limit)
+    if not leads:
+        return ""
+    lines = ["Here are 5 live B2B startup & hiring signals captured today:"]
+    for idx, item in enumerate(leads, 1):
+        lines.append(
+            f"{idx}. {item['company']} ({item['domain']}) — {item['headline']} [Intent {item['intent_score']}/100]"
+        )
+    return "\n".join(lines) + "\n\n"
+
+
 def craft_pitch(lead):
-    raw_name = (lead.get("name") or lead.get("username") or "there").strip()
-    first_name = raw_name.split()[0] if raw_name else "there"
+    raw_name = (lead.get("name") or "").strip()
+    username = (lead.get("username") or "").strip()
+    first_name = _clean_first_name(raw_name, username)
     repo_full = lead.get("repo", "your repo")
+    eco_repo = (lead.get("ecosystem_repo") or repo_full).strip()
+    eco_short = eco_repo.split("/")[-1]
     repo_short = repo_full.split("/")[-1]
     track = lead.get("track", "track_agentfuel")
+    source = lead.get("lead_source") or "repo_search"
     diag = (lead.get("diagnostic_summary") or "").strip()
     diag_block = f"{diag}\n\n" if diag else ""
+    target_label = f"your {eco_short} stack" if source == "issue_poach" else repo_short
+
+    if source == "issue_poach" and lead.get("issue_number"):
+        context_line = f"Saw your GitHub issue #{lead['issue_number']} on {eco_repo}."
+    elif source == "recent_fork":
+        context_line = f"Saw your recent fork of {eco_repo} ({repo_full})."
+    else:
+        context_line = f"Saw your work on {repo_full}."
 
     if track == "track_rugshield":
-        subject = f"Quick pre-trade token safety check for {repo_short}"
+        subject = (
+            f"Pre-swap safety check for {eco_short} #{lead['issue_number']}"
+            if source == "issue_poach" and lead.get("issue_number")
+            else f"Pre-swap safety gate for your {eco_short} fork"
+        )[:68]
         text = (
             f"Hey {first_name},\n\n"
-            f"Saw your work on {repo_full}. {diag_block}"
-            f"If you want an external safety gate before Base or Solana swaps execute "
-            f"(sell-tax simulation, Token-2022 mint/freeze authority, and fail-closed inconclusive checks), "
-            f"run any Base or Solana token in the live browser scanner free with zero signup:\n"
+            f"{context_line} {diag_block}"
+            f"Drop a single pre-trade check in front of Base or Solana swaps before funds move "
+            f"(sell-tax simulation, Token-2022 mint/freeze checks, fail-closed gating):\n"
+            f"POST rugshield-402.onrender.com/v1/scan with header Authorization: Bearer <key> and JSON "
+            f"{{\"token_address\": \"0x...\", \"chain\": \"base\"}}\n\n"
+            f"Test any Base or Solana token free in-browser:\n"
             f"https://ak10082247-max.github.io/scanner.html\n\n"
-            f"To adopt fast: grab a $5 API key or $9 TypeScript self-hosted .zip (instant Stripe checkout), "
-            f"or reply if you want my $29 fixed-outcome PR wiring it into {repo_short} with tests:\n"
-            f"https://ak10082247-max.github.io/products.html\n\n"
+            f"Grab a $5 30-day API key (all 3 services via Stripe, no crypto wallet needed), or reply for a $29 PR wiring it into {target_label}:\n"
+            f"https://agentfuel402.ak10082247.workers.dev/v1/checkout/api-key?plan=starter\n\n"
             f"Best,\nArman\n"
         )
 
     elif track == "track_canaryguard":
-        subject = f"Deterministic prompt-injection guard for {repo_short}"
+        subject = (
+            f"Prompt-injection guard for {eco_short} #{lead['issue_number']}"
+            if source == "issue_poach" and lead.get("issue_number")
+            else f"Prompt-injection guard for your {eco_short} fork"
+        )[:68]
         text = (
             f"Hey {first_name},\n\n"
-            f"Saw what you're building in {repo_full}. {diag_block}"
-            f"If you need a deterministic guard in front of untrusted web/tool inputs "
-            f"(role delimiter stripping, Unicode Tag decoding, MCP tool-poisoning checks, sub-10ms engine), "
-            f"test your own snippets free in our interactive inspector:\n"
+            f"{context_line} {diag_block}"
+            f"Protect multi-tenant LLM gateways & MCP tools against untrusted web/RAG inputs "
+            f"(role delimiter stripping, Unicode Tag decoding, sub-10ms engine):\n"
+            f"POST canaryguard-402.onrender.com/v1/sanitize with header Authorization: Bearer <key> and JSON "
+            f"{{\"content\": tool_output, \"strict_mode\": true}}\n\n"
+            f"Test payloads live with zero signup:\n"
             f"https://ak10082247-max.github.io/scanner.html\n\n"
-            f"To ship quickly: grab a $5 30-day API key (HTTP + MCP) or $9 Express firewall .zip, "
-            f"or reply for a $29 fixed-outcome integration PR tailored to {repo_short}:\n"
-            f"https://ak10082247-max.github.io/products.html\n\n"
+            f"Grab a $5 30-day API key (HTTP + MCP via Stripe), or reply for a $29 integration PR tailored to {target_label}:\n"
+            f"https://agentfuel402.ak10082247.workers.dev/v1/checkout/api-key?plan=starter\n\n"
             f"Best,\nArman\n"
         )
 
     else:
-        subject = f"Cutting scrape blocks / token bloat in {repo_short}"
+        rescue = lead.get("rescue_result") or {}
+        if source == "issue_poach" and lead.get("issue_number") and rescue.get("excerpt"):
+            subject = f"Fixed your {eco_short} #{lead['issue_number']} extraction"[:68]
+            lead_intro = (
+                f"Saw your GitHub issue #{lead['issue_number']} on {eco_repo} where {rescue['target_url']} had extraction trouble.\n"
+                f"I ran it through AgentFuel402 edge extractor ({rescue['tokens']} clean tokens via {rescue['engine']}):\n"
+                f"{rescue['excerpt']}...\n\n"
+            )
+            apify_url = "https://apify.com/kuroxreal/llm-clean-markdown-ppe"
+            batch_cta = "1) Batch up to 100 URLs in 1 click on Apify (Pay-Per-Event, zero monthly subscription):"
+        else:
+            subject = (
+                f"5 live B2B leads + bulk batch for {eco_short}"
+                if source != "recent_fork"
+                else f"5 live B2B leads + bulk batch for {eco_short} fork"
+            )[:68]
+            lead_intro = f"{context_line} {diag_block}"
+            apify_url = "https://apify.com/kuroxreal/b2b-intent-leads-ppe"
+            batch_cta = "1) Pull 250-500 leads in 1 click (maxLeads: 250 = $2.50 / 500 = $5.00 via Apify):"
+
+        sample_block = format_live_b2b_sample_block(limit=5)
         text = (
             f"Hey {first_name},\n\n"
-            f"Saw {repo_full} on GitHub. {diag_block}"
-            f"If you need clean Markdown, Shopify price/stock JSON, or live B2B intent data "
-            f"without maintaining brittle Playwright browsers, test it live at Cloudflare Edge:\n"
-            f"https://ak10082247-max.github.io/scanner.html\n\n"
-            f"You can grab a $5 Starter API key, the $19 live B2B Tech Intent CSV pack, a $9 source .zip, "
-            f"or reply for a $29 fixed-outcome integration PR for {repo_short} here:\n"
-            f"https://ak10082247-max.github.io/products.html\n\n"
+            f"{lead_intro}"
+            f"{sample_block}"
+            f"Two fast ways to pull full batches with zero monthly lock-in:\n"
+            f"{batch_cta}\n"
+            f"{apify_url}\n"
+            f"2) $5 30-day Unified API Key (HTTP + MCP across AgentFuel402, CanaryGuard & RugShield via Stripe — or ask for $19 CSV pack / $29 custom PR):\n"
+            f"https://agentfuel402.ak10082247.workers.dev/v1/checkout/api-key?plan=starter\n\n"
             f"Best,\nArman\n"
         )
 
@@ -882,6 +1327,12 @@ Emails Sent Today:                {leads_summary['sent_today']} / {MAX_EMAILS_PE
 =============================================================================
 """
 
+    try:
+        top_bounties = bounty_hunter.scan_open_cash_bounties(days=14, top_n=5, token=GH_PAT)
+        body += bounty_hunter.format_bounty_scorecard_section(top_bounties)
+    except Exception as exc:
+        body += f"\n6. TOP OPEN GITHUB CASH BOUNTIES ($50-$500): scan unavailable ({exc})\n"
+
     print(body)
 
     for recipient in DIGEST_RECIPIENTS:
@@ -915,7 +1366,7 @@ def main():
             for lead in leads:
                 lead["diagnostic_summary"] = run_live_diagnostic(lead)
                 subj, pitch = craft_pitch(lead)
-                print(f"Repo: {lead['repo']} (Stars: {lead.get('stars', 0)}) -> {lead['email']}")
+                print(f"Source: {lead.get('lead_source')} | Eco: {lead.get('ecosystem_repo', lead['repo'])} | Repo: {lead['repo']} -> {lead['email']}")
                 print(f"Diag: {lead.get('diagnostic_summary') or '(none)'}")
                 print(f"Subject: {subj}\n{pitch}")
         return
@@ -989,13 +1440,15 @@ def main():
                         "username": user,
                         "email": email,
                         "track": track_name,
+                        "lead_source": lead.get("lead_source", "repo_search"),
+                        "ecosystem_repo": lead.get("ecosystem_repo", lead["repo"]),
                         "repo": lead["repo"],
                         "sent_date": datetime.now(timezone.utc).isoformat()
                     })
                     track_counts[track_name] += 1
                     sent_this_run += 1
                     save_leads(leads_data)
-                    print(f"  [+] {track_name} pitch delivered to: {email} ({user} on {lead['repo']})")
+                    print(f"  [+] {track_name} [{lead.get('lead_source')}] pitch delivered to: {email} ({user} on {lead['repo']})")
                     time.sleep(random.uniform(9, 14))
                 except Exception as e:
                     print(f"  [-] Failed to pitch {email}: {e}")

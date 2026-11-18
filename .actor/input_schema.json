@@ -10,22 +10,40 @@
       "editor": "select",
       "default": "b2b-intent-leads",
       "enum": ["b2b-intent-leads", "llm-clean-markdown", "ecom-price-stock", "reverse-engineer-anything"],
-      "enumTitles": ["B2B Intent Leads ($0.010 USD)", "LLM Clean Markdown ($0.003 USD)", "E-Commerce Price & Stock ($0.003 USD)", "Reverse Engineer Anything (REA) ($0.015 USD)"]
+      "enumTitles": ["B2B Intent Leads ($0.010 USD / lead)", "LLM Clean Markdown ($0.003 USD / URL)", "E-Commerce Price & Stock ($0.003 USD / URL)", "Reverse Engineer Anything (REA) ($0.015 USD / URL)"]
+    },
+    "maxLeads": {
+      "title": "Max Leads (B2B Batch)",
+      "type": "integer",
+      "description": "Maximum distinct B2B company signals to return (default 50, max 500; billed 1 lead-signal-fetch event per lead delivered)",
+      "default": 50,
+      "minimum": 1,
+      "maximum": 500
+    },
+    "urls": {
+      "title": "Target URLs (Batch up to 100)",
+      "type": "array",
+      "description": "Optional array of up to 100 target URLs for bulk Markdown extraction, e-commerce price/stock monitoring, or reverse-engineering (billed 1 event per succeeded URL)",
+      "editor": "stringList",
+      "maxItems": 100,
+      "items": {
+        "type": "string"
+      }
     },
     "url": {
-      "title": "Target URL",
+      "title": "Target URL (Single Fallback)",
       "type": "string",
-      "description": "Target webpage or product URL for Markdown or E-Commerce extraction",
+      "description": "Single webpage or product URL when urls array is empty",
       "editor": "textfield",
       "default": "https://news.ycombinator.com"
     },
     "limit": {
-      "title": "Leads Limit",
+      "title": "Legacy Leads Limit Alias",
       "type": "integer",
-      "description": "Maximum number of B2B lead signals to return",
-      "default": 10,
+      "description": "Optional fallback alias for maxLeads (1-500)",
+      "default": 50,
       "minimum": 1,
-      "maximum": 50
+      "maximum": 500
     },
     "category": {
       "title": "B2B Category",
