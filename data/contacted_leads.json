@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-18T21:08:48.335375+00:00",
+  "updated_at": "2026-11-19T02:39:40.166145+00:00",
   "suppressed_emails": [
     "paulalexeev10@gmail.com",
     "serge.lopes.94@free.fr",
@@ -259,7 +259,13 @@
     "hi@hyoban.cc",
     "takalele@konnex.me",
     "tummalamohanaditya119@gmail.com",
-    "signallayerops@gmail.com"
+    "signallayerops@gmail.com",
+    "intelligencescaling.archive@gmail.com",
+    "tranvantuanunique@gmail.com",
+    "hqzhon@gmail.com",
+    "github@boltutil.com",
+    "joel@joelparkerhenderson.com",
+    "nsunglab@gmail.com"
   ],
   "contacted_users": [
     "bennyjo",
@@ -508,7 +514,13 @@
     "hyoban",
     "takalele",
     "adityajai119",
-    "signallayerops"
+    "signallayerops",
+    "intelligencescaling-archive",
+    "trantuandev",
+    "hqzhon",
+    "boltutil",
+    "jph",
+    "cflsdf"
   ],
   "history": [
     {
@@ -2251,6 +2263,60 @@
       "ecosystem_repo": "enescingoz/awesome-n8n-templates",
       "repo": "signallayerops/awesome-n8n-templates",
       "sent_date": "2026-11-18T21:08:48.335375+00:00"
+    },
+    {
+      "username": "intelligencescaling-archive",
+      "email": "intelligencescaling.archive@gmail.com",
+      "track": "segment_agency",
+      "lead_source": "agency_org_search",
+      "company": "intelscaling.com",
+      "repo": "intelligencescaling-archive/website",
+      "sent_date": "2026-11-19T02:38:17.937654+00:00"
+    },
+    {
+      "username": "trantuandev",
+      "email": "tranvantuanunique@gmail.com",
+      "track": "segment_agency",
+      "lead_source": "agency_org_search",
+      "company": "FPT Software Academy",
+      "repo": "trantuandev/coffee-shop-website",
+      "sent_date": "2026-11-19T02:38:30.209693+00:00"
+    },
+    {
+      "username": "hqzhon",
+      "email": "hqzhon@gmail.com",
+      "track": "segment_ecom",
+      "lead_source": "ecom_brand_search",
+      "company": "calcdelta.com",
+      "repo": "hqzhon/opc-opportunity-wiki",
+      "sent_date": "2026-11-19T02:38:59.514569+00:00"
+    },
+    {
+      "username": "boltutil",
+      "email": "github@boltutil.com",
+      "track": "segment_ecom",
+      "lead_source": "ecom_brand_search",
+      "company": "boltutil.com",
+      "repo": "boltutil/boltutil",
+      "sent_date": "2026-11-19T02:39:11.131176+00:00"
+    },
+    {
+      "username": "jph",
+      "email": "joel@joelparkerhenderson.com",
+      "track": "segment_ai_saas",
+      "lead_source": "show_hn_launch",
+      "company": "Solid 2.0 + Lily Design System =",
+      "repo": "Solid 2.0 + Lily Design System =",
+      "sent_date": "2026-11-19T02:39:27.319985+00:00"
+    },
+    {
+      "username": "cflsdf",
+      "email": "nsunglab@gmail.com",
+      "track": "segment_ai_saas",
+      "lead_source": "show_hn_launch",
+      "company": "Apps",
+      "repo": "https://apps.apple.com/cn/app/%E9%A3%9E%E8%88%9E%E7%B2%92%E5%AD%90-%E4%BA%94%E5%BD%A9%E6%96%91%E6%96%93%E7%9A%84%E6%8C%87%E5%B0%96%E8%89%BA%E6%9C%AF/id6444665083",
+      "sent_date": "2026-11-19T02:39:40.166122+00:00"
     }
   ]
 }
