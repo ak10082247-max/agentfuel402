@@ -4,6 +4,9 @@
  */
 
 import { BUNDLE_ZIPS } from "./bundles.js";
+import { STORE_PRODUCTS, resolveStoreProduct } from "./store_engine.js";
+
+export { STORE_PRODUCTS, resolveStoreProduct };
 
 const enc = new TextEncoder();
 const dec = new TextDecoder();
@@ -346,6 +349,10 @@ function resolveCatalogItemFromSession(session) {
   if (PRICE_ID_TO_BUNDLE[priceId]) {
     return { kind: "bundle", item: PRICE_ID_TO_BUNDLE[priceId] };
   }
+  const storeMatch = resolveStoreProduct(metaSku);
+  if (storeMatch) {
+    return { kind: "store_product", item: storeMatch };
+  }
   for (const d of Object.values(DATA_PACK_PLANS)) {
     if (metaSku === d.sku) return { kind: "data_pack", item: d };
   }
@@ -354,6 +361,11 @@ function resolveCatalogItemFromSession(session) {
   }
   for (const p of Object.values(API_KEY_PLANS)) {
     if (metaSku === p.sku) return { kind: "api_key", item: p };
+  }
+  if (metaKind === "store_product") {
+    if (session.amount_total === 2900) return { kind: "store_product", item: STORE_PRODUCTS["base-alpha-feed"] };
+    if (session.amount_total === 3900) return { kind: "store_product", item: STORE_PRODUCTS["b2b-startup-leads-500"] };
+    if (session.amount_total === 999) return { kind: "store_product", item: STORE_PRODUCTS["instant-security-audit"] };
   }
   if (session.amount_total === 1900 && metaKind === "data_pack") return { kind: "data_pack", item: DATA_PACK_PLANS["csv-pack"] };
   if (session.amount_total === 1900) return { kind: "api_key", item: API_KEY_PLANS.pro };
@@ -410,7 +422,54 @@ export async function verifyCheckoutSessionAndMint(sessionId, origin, env) {
   );
 
   const downloads = [];
-  if (resolved.kind === "data_pack") {
+  if (resolved.kind === "store_product") {
+    const target = String(session.metadata?.target || "").trim();
+    const pref = String(session.metadata?.file_format || item.defaultFormat || "json").toLowerCase();
+    const formats =
+      item.id === "instant-security-audit"
+        ? ["json", "html"]
+        : pref === "csv"
+          ? ["csv", "json"]
+          : ["json", "csv"];
+
+    for (const fmt of formats) {
+      const dlToken = await signKuroxToken(
+        {
+          typ: "store_download",
+          sid: session.id,
+          sku: item.sku,
+          productId: item.id,
+          format: fmt,
+          target: target || undefined,
+          iat: now,
+          exp: now + 7 * 24 * 60 * 60,
+        },
+        env.KUROX_SIGNING_SECRET,
+        "dl_v1",
+      );
+      const filename =
+        fmt === "csv"
+          ? item.filenameCsv
+          : fmt === "html"
+            ? item.filenameHtml
+            : item.filenameJson;
+      const titleSuffix =
+        fmt === "html"
+          ? "Printable PDF / HTML Security Certificate"
+          : fmt === "csv"
+            ? "CSV Spreadsheet Export"
+            : "Structured JSON Export";
+      downloads.push({
+        sku: item.sku,
+        product_id: item.id,
+        format: fmt,
+        title: `${item.name} — ${titleSuffix}`,
+        filename,
+        bytes: null,
+        url: `${origin}/v1/store/download?token=${encodeURIComponent(dlToken)}`,
+      });
+    }
+  } else if (resolved.kind === "data_pack") {
     const dlToken = await signKuroxToken(
       {
         typ: "download",
@@ -504,7 +563,7 @@ export function renderFulfillmentHtml(fulfillment, origin) {
   <p class="meta">Product: <strong>${escapeHtml(fulfillment.product_name)}</strong> &bull; Session: <code>${escapeHtml(fulfillment.session_id)}</code></p>
 
   <div class="card">
-    <h3>1. Instant ZIP Downloads</h3>
+    <h3>1. Instant Downloads &amp; Certificates</h3>
     ${downloadCards}
   </div>
 
@@ -517,7 +576,7 @@ export function renderFulfillmentHtml(fulfillment, origin) {
   -H "Authorization: Bearer ${escapeHtml(fulfillment.api_key)}"</pre>
   </div>
 
-  <p><a class="btn" href="${escapeHtml(origin)}/">Back to AgentFuel402</a> <a class="btn" href="https://ak10082247-max.github.io/products.html">All Kurox Products</a></p>
+  <p><a class="btn" href="${escapeHtml(origin)}/store">AgentFuel Store</a> <a class="btn" href="${escapeHtml(origin)}/">Back to AgentFuel402</a> <a class="btn" href="https://ak10082247-max.github.io/products.html">All Kurox Products</a></p>
 </body>
 </html>`;
 }

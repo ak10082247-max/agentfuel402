@@ -9,9 +9,12 @@ import {
   API_KEY_PLANS,
   BUNDLE_SKUS,
   DATA_PACK_PLANS,
+  STORE_PRODUCTS,
+  resolveStoreProduct,
   authenticateBearerApiKey,
   createStripeCheckoutSession,
   hasSigningSecretConfigured,
+  signKuroxToken,
   signStatelessPassToken,
   verifyCheckoutSessionAndMint,
   verifyKuroxToken,
@@ -20,6 +23,17 @@ import {
   renderFulfillmentHtml,
   verifyStripeWebhookSignature,
 } from "./stripe_billing.js";
+import {
+  getStoreDataset,
+  baseAlphaToCsv,
+  b2bLeadsToCsv,
+  buildStoreCatalogResponse,
+  validateAuditTarget,
+  runInstantSecurityAudit,
+  verifyAndRenderSignedAuditBadge,
+  renderAuditCertificateHtml,
+  renderStoreHtml,
+} from "./store_engine.js";
 
 const MERCHANT_BASE = "0x80E0Ae84679b7f11bE171DaADd492FBECf628cd6";
 const BASE_USDC = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
@@ -301,6 +315,14 @@ const ROUTE_BAZAAR_EXAMPLES = {
       api_key: "af402_live_1797628800_abc123def456.0123456789abcdef",
       expires_at: "2026-12-18T21:15:00.000Z",
       tx_hash: "0xabc123"
+    }
+  },
+  "/v1/store/buy": {
+    input: { sku: "base-alpha-feed", format: "json" },
+    output: {
+      status: "fulfilled",
+      sku: "store-base-alpha-feed-v1",
+      downloads: [{ format: "json", url: "https://agentfuel402.ak10082247.workers.dev/v1/store/download?token=..." }]
     }
   }
 };
@@ -1594,6 +1616,18 @@ async function handleWorkerFetch(req, env, ctx) {
           },
           fulfillment: "Automated instant ZIP/CSV download + Bearer API key (sk_kurox_v1.*) at /v1/stripe/success"
         },
+        intelligence_store: {
+          storefront_url: `${url.origin}/store`,
+          catalog_url: `${url.origin}/v1/store/products`,
+          products: Object.values(STORE_PRODUCTS).map((p) => ({
+            id: p.id,
+            sku: p.sku,
+            name: p.name,
+            price: p.priceDisplay,
+            stripe_checkout_url: `${url.origin}/v1/store/checkout?sku=${encodeURIComponent(p.id)}`,
+            x402_purchase_url: `${url.origin}/v1/store/buy?sku=${encodeURIComponent(p.id)}`
+          }))
+        },
         badge_endpoint: `${url.origin}/v1/badge/safety`,
         scanner_portal: "https://ak10082247-max.github.io/scanner.html",
         free_previews: [
@@ -1646,8 +1680,9 @@ async function handleWorkerFetch(req, env, ctx) {
   </div>
 
   <div class="cta-bar">
-    <a class="btn btn-green" href="/v1/checkout/api-key?plan=starter">🔑 Buy API Key ($5 Starter / 30d)</a>
-    <a class="btn btn-blue" href="/v1/checkout/api-key?plan=pro">🚀 Buy Pro API Key ($19 / 90d)</a>
+    <a class="btn btn-green" href="/store">🛒 Intelligence Store ($9.99–$39 Packs &amp; Audits)</a>
+    <a class="btn btn-blue" href="/v1/checkout/api-key?plan=starter">🔑 Buy API Key ($5 Starter / 30d)</a>
+    <a class="btn" href="/v1/checkout/api-key?plan=pro">🚀 Buy Pro API Key ($19 / 90d)</a>
     <a class="btn" href="/v1/checkout/bundle?sku=dual">📦 Dual Security ZIP Bundle ($15 Instant)</a>
     <a class="btn" href="https://apify.com/kuroxreal" target="_blank" rel="noopener">💳 Apify Store</a>
     <a class="btn" href="https://www.npmjs.com/package/@kurox_real/agentfuel402" target="_blank" rel="noopener">📦 npm CLI / MCP</a>
@@ -1804,6 +1839,37 @@ async function handleWorkerFetch(req, env, ctx) {
                 "422": { description: "Upstream target unreachable (charged: false)" }
               }
             }
+          },
+          "/v1/store/products": {
+            get: {
+              summary: "List High-AOV Intelligence Store Products ($9.99-$39)",
+              responses: { "200": { description: "JSON catalog of store datasets and audits" } }
+            }
+          },
+          "/v1/store/buy": {
+            post: {
+              summary: "Purchase Store Dataset or Security Audit Certificate via x402 V2 (Base or Solana USDC)",
+              requestBody: {
+                required: true,
+                content: {
+                  "application/json": {
+                    schema: {
+                      type: "object",
+                      properties: {
+                        sku: { type: "string", enum: ["base-alpha-feed", "b2b-startup-leads-500", "instant-security-audit"] },
+                        format: { type: "string", enum: ["json", "csv", "html"] },
+                        target: { type: "string", description: "Required for instant-security-audit (GitHub owner/repo, 0x address, or Solana mint)" }
+                      },
+                      required: ["sku"]
+                    }
+                  }
+                }
+              },
+              responses: {
+                "200": { description: "Fulfilled order with time-limited /v1/store/download?token=... links" },
+                "402": { description: "Payment Required via x402 V2 (Base or Solana USDC)" }
+              }
+            }
           }
         }
       };
@@ -1956,6 +2022,409 @@ Endpoints:
           "Content-Type": "image/svg+xml; charset=utf-8",
           "Cache-Control": targetUrl ? "public, max-age=300" : "public, max-age=600"
         }
+      });
+    }
+
+    // -------------------------------------------------------------------------
+    // AGENTFUEL INTELLIGENCE STORE (/store & /v1/store/*)
+    // High-AOV Digital Data Products & Instant Security Certificates ($9.99-$39)
+    // -------------------------------------------------------------------------
+    if (path === "/store" || path === "/store/") {
+      return new Response(renderStoreHtml(url.origin), {
+        status: 200,
+        headers: { ...cors, "Content-Type": "text/html; charset=utf-8", "Cache-Control": "public, max-age=60" }
+      });
+    }
+
+    if (path === "/v1/store/products") {
+      return new Response(JSON.stringify(buildStoreCatalogResponse(url.origin), null, 2), {
+        status: 200,
+        headers: { ...cors, "Content-Type": "application/json", "Cache-Control": "public, max-age=60" }
+      });
+    }
+
+    if (path === "/v1/store/preview") {
+      const product = resolveStoreProduct(url.searchParams.get("sku") || "base-alpha-feed");
+      if (!product || product.requiresTarget) {
+        return new Response(JSON.stringify({ error: "preview_available_for_datasets_only", available: ["base-alpha-feed", "b2b-startup-leads-500"] }), {
+          status: 400,
+          headers: { ...cors, "Content-Type": "application/json" }
+        });
+      }
+      const dataset = await getStoreDataset(product.id, env);
+      const sample = product.id === "base-alpha-feed" ? (dataset?.tokens || []).slice(0, 2) : (dataset?.leads || []).slice(0, 2);
+      return new Response(JSON.stringify({
+        product: product.id,
+        preview: true,
+        compiled_at: dataset?.compiled_at || null,
+        total_available: product.id === "base-alpha-feed" ? (dataset?.total_tokens || 0) : (dataset?.total_leads || 0),
+        sample_rows: sample,
+        purchase_stripe: `${url.origin}/v1/store/checkout?sku=${encodeURIComponent(product.id)}`,
+        purchase_x402: `${url.origin}/v1/store/buy?sku=${encodeURIComponent(product.id)}`
+      }, null, 2), {
+        status: 200,
+        headers: { ...cors, "Content-Type": "application/json", "Cache-Control": "public, max-age=60" }
+      });
+    }
+
+    if (path === "/v1/store/checkout") {
+      if (req.method !== "GET" && req.method !== "POST") {
+        return new Response(JSON.stringify({ error: "Method not allowed" }), {
+          status: 405,
+          headers: { ...cors, "Content-Type": "application/json" }
+        });
+      }
+      let bodyParams = {};
+      if (req.method === "POST") {
+        try { bodyParams = await req.json(); } catch { bodyParams = {}; }
+      }
+      const rawSku = url.searchParams.get("sku") || bodyParams.sku || "base-alpha-feed";
+      const product = resolveStoreProduct(rawSku);
+      if (!product) {
+        return new Response(JSON.stringify({ error: "invalid_store_sku", available: Object.keys(STORE_PRODUCTS) }), {
+          status: 400,
+          headers: { ...cors, "Content-Type": "application/json" }
+        });
+      }
+
+      const rawTarget = String(url.searchParams.get("target") || bodyParams.target || "").trim();
+      let cleanTarget = "";
+      if (product.requiresTarget) {
+        const check = validateAuditTarget(rawTarget);
+        if (!check.valid) {
+          return new Response(JSON.stringify({ error: "invalid_audit_target", message: check.error, charged: false }), {
+            status: 400,
+            headers: { ...cors, "Content-Type": "application/json" }
+          });
+        }
+        cleanTarget = check.normalized;
+      }
+
+      const rawFmt = String(url.searchParams.get("format") || bodyParams.format || product.defaultFormat).toLowerCase();
+      const fileFormat = product.formats.includes(rawFmt) ? rawFmt : product.defaultFormat;
+
+      try {
+        const session = await createStripeCheckoutSession({
+          successUrl: `${url.origin}/v1/stripe/success?session_id={CHECKOUT_SESSION_ID}`,
+          cancelUrl: `${url.origin}/store?canceled=1`,
+          lineItems: [{
+            price_data: {
+              currency: "usd",
+              unit_amount: product.amountCents,
+              product_data: {
+                name: product.name,
+                description: cleanTarget ? `${product.tagline} Target: ${cleanTarget}` : product.tagline
+              }
+            },
+            quantity: 1
+          }],
+          metadata: {
+            kind: "store_product",
+            sku: product.sku,
+            product_id: product.id,
+            file_format: fileFormat,
+            ...(cleanTarget ? { target: cleanTarget } : {})
+          }
+        }, env);
+
+        if (req.method === "POST" || url.searchParams.get("response") === "json") {
+          return new Response(JSON.stringify({
+            id: session.id,
+            url: session.url,
+            product_id: product.id,
+            sku: product.sku,
+            name: product.name,
+            amount_cents: product.amountCents,
+            target: cleanTarget || null
+          }, null, 2), { status: 200, headers: { ...cors, "Content-Type": "application/json" } });
+        }
+        return new Response(null, { status: 303, headers: { ...cors, Location: session.url } });
+      } catch (err) {
+        return new Response(JSON.stringify({ error: err.message, charged: false }), {
+          status: err.httpStatus || 502,
+          headers: { ...cors, "Content-Type": "application/json" }
+        });
+      }
+    }
+
+    if (path === "/v1/store/buy" || path === "/v1/store/checkout/x402") {
+      if (req.method !== "POST" && req.method !== "GET") {
+        return new Response(JSON.stringify({ error: "Method not allowed", charged: false }), {
+          status: 405,
+          headers: { ...cors, "Content-Type": "application/json" }
+        });
+      }
+      let bodyParams = {};
+      if (req.method === "POST") {
+        try { bodyParams = await req.json(); } catch { bodyParams = {}; }
+      }
+      const rawSku = url.searchParams.get("sku") || bodyParams.sku || "base-alpha-feed";
+      const product = resolveStoreProduct(rawSku);
+      if (!product) {
+        return new Response(JSON.stringify({ error: "invalid_store_sku", available: Object.keys(STORE_PRODUCTS), charged: false }), {
+          status: 400,
+          headers: { ...cors, "Content-Type": "application/json" }
+        });
+      }
+
+      const rawTarget = String(url.searchParams.get("target") || bodyParams.target || "").trim();
+      let cleanTarget = "";
+      if (product.requiresTarget) {
+        const check = validateAuditTarget(rawTarget);
+        if (!check.valid) {
+          return new Response(JSON.stringify({ error: "invalid_audit_target", message: check.error, charged: false }), {
+            status: 400,
+            headers: { ...cors, "Content-Type": "application/json" }
+          });
+        }
+        cleanTarget = check.normalized;
+      }
+
+      const rawFmt = String(url.searchParams.get("format") || bodyParams.format || product.defaultFormat).toLowerCase();
+      const fileFormat = product.formats.includes(rawFmt) ? rawFmt : product.defaultFormat;
+      const storeCfg = {
+        name: product.name,
+        amountMicro: product.amountMicro,
+        priceDisplay: `$${(product.amountCents / 100).toFixed(2)} USDC`,
+        description: product.tagline,
+        inputSchema: {
+          type: "object",
+          properties: {
+            sku: { type: "string" },
+            format: { type: "string" },
+            target: { type: "string" }
+          }
+        },
+        outputSchema: {
+          type: "object",
+          properties: {
+            status: { type: "string" },
+            sku: { type: "string" },
+            downloads: { type: "array" }
+          }
+        }
+      };
+
+      const paymentHdr = req.headers.get("PAYMENT-SIGNATURE") || req.headers.get("X-PAYMENT") || req.headers.get("payment-signature");
+      if (!paymentHdr) {
+        return build402Challenge(req, path, undefined, storeCfg);
+      }
+
+      if (!hasSigningSecretConfigured(env)) {
+        return new Response(JSON.stringify({
+          status: "error",
+          error: "signing_secret_not_configured",
+          charged: false,
+          message: "Store download signing key is not configured on this worker isolate."
+        }, null, 2), { status: 503, headers: { ...cors, "Content-Type": "application/json" } });
+      }
+
+      let paymentPrep;
+      try {
+        paymentPrep = await validateAndVerifyPayAI(req, path, paymentHdr, storeCfg);
+      } catch (verifyErr) {
+        return build402Challenge(req, path, `Payment validation rejected: ${verifyErr.message}`, storeCfg);
+      }
+
+      // Execute / verify deliverable BEFORE settling payment so buyers are never charged on bad targets
+      let inlinePayload;
+      try {
+        if (product.id === "instant-security-audit") {
+          inlinePayload = await runInstantSecurityAudit(cleanTarget, env.KUROX_SIGNING_SECRET, url.origin);
+        } else {
+          inlinePayload = await getStoreDataset(product.id, env);
+          if (!inlinePayload) throw new UpstreamTargetError("Store dataset snapshot unavailable.", 502);
+        }
+      } catch (execErr) {
+        return new Response(JSON.stringify({
+          status: "error",
+          error: "deliverable_generation_failed",
+          charged: false,
+          message: execErr.message
+        }, null, 2), { status: execErr.httpStatus || 422, headers: { ...cors, "Content-Type": "application/json" } });
+      }
+
+      let receipt;
+      try {
+        receipt = await settlePayAI(paymentPrep);
+      } catch (settleErr) {
+        return new Response(JSON.stringify({
+          status: "error",
+          error: "settlement_failed",
+          charged: false,
+          message: `On-chain settlement could not be completed: ${settleErr.message}`
+        }, null, 2), { status: 502, headers: { ...cors, "Content-Type": "application/json" } });
+      }
+
+      const now = Math.floor(Date.now() / 1000);
+      const fmts = product.id === "instant-security-audit" ? ["json", "html"] : (fileFormat === "csv" ? ["csv", "json"] : ["json", "csv"]);
+      const downloads = [];
+      for (const fmt of fmts) {
+        const dlToken = await signKuroxToken({
+          typ: "store_download",
+          sid: receipt.transaction,
+          sku: product.sku,
+          productId: product.id,
+          format: fmt,
+          ...(cleanTarget ? { target: cleanTarget } : {}),
+          iat: now,
+          exp: now + 7 * 24 * 60 * 60
+        }, env.KUROX_SIGNING_SECRET, "dl_v1");
+        downloads.push({
+          format: fmt,
+          filename: fmt === "csv" ? product.filenameCsv : fmt === "html" ? product.filenameHtml : product.filenameJson,
+          url: `${url.origin}/v1/store/download?token=${encodeURIComponent(dlToken)}`
+        });
+      }
+
+      const apiKey = await signKuroxToken({
+        typ: "api_key",
+        sid: receipt.transaction,
+        sku: product.sku,
+        tier: product.tier,
+        iat: now,
+        exp: now + product.bonusApiTtlSeconds
+      }, env.KUROX_SIGNING_SECRET, "sk_kurox_v1");
+
+      const b64Receipt = btoa(JSON.stringify(receipt));
+      return new Response(JSON.stringify({
+        status: "fulfilled",
+        paid: true,
+        product_id: product.id,
+        sku: product.sku,
+        tx_hash: receipt.transaction,
+        network: receipt.network,
+        payer: receipt.payer,
+        amount_micro: product.amountMicro.toString(),
+        api_key: apiKey,
+        downloads,
+        deliverable: inlinePayload
+      }, null, 2), {
+        status: 200,
+        headers: {
+          ...cors,
+          "Content-Type": "application/json",
+          "Cache-Control": "no-store",
+          "PAYMENT-RESPONSE": b64Receipt,
+          "X-Payment-Response": b64Receipt
+        }
+      });
+    }
+
+    if (path === "/v1/store/download") {
+      if (!hasSigningSecretConfigured(env)) {
+        return new Response(JSON.stringify({ error: "download_verification_unavailable" }), {
+          status: 503,
+          headers: { ...cors, "Content-Type": "application/json" }
+        });
+      }
+      const token = url.searchParams.get("token") || "";
+      if (!token) {
+        return new Response(JSON.stringify({ error: "missing_token" }), {
+          status: 400,
+          headers: { ...cors, "Content-Type": "application/json" }
+        });
+      }
+      const payload = await verifyKuroxToken(token, env.KUROX_SIGNING_SECRET, "dl_v1");
+      if (!payload || payload.typ !== "store_download") {
+        return new Response(JSON.stringify({ error: "invalid_or_expired_download_token" }), {
+          status: 403,
+          headers: { ...cors, "Content-Type": "application/json", "Cache-Control": "no-store" }
+        });
+      }
+      const product = resolveStoreProduct(payload.productId || payload.sku);
+      if (!product) {
+        return new Response(JSON.stringify({ error: "invalid_store_product_token" }), {
+          status: 403,
+          headers: { ...cors, "Content-Type": "application/json", "Cache-Control": "no-store" }
+        });
+      }
+
+      const rawFmt = String(url.searchParams.get("format") || payload.format || product.defaultFormat).toLowerCase();
+      const fmt = product.formats.includes(rawFmt) ? rawFmt : product.defaultFormat;
+
+      if (product.id === "instant-security-audit") {
+        const target = String(payload.target || "").trim();
+        if (!target) {
+          return new Response(JSON.stringify({ error: "missing_audit_target_in_token" }), {
+            status: 400,
+            headers: { ...cors, "Content-Type": "application/json" }
+          });
+        }
+        try {
+          const report = await runInstantSecurityAudit(target, env.KUROX_SIGNING_SECRET, url.origin);
+          if (fmt === "html") {
+            return new Response(renderAuditCertificateHtml(report), {
+              status: 200,
+              headers: { ...cors, "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" }
+            });
+          }
+          if (fmt === "svg") {
+            const badgeUrl = new URL(report.readme_badge_url);
+            const svg = await verifyAndRenderSignedAuditBadge(badgeUrl.searchParams, env.KUROX_SIGNING_SECRET);
+            return new Response(svg || "", {
+              status: 200,
+              headers: { ...cors, "Content-Type": "image/svg+xml; charset=utf-8", "Cache-Control": "no-store" }
+            });
+          }
+          return new Response(JSON.stringify(report, null, 2), {
+            status: 200,
+            headers: {
+              ...cors,
+              "Content-Type": "application/json; charset=utf-8",
+              "Content-Disposition": `attachment; filename="${product.filenameJson}"`,
+              "Cache-Control": "no-store"
+            }
+          });
+        } catch (auditErr) {
+          return new Response(JSON.stringify({ error: auditErr.message }), {
+            status: auditErr.httpStatus || 502,
+            headers: { ...cors, "Content-Type": "application/json", "Cache-Control": "no-store" }
+          });
+        }
+      }
+
+      const dataset = await getStoreDataset(product.id, env, url.searchParams.get("refresh") === "live");
+      if (!dataset) {
+        return new Response(JSON.stringify({ error: "dataset_unavailable" }), {
+          status: 502,
+          headers: { ...cors, "Content-Type": "application/json" }
+        });
+      }
+      if (fmt === "csv") {
+        const csvStr = product.id === "base-alpha-feed" ? baseAlphaToCsv(dataset) : b2bLeadsToCsv(dataset);
+        return new Response(csvStr, {
+          status: 200,
+          headers: {
+            ...cors,
+            "Content-Type": "text/csv; charset=utf-8",
+            "Content-Disposition": `attachment; filename="${product.filenameCsv}"`,
+            "Cache-Control": "no-store"
+          }
+        });
+      }
+      return new Response(JSON.stringify(dataset, null, 2), {
+        status: 200,
+        headers: {
+          ...cors,
+          "Content-Type": "application/json; charset=utf-8",
+          "Content-Disposition": `attachment; filename="${product.filenameJson}"`,
+          "Cache-Control": "no-store"
+        }
+      });
+    }
+
+    if (path === "/v1/store/badge") {
+      const svg = await verifyAndRenderSignedAuditBadge(url.searchParams, env?.KUROX_SIGNING_SECRET);
+      if (!svg) {
+        return new Response(JSON.stringify({ error: "invalid_or_unsigned_audit_badge" }), {
+          status: 403,
+          headers: { ...cors, "Content-Type": "application/json" }
+        });
+      }
+      return new Response(svg, {
+        status: 200,
+        headers: { ...cors, "Content-Type": "image/svg+xml; charset=utf-8", "Cache-Control": "public, max-age=3600" }
       });
     }
 

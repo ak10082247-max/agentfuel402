@@ -27,11 +27,19 @@ jobs:
           SMTP_PASS: ${{ secrets.SMTP_PASS }}
         run: |
           python scripts/test_outreach.py
+          python scripts/compile_store_products.py --if-stale-hours 23
           python scripts/unified_empire_engine.py
 
-      - name: Persist Contacted Leads State
+      - name: Persist Contacted Leads & Store Data State
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/contacted_leads.json
-          git diff --staged --quiet || (git commit -m "chore: persist updated contacted leads state [skip ci]" && git push origin main)
+          git add data/contacted_leads.json data/latest_base_alpha.json data/latest_b2b_leads.json data/store_snapshots.js
+          if ! git diff --staged --quiet; then
+            if git diff --staged --name-only | grep -q "store_snapshots.js"; then
+              git commit -m "chore: refresh daily /store intelligence datasets"
+            else
+              git commit -m "chore: persist updated contacted leads state [skip ci]"
+            fi
+            git push origin main
+          fi

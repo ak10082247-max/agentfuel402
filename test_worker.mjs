@@ -226,9 +226,10 @@ test("POST /v1/pass/prepay enforces 402/503 fail-closed and mints 30-day af402_l
     assert.equal(mcpPassBody.result._meta["kurox/auth"].tier, "agency_pass_30d");
 
     // 6. Tampered, malformed, and expired af402_live tokens fail closed with 401 on /v1/fuel/* and /mcp
+    const tamperedChar = mintBody.api_key.endsWith("0") ? "1" : "0";
     const tamperedPass = await worker.fetch(
       new Request("https://agentfuel402.ak10082247.workers.dev/v1/fuel/sdk-live-spec?package=fastapi", {
-        headers: { Authorization: `Bearer ${mintBody.api_key.slice(0, -1)}0` },
+        headers: { Authorization: `Bearer ${mintBody.api_key.slice(0, -1)}${tamperedChar}` },
       }),
       PASS_ENV,
     );
@@ -714,6 +715,221 @@ test("SVG Safety Badge, $19 Live CSV Pack checkout/download & RapidAPI bypass wo
       TEST_ENV,
     );
     assert.equal(rapidBad.status, 402);
+  } finally {
+    globalThis.fetch = ORIG_FETCH;
+  }
+});
+
+test("Intelligence Store (/store, /v1/store/products, Stripe & x402 checkout, downloads, Security Audit & SVG badge)", async () => {
+  const STORE_SECRET = "store-signing-secret-0123456789abcdef";
+  const STORE_ENV = { ...ENV, STRIPE_SECRET_KEY: "sk_test_store_123", KUROX_SIGNING_SECRET: STORE_SECRET };
+
+  // 1. Storefront HTML, JSON Catalog & Previews
+  const [storeHtmlRes, productsRes, previewRes] = await Promise.all([
+    worker.fetch(new Request("https://agentfuel402.ak10082247.workers.dev/store"), STORE_ENV),
+    worker.fetch(new Request("https://agentfuel402.ak10082247.workers.dev/v1/store/products"), STORE_ENV),
+    worker.fetch(new Request("https://agentfuel402.ak10082247.workers.dev/v1/store/preview?sku=base-alpha-feed"), STORE_ENV),
+  ]);
+  assert.equal(storeHtmlRes.status, 200);
+  assert.match(storeHtmlRes.headers.get("Content-Type"), /text\/html/i);
+  const storeHtml = await storeHtmlRes.text();
+  assert.match(storeHtml, /AgentFuel402 Intelligence Store/);
+  assert.match(storeHtml, /base-alpha-feed/);
+  assert.match(storeHtml, /b2b-startup-leads-500/);
+  assert.match(storeHtml, /instant-security-audit/);
+
+  assert.equal(productsRes.status, 200);
+  const catalog = await productsRes.json();
+  assert.equal(catalog.products.length, 3);
+  const byId = Object.fromEntries(catalog.products.map((p) => [p.id, p]));
+  assert.equal(byId["base-alpha-feed"].amount_cents, 2900);
+  assert.equal(byId["base-alpha-feed"].amount_micro_usdc, "29000000");
+  assert.equal(byId["b2b-startup-leads-500"].amount_cents, 3900);
+  assert.equal(byId["b2b-startup-leads-500"].amount_micro_usdc, "39000000");
+  assert.equal(byId["instant-security-audit"].amount_cents, 999);
+  assert.equal(byId["instant-security-audit"].amount_micro_usdc, "9990000");
+  assert.ok(byId["base-alpha-feed"].live_stats.total_tokens >= 10);
+  assert.ok(byId["b2b-startup-leads-500"].live_stats.total_leads >= 100);
+
+  assert.equal(previewRes.status, 200);
+  const preview = await previewRes.json();
+  assert.equal(preview.preview, true);
+  assert.equal(preview.sample_rows.length, 2);
+
+  // 2. Audit target validation BEFORE payment
+  const badAudit400 = await worker.fetch(
+    new Request("https://agentfuel402.ak10082247.workers.dev/v1/store/buy?sku=instant-security-audit", { method: "POST" }),
+    STORE_ENV,
+  );
+  assert.equal(badAudit400.status, 400);
+
+  // 3. Unpaid x402 challenges for all 3 SKUs
+  const cAlpha = await worker.fetch(
+    new Request("https://agentfuel402.ak10082247.workers.dev/v1/store/buy?sku=base-alpha-feed", { method: "POST" }),
+    STORE_ENV,
+  );
+  assert.equal(cAlpha.status, 402);
+  const cAlphaJson = JSON.parse(Buffer.from(cAlpha.headers.get("PAYMENT-REQUIRED"), "base64").toString("utf8"));
+  assert.equal(cAlphaJson.accepts[0].amount, "29000000");
+
+  const cAudit = await worker.fetch(
+    new Request("https://agentfuel402.ak10082247.workers.dev/v1/store/buy?sku=instant-security-audit&target=acme/mcp-server", { method: "POST" }),
+    STORE_ENV,
+  );
+  assert.equal(cAudit.status, 402);
+  const cAuditJson = JSON.parse(Buffer.from(cAudit.headers.get("PAYMENT-REQUIRED"), "base64").toString("utf8"));
+  assert.equal(cAuditJson.accepts[0].amount, "9990000");
+
+  const origFetch = globalThis.fetch;
+  let verifyCalls = 0;
+  let settleCalls = 0;
+  globalThis.fetch = async (url, init) => {
+    const u = String(url);
+    if (u === "https://api.stripe.com/v1/checkout/sessions") {
+      return new Response(
+        JSON.stringify({ id: "cs_test_store_alpha", url: "https://checkout.stripe.com/c/pay/cs_test_store_alpha" }),
+        { status: 200, headers: { "content-type": "application/json" } },
+      );
+    }
+    if (u.startsWith("https://api.stripe.com/v1/checkout/sessions/cs_test_paid_store_alpha")) {
+      return new Response(
+        JSON.stringify({
+          id: "cs_test_paid_store_alpha",
+          payment_status: "paid",
+          amount_total: 2900,
+          currency: "usd",
+          customer_details: { email: "quant@example.com" },
+          metadata: { kind: "store_product", sku: "store-base-alpha-feed-v1", product_id: "base-alpha-feed", file_format: "csv" },
+          line_items: { data: [] },
+        }),
+        { status: 200, headers: { "content-type": "application/json" } },
+      );
+    }
+    if (u === "https://facilitator.payai.network/verify") {
+      verifyCalls += 1;
+      return new Response(JSON.stringify({ isValid: true }), { status: 200, headers: { "content-type": "application/json" } });
+    }
+    if (u === "https://facilitator.payai.network/settle") {
+      settleCalls += 1;
+      return new Response(
+        JSON.stringify({ success: true, payer: "0x2222222222222222222222222222222222222222", transaction: "0xdeadbeef1234567890abcdef" }),
+        { status: 200, headers: { "content-type": "application/json" } },
+      );
+    }
+    if (u === "https://api.github.com/repos/missing/notfound") {
+      return new Response(JSON.stringify({ message: "Not Found" }), { status: 404, headers: { "content-type": "application/json" } });
+    }
+    if (u === "https://api.github.com/repos/acme/mcp-server") {
+      return new Response(
+        JSON.stringify({ html_url: "https://github.com/acme/mcp-server", default_branch: "main", stargazers_count: 180, language: "TypeScript", archived: false, license: { spdx_id: "MIT" }, open_issues_count: 2 }),
+        { status: 200, headers: { "content-type": "application/json" } },
+      );
+    }
+    if (u === "https://api.github.com/repos/acme/mcp-server/contents") {
+      return new Response(
+        JSON.stringify([{ name: "README.md" }, { name: "package.json" }, { name: "LICENSE" }, { name: "server.json" }]),
+        { status: 200, headers: { "content-type": "application/json" } },
+      );
+    }
+    if (u.startsWith("https://raw.githubusercontent.com/acme/mcp-server/main/package.json")) {
+      return new Response(JSON.stringify({ name: "mcp-server", dependencies: { zod: "^3.23.0" } }), { status: 200, headers: { "content-type": "application/json" } });
+    }
+    if (u.startsWith("https://raw.githubusercontent.com/acme/mcp-server/main/README.md")) {
+      return new Response("# Safe MCP Server\nClean production documentation.\n", { status: 200, headers: { "content-type": "text/plain" } });
+    }
+    throw new Error(`Unexpected fetch in store test: ${u}`);
+  };
+
+  try {
+    // 4. Stripe Store Checkout -> Fulfillment -> /v1/store/download?token=...
+    const stripeCoRedirect = await worker.fetch(
+      new Request("https://agentfuel402.ak10082247.workers.dev/v1/store/checkout?sku=base-alpha-feed&format=csv"),
+      STORE_ENV,
+    );
+    assert.equal(stripeCoRedirect.status, 303);
+    assert.equal(stripeCoRedirect.headers.get("Location"), "https://checkout.stripe.com/c/pay/cs_test_store_alpha");
+
+    const stripeSucc = await worker.fetch(
+      new Request("https://agentfuel402.ak10082247.workers.dev/v1/stripe/success?session_id=cs_test_paid_store_alpha&format=json"),
+      STORE_ENV,
+    );
+    assert.equal(stripeSucc.status, 200);
+    const fulData = await stripeSucc.json();
+    assert.equal(fulData.sku, "store-base-alpha-feed-v1");
+    assert.equal(fulData.downloads.length, 2);
+    assert.match(fulData.downloads[0].url, /\/v1\/store\/download\?token=/);
+
+    const alphaCsvRes = await worker.fetch(new Request(fulData.downloads[0].url), STORE_ENV);
+    assert.equal(alphaCsvRes.status, 200);
+    assert.match(alphaCsvRes.headers.get("Content-Type"), /text\/csv/);
+    const alphaCsv = await alphaCsvRes.text();
+    assert.match(alphaCsv, /^chain,symbol,token_address/);
+
+    const alphaJsonRes = await worker.fetch(new Request(fulData.downloads[1].url), STORE_ENV);
+    assert.equal(alphaJsonRes.status, 200);
+    const alphaJson = await alphaJsonRes.json();
+    assert.equal(alphaJson.product, "base-alpha-feed");
+    assert.ok(alphaJson.tokens.length >= 10);
+
+    // 5. x402 Crypto Purchase ($9.99 Instant Audit): 404 target rejects BEFORE settlement (charged: false)
+    const auditOpt = cAuditJson.accepts[0];
+    const mkSig = (opt, amt) =>
+      Buffer.from(
+        JSON.stringify({
+          x402Version: 2,
+          resource: cAuditJson.resource,
+          accepted: opt,
+          payload: { signature: `0x${"33".repeat(65)}`, authorization: { from: "0x2222", to: opt.payTo, value: amt, validAfter: "0", validBefore: "9999999999", nonce: `0x${"44".repeat(32)}` } },
+        }),
+      ).toString("base64");
+
+    const auditMissingRes = await worker.fetch(
+      new Request("https://agentfuel402.ak10082247.workers.dev/v1/store/buy?sku=instant-security-audit&target=missing/notfound", {
+        method: "POST",
+        headers: { "PAYMENT-SIGNATURE": mkSig(auditOpt, "9990000") },
+      }),
+      STORE_ENV,
+    );
+    assert.equal(auditMissingRes.status, 404);
+    const auditMissingBody = await auditMissingRes.json();
+    assert.equal(auditMissingBody.charged, false);
+    assert.equal(settleCalls, 0);
+
+    // 6. Paid $9.99 Audit settles on-chain -> JSON + Printable HTML Certificate + Verified SVG Badge
+    const auditPaidRes = await worker.fetch(
+      new Request("https://agentfuel402.ak10082247.workers.dev/v1/store/buy?sku=instant-security-audit&target=https://github.com/acme/mcp-server", {
+        method: "POST",
+        headers: { "PAYMENT-SIGNATURE": mkSig(auditOpt, "9990000") },
+      }),
+      STORE_ENV,
+    );
+    assert.equal(auditPaidRes.status, 200);
+    assert.equal(verifyCalls, 2);
+    assert.equal(settleCalls, 1);
+    const auditBody = await auditPaidRes.json();
+    assert.equal(auditBody.paid, true);
+    assert.equal(auditBody.deliverable.target, "acme/mcp-server");
+    assert.equal(auditBody.deliverable.score, 90); // 100 - 10 missing SECURITY.md
+    assert.equal(auditBody.deliverable.grade, "A");
+    assert.ok(auditBody.deliverable.certificate_signature);
+
+    const htmlCertRes = await worker.fetch(new Request(auditBody.downloads[1].url), STORE_ENV);
+    assert.equal(htmlCertRes.status, 200);
+    assert.match(htmlCertRes.headers.get("Content-Type"), /text\/html/);
+    assert.match(await htmlCertRes.text(), /Print \/ Save PDF Certificate/);
+
+    const svgBadgeRes = await worker.fetch(new Request(auditBody.deliverable.readme_badge_url), STORE_ENV);
+    assert.equal(svgBadgeRes.status, 200);
+    assert.match(svgBadgeRes.headers.get("Content-Type"), /image\/svg\+xml/);
+    assert.match(await svgBadgeRes.text(), /acme\/mcp-server/);
+
+    const badgeUrlStr = auditBody.deliverable.readme_badge_url;
+    const lastHex = badgeUrlStr.slice(-1) === "0" ? "1" : "0";
+    const badBadge = await worker.fetch(
+      new Request(`${badgeUrlStr.slice(0, -1)}${lastHex}`),
+      STORE_ENV,
+    );
+    assert.equal(badBadge.status, 403);
   } finally {
     globalThis.fetch = ORIG_FETCH;
   }

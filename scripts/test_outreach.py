@@ -193,6 +193,50 @@ class OutreachUpgradeTest(unittest.TestCase):
         self.assertEqual(results[0]["amount_usd"], 250)
         self.assertIn("last 14 days", bh.format_bounty_scorecard_section([]))
 
+    def test_compile_store_products_sanitization_and_security(self):
+        import compile_store_products as csp
+
+        # 1. Zero-width spoof characters stripped and flagged cleanly
+        spoof_pool = {
+            "id": "base_0xpool1",
+            "attributes": {
+                "name": "UO\u200aD\u200aF / WETH",
+                "base_token_price_usd": "0.05",
+                "reserve_in_usd": "25000",
+                "volume_usd": {"h24": "12000"},
+                "fdv_usd": "500000",
+                "transactions": {"h24": {"buys": 12, "sells": 5}},
+                "pool_created_at": "2026-11-18T12:00:00Z",
+            },
+            "relationships": {
+                "base_token": {"data": {"id": "base_0x1234567890abcdef1234567890abcdef12345678"}},
+                "dex": {"data": {"id": "uniswap"}},
+            },
+        }
+        parsed = csp._extract_gecko_pool("base", spoof_pool)
+        self.assertEqual(parsed["symbol"], "UODF")
+        self.assertIn("zero_width_symbol_spoof", parsed["anomaly_flags"])
+        self.assertTrue(parsed["liquidity_over_10k"])
+
+        # Quote tokens (USDC/WETH) must be excluded
+        usdc_pool = {
+            **spoof_pool,
+            "relationships": {
+                "base_token": {"data": {"id": "base_0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"}},
+                "dex": {"data": {"id": "uniswap"}},
+            },
+        }
+        self.assertIsNone(csp._extract_gecko_pool("base", usdc_pool))
+
+        # 2. Deployer dump risk classifier
+        self.assertEqual(csp._classify_base_deployer_risk({"is_honeypot": "1"}), "critical")
+        self.assertEqual(csp._classify_base_deployer_risk({"is_honeypot": "0", "buy_tax": "0", "sell_tax": "0", "creator_percent": "0.22", "is_open_source": "1"}), "high")
+        self.assertEqual(csp._classify_base_deployer_risk({"is_honeypot": "0", "buy_tax": "0", "sell_tax": "0", "creator_percent": "0.0", "is_open_source": "1"}), "low")
+
+        # 3. Public email extractor ignores noreply/asset garbage and extracts real contacts
+        self.assertIsNone(csp.extract_public_email("123+bot@users.noreply.github.com"))
+        self.assertEqual(csp.extract_public_email("Reach founders at founders (at) acmeai [dot] io"), "founders@acmeai.io")
+
 
 if __name__ == "__main__":
     unittest.main()
