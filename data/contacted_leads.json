@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-19T02:39:40.166145+00:00",
+  "updated_at": "2026-11-19T11:50:21.695059+00:00",
   "suppressed_emails": [
     "paulalexeev10@gmail.com",
     "serge.lopes.94@free.fr",
@@ -265,7 +265,13 @@
     "hqzhon@gmail.com",
     "github@boltutil.com",
     "joel@joelparkerhenderson.com",
-    "nsunglab@gmail.com"
+    "nsunglab@gmail.com",
+    "kalamarico@gmail.com",
+    "hryhorchuk.oleksandr.a@gmail.com",
+    "pr359347@gmail.com",
+    "contact@shapediver.com",
+    "danlapteacru@gmail.com",
+    "hello@hrih.si"
   ],
   "contacted_users": [
     "bennyjo",
@@ -520,7 +526,13 @@
     "hqzhon",
     "boltutil",
     "jph",
-    "cflsdf"
+    "cflsdf",
+    "calamarico",
+    "imdarkly",
+    "pr359347-sketch",
+    "shapediver",
+    "danlapteacru",
+    "donatimator"
   ],
   "history": [
     {
@@ -2317,6 +2329,60 @@
       "company": "Apps",
       "repo": "https://apps.apple.com/cn/app/%E9%A3%9E%E8%88%9E%E7%B2%92%E5%AD%90-%E4%BA%94%E5%BD%A9%E6%96%91%E6%96%93%E7%9A%84%E6%8C%87%E5%B0%96%E8%89%BA%E6%9C%AF/id6444665083",
       "sent_date": "2026-11-19T02:39:40.166122+00:00"
+    },
+    {
+      "username": "calamarico",
+      "email": "kalamarico@gmail.com",
+      "track": "segment_agency",
+      "lead_source": "agency_org_search",
+      "company": "startoneservices",
+      "repo": "calamarico/artist-website",
+      "sent_date": "2026-11-19T11:49:14.180238+00:00"
+    },
+    {
+      "username": "imdarkly",
+      "email": "hryhorchuk.oleksandr.a@gmail.com",
+      "track": "segment_agency",
+      "lead_source": "agency_org_search",
+      "company": "hryhorchuk.vercel.app",
+      "repo": "ImDarkly/portfolio",
+      "sent_date": "2026-11-19T11:49:28.030583+00:00"
+    },
+    {
+      "username": "pr359347-sketch",
+      "email": "pr359347@gmail.com",
+      "track": "segment_ecom",
+      "lead_source": "ecom_brand_search",
+      "company": "shoppilot",
+      "repo": "pr359347-sketch/shoppilot",
+      "sent_date": "2026-11-19T11:49:44.907727+00:00"
+    },
+    {
+      "username": "shapediver",
+      "email": "contact@shapediver.com",
+      "track": "segment_ecom",
+      "lead_source": "ecom_brand_search",
+      "company": "help.shapediver.com",
+      "repo": "shapediver/AppBuilderSdk",
+      "sent_date": "2026-11-19T11:49:57.085466+00:00"
+    },
+    {
+      "username": "danlapteacru",
+      "email": "danlapteacru@gmail.com",
+      "track": "segment_ai_saas",
+      "lead_source": "show_hn_launch",
+      "company": "Agent Bolt",
+      "repo": "https://agentbolt.dev/#game",
+      "sent_date": "2026-11-19T11:50:10.766834+00:00"
+    },
+    {
+      "username": "donatimator",
+      "email": "hello@hrih.si",
+      "track": "segment_ai_saas",
+      "lead_source": "show_hn_launch",
+      "company": "Hrih",
+      "repo": "https://hrih.si/projects/qr-anatomy/",
+      "sent_date": "2026-11-19T11:50:21.695036+00:00"
     }
   ]
 }
