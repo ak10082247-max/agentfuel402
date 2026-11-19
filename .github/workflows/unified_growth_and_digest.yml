@@ -1,4 +1,4 @@
-name: Unified Empire Growth & Daily Digest Engine
+name: Unified Agency Arbitrage & Store Growth Engine
 
 on:
   schedule:
@@ -19,7 +19,7 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Run Unified Empire Engine
+      - name: Run Agency Arbitrage Engine & Store Data Pipeline
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
           APIFY_TOKEN: ${{ secrets.APIFY_TOKEN }}
@@ -28,6 +28,7 @@ jobs:
         run: |
           python scripts/test_outreach.py
           python scripts/compile_store_products.py --if-stale-hours 23
+          python scripts/agency_dealmaker.py --mode b2b-pack --limit 200 --no-save
           python scripts/unified_empire_engine.py
 
       - name: Persist Contacted Leads & Store Data State

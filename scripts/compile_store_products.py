@@ -481,17 +481,27 @@ def compile_b2b_startup_leads(target_count: int = 500, gh_token: str = "") -> di
     gh_tok = gh_token or resolve_gh_token()
     since_14d = (datetime.now(timezone.utc) - timedelta(days=14)).strftime("%Y-%m-%d")
     leads_by_key: dict[str, dict] = {}
+    seen_headlines: set[str] = set()
 
     def _add_lead(row: dict):
         domain = (row.get("domain") or "").lower().strip()
         company = (row.get("company_name") or "").lstrip("@").strip()
         row["company_name"] = company
+        head_sig = re.sub(r"[^a-z0-9]+", "", (row.get("launch_headline") or "").lower())[:48]
+        if head_sig and head_sig in seen_headlines:
+            return
+        if "manus" in (company + " " + (row.get("launch_headline") or "")).lower() or "gemini-config-checker" in company.lower() or "github-copilot-app" in company.lower():
+            return
+        if domain in ("en.wikipedia.org", "wikipedia.org", "tradingeconomics.com", "news.ycombinator.com"):
+            return
         key = domain if (domain and domain not in ("unknown", "github.com", "news.ycombinator.com", "remotive.com")) else f"{row.get('source_type')}:{company.lower()}"
         if not key or not company:
             return
         existing = leads_by_key.get(key)
         if not existing:
             leads_by_key[key] = row
+            if head_sig:
+                seen_headlines.add(head_sig)
         elif not existing.get("email") and row.get("email"):
             existing["email"] = row["email"]
 
@@ -505,8 +515,10 @@ def compile_b2b_startup_leads(target_count: int = 500, gh_token: str = "") -> di
                 if not raw_title:
                     continue
                 clean_title = re.sub(r"^(?:Show HN|Launch HN):\s*", "", raw_title, flags=re.IGNORECASE).strip()
-                company = re.split(r"\s+[–—\-|:]\s+|:\s+", clean_title, maxsplit=1)[0].strip()[:48]
                 website = (h.get("url") or "").strip()
+                if not website.startswith(("http://", "https://")) or clean_title.lower().startswith(("why ", "how ", "because ", "what ", "ask hn:")):
+                    continue
+                company = re.split(r"\s+[–—\-|:]\s+|:\s+", clean_title, maxsplit=1)[0].strip()[:48]
                 domain = "unknown"
                 if website.startswith("http"):
                     try:
@@ -581,22 +593,30 @@ def compile_b2b_startup_leads(target_count: int = 500, gh_token: str = "") -> di
                     timeout=10,
                 ).get("hits") or []
                 for c in comments:
+                    if str(c.get("parent_id") or "") != str(thread_id):
+                        continue
                     raw_txt = _clean_text(c.get("comment_text") or "")
-                    if len(raw_txt) < 40:
+                    if len(raw_txt) < 50 or raw_txt.startswith(">"):
                         continue
                     first_line = raw_txt.split("|", 1)[0].strip()
-                    company = first_line[:45].split("http")[0].strip()
                     url_m = re.search(r"https?://[^\s<>\"')]+", raw_txt)
                     website = url_m.group(0).rstrip(".,;)") if url_m else ""
+                    email = extract_public_email(raw_txt)
+                    if "|" not in raw_txt and not any(k in raw_txt.lower() for k in ("hiring", "remote", "engineer", "apply", "salary", "full-time")):
+                        continue
+                    company = re.split(r"\s+[–—\-|]\s+|https?://", first_line, maxsplit=1)[0].strip()[:45]
+                    if not company or company.lower().startswith(("is ", "it's ", "i ", "we're hiring", "if you")):
+                        company = (urllib.parse.urlparse(website).netloc.lower().removeprefix("www.") if website else "") or (c.get("author") or "Hiring Startup")
                     domain = "unknown"
                     if website:
                         try:
                             domain = urllib.parse.urlparse(website).netloc.lower().removeprefix("www.")
                         except Exception:
                             pass
-                    email = extract_public_email(raw_txt)
+                    if domain == "unknown" and not email:
+                        continue
                     _add_lead({
-                        "company_name": company or (c.get("author") or "Hiring Startup"),
+                        "company_name": company,
                         "launch_headline": raw_txt[:140],
                         "domain": domain,
                         "website_url": website or f"https://news.ycombinator.com/item?id={c.get('objectID')}",
@@ -762,7 +782,13 @@ def compile_b2b_startup_leads(target_count: int = 500, gh_token: str = "") -> di
 
     all_leads = list(leads_by_key.values())
     all_leads.sort(
-        key=lambda r: (bool(r.get("email")), bool(r.get("hiring_intent")), _safe_int(r.get("intent_score"))),
+        key=lambda r: (
+            bool(r.get("email")) and (r.get("domain") or "unknown") not in ("unknown", "github.com"),
+            bool(r.get("email")),
+            bool(r.get("hiring_intent")),
+            (r.get("domain") or "unknown") not in ("unknown", "github.com"),
+            _safe_int(r.get("intent_score")),
+        ),
         reverse=True,
     )
     final_leads = all_leads[:target_count]

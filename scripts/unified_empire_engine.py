@@ -23,8 +23,10 @@ from email.mime.multipart import MIMEMultipart
 
 try:
     import bounty_hunter
+    import agency_dealmaker
 except ImportError:
     from scripts import bounty_hunter
+    from scripts import agency_dealmaker
 
 # Create SSL context resilient to missing local CA cert bundles
 try:
@@ -1307,13 +1309,13 @@ Breakdown across Active Actors:
         body += f"- {a['name']:25}: {a['runs']:2} runs | {a['succeeded']:2} succeeded | {a['ppe_charges']:2} PPE (~${a.get('est_usd', 0.0):.4f})\n"
 
     body += f"""
-4. 3-TRACK OUTBOUND PROSPECTING & GROWTH:
+4. HIGH-TICKET AGENCY ARBITRAGE & FREE-AUDIT OUTBOUND:
 -----------------------------------------------------------------------------
 Total Leads Contacted (Lifetime): {leads_summary['total_lifetime']}
 Emails Sent Today:                {leads_summary['sent_today']} / {MAX_EMAILS_PER_DAY} daily cap
-- Track 1 - RugShield (Base/Solana DEX Bots): {leads_summary['track_rugshield_sent']} sent
-- Track 2 - CanaryGuard (AI Agents / MCP):     {leads_summary['track_canaryguard_sent']} sent
-- Track 3 - AgentFuel402 (B2B / E-Com / Scrap): {leads_summary['track_agentfuel_sent']} sent
+- Segment 1 - Boutique Agencies ($149 200-Lead Pack):       {leads_summary.get('segment_agency_sent', 0)} sent
+- Segment 2 - E-Com / Shopify (Free Price Audit -> $149):   {leads_summary.get('segment_ecom_sent', 0)} sent
+- Segment 3 - AI / SaaS Launches (Free Audit -> Store/$19): {leads_summary.get('segment_ai_saas_sent', 0)} sent
 
 5. ACTIVE PRODUCTION SERVICES (SUSPENDED SERVICES FULLY SILENCED):
 -----------------------------------------------------------------------------
@@ -1360,14 +1362,22 @@ def main():
             | {e.lower().strip() for e in leads_data.get("suppressed_emails", [])}
         )
         known_users = {u.lower().strip() for u in leads_data["contacted_users"]}
-        for track_name in ["track_rugshield", "track_canaryguard", "track_agentfuel"]:
-            print(f"\n=== DRY RUN: {track_name} ===")
-            leads = search_github_leads(track_name, limit=1, exclude_emails=known_emails, exclude_users=known_users)
+        sample_5 = agency_dealmaker.generate_b2b_agency_pack(limit=5, save=False).get("leads") or []
+        for seg_name in ["segment_agency", "segment_ecom", "segment_ai_saas"]:
+            print(f"\n=== DRY RUN BUYER SEGMENT: {seg_name} ===")
+            leads = agency_dealmaker.discover_business_buyers(
+                seg_name,
+                limit=1,
+                exclude_emails=known_emails,
+                exclude_users=known_users,
+                gh_token=GH_PAT,
+                email_validator=is_deliverable_personal_email,
+            )
             for lead in leads:
-                lead["diagnostic_summary"] = run_live_diagnostic(lead)
-                subj, pitch = craft_pitch(lead)
-                print(f"Source: {lead.get('lead_source')} | Eco: {lead.get('ecosystem_repo', lead['repo'])} | Repo: {lead['repo']} -> {lead['email']}")
-                print(f"Diag: {lead.get('diagnostic_summary') or '(none)'}")
+                lead["diagnostic_summary"] = agency_dealmaker.run_buyer_lead_magnet_audit(lead, sample_leads=sample_5)
+                subj, pitch = agency_dealmaker.craft_high_ticket_pitch(lead, audit_summary=lead["diagnostic_summary"])
+                print(f"Source: {lead.get('lead_source')} | Company: {lead.get('company')} | URL: {lead.get('website_url')} -> {lead['email']}")
+                print(f"Audit/Sample: {lead.get('diagnostic_summary') or '(none)'}")
                 print(f"Subject: {subj}\n{pitch}")
         return
 
@@ -1392,7 +1402,7 @@ def main():
     force_budget = max(0, min(int(args.force_send or 0), 18))
     print(f"[+] Outbound Sent Today: {sent_today}/{MAX_EMAILS_PER_DAY} (Remaining capacity: {remaining_today}, Force batch: {force_budget}, Fill cap: {args.fill_daily_cap})")
 
-    track_counts = {"track_rugshield": 0, "track_canaryguard": 0, "track_agentfuel": 0}
+    seg_counts = {"segment_agency": 0, "segment_ecom": 0, "segment_ai_saas": 0}
 
     if not args.digest_only and (remaining_today > 0 or force_budget > 0):
         # Spread sends across 3-hourly cron runs (max 6 per run, 24/day) unless --fill-daily-cap or --force-send
@@ -1402,22 +1412,30 @@ def main():
             run_budget = remaining_today
         else:
             run_budget = min(remaining_today, MAX_EMAILS_PER_RUN)
-        per_track = max(1, (run_budget + 2) // 3)
+        per_seg = max(1, (run_budget + 2) // 3)
         known_emails = (
             {e.lower().strip() for e in leads_data.get("contacted_emails", [])}
             | {e.lower().strip() for e in leads_data.get("suppressed_emails", [])}
         )
         known_users = {u.lower().strip() for u in leads_data["contacted_users"]}
 
+        sample_5 = []
+        try:
+            sample_5 = agency_dealmaker.generate_b2b_agency_pack(limit=5, save=False).get("leads") or []
+        except Exception:
+            sample_5 = []
+
         sent_this_run = 0
-        for track_name in ["track_rugshield", "track_canaryguard", "track_agentfuel"]:
+        for seg_name in ["segment_agency", "segment_ecom", "segment_ai_saas"]:
             if sent_this_run >= run_budget or (force_budget == 0 and count_sent_today(leads_data["history"]) >= MAX_EMAILS_PER_DAY):
                 break
-            leads = search_github_leads(
-                track_name,
-                limit=per_track,
+            leads = agency_dealmaker.discover_business_buyers(
+                seg_name,
+                limit=per_seg,
                 exclude_emails=known_emails,
                 exclude_users=known_users,
+                gh_token=GH_PAT,
+                email_validator=is_deliverable_personal_email,
             )
             for lead in leads:
                 if sent_this_run >= run_budget or (force_budget == 0 and count_sent_today(leads_data["history"]) >= MAX_EMAILS_PER_DAY):
@@ -1429,8 +1447,8 @@ def main():
                 if email in known_emails or user in known_users:
                     continue
                 try:
-                    lead["diagnostic_summary"] = run_live_diagnostic(lead)
-                    subj, pitch = craft_pitch(lead)
+                    lead["diagnostic_summary"] = agency_dealmaker.run_buyer_lead_magnet_audit(lead, sample_leads=sample_5)
+                    subj, pitch = agency_dealmaker.craft_high_ticket_pitch(lead, audit_summary=lead["diagnostic_summary"])
                     send_email(email, subj, pitch)
                     known_emails.add(email)
                     known_users.add(user)
@@ -1439,26 +1457,26 @@ def main():
                     leads_data["history"].append({
                         "username": user,
                         "email": email,
-                        "track": track_name,
-                        "lead_source": lead.get("lead_source", "repo_search"),
-                        "ecosystem_repo": lead.get("ecosystem_repo", lead["repo"]),
-                        "repo": lead["repo"],
+                        "track": seg_name,
+                        "lead_source": lead.get("lead_source", seg_name),
+                        "company": lead.get("company", ""),
+                        "repo": lead.get("repo", lead.get("website_url", "")),
                         "sent_date": datetime.now(timezone.utc).isoformat()
                     })
-                    track_counts[track_name] += 1
+                    seg_counts[seg_name] += 1
                     sent_this_run += 1
                     save_leads(leads_data)
-                    print(f"  [+] {track_name} [{lead.get('lead_source')}] pitch delivered to: {email} ({user} on {lead['repo']})")
+                    print(f"  [+] {seg_name} [{lead.get('lead_source')}] audit pitch delivered to: {email} ({lead.get('company')})")
                     time.sleep(random.uniform(9, 14))
                 except Exception as e:
                     print(f"  [-] Failed to pitch {email}: {e}")
 
     leads_summary = {
         "total_lifetime": len(leads_data["contacted_emails"]),
-        "sent_today": sent_today + sum(track_counts.values()),
-        "track_rugshield_sent": track_counts["track_rugshield"],
-        "track_canaryguard_sent": track_counts["track_canaryguard"],
-        "track_agentfuel_sent": track_counts["track_agentfuel"]
+        "sent_today": sent_today + sum(seg_counts.values()),
+        "segment_agency_sent": seg_counts["segment_agency"],
+        "segment_ecom_sent": seg_counts["segment_ecom"],
+        "segment_ai_saas_sent": seg_counts["segment_ai_saas"],
     }
 
     # 5. Generate & Deliver Daily Revenue Scorecard Digest

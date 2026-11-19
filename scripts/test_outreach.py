@@ -237,6 +237,90 @@ class OutreachUpgradeTest(unittest.TestCase):
         self.assertIsNone(csp.extract_public_email("123+bot@users.noreply.github.com"))
         self.assertEqual(csp.extract_public_email("Reach founders at founders (at) acmeai [dot] io"), "founders@acmeai.io")
 
+    def test_agency_dealmaker_pack_ecom_matrix_and_buyer_pitches(self):
+        import tempfile
+        import agency_dealmaker as ad
+        import compile_store_products as csp
+
+        sample_raw = {
+            "total_leads": 3,
+            "verified_email_count": 1,
+            "hiring_count": 2,
+            "leads": [
+                {
+                    "company_name": "AcmeGrowth",
+                    "launch_headline": "B2B agency automation & outbound workflows",
+                    "domain": "acmegrowth.io",
+                    "website_url": "https://acmegrowth.io",
+                    "source_type": "show_hn",
+                    "source_url": "https://news.ycombinator.com/item?id=1",
+                    "founder_or_contact": "Sam Founder",
+                    "email": "sam@acmegrowth.io",
+                    "tech_stack": ["SaaS", "AI/LLM"],
+                    "hiring_intent": True,
+                    "intent_score": 92,
+                    "published_at": "2026-11-18T12:00:00Z",
+                },
+                {
+                    "company_name": "ShopPulse",
+                    "launch_headline": "Shopify checkout analytics for DTC brands",
+                    "domain": "shoppulse.com",
+                    "website_url": "https://shoppulse.com",
+                    "source_type": "show_hn",
+                    "source_url": "https://news.ycombinator.com/item?id=2",
+                    "founder_or_contact": "Maya Retail",
+                    "email": None,
+                    "tech_stack": ["E-Commerce", "TypeScript/React"],
+                    "hiring_intent": True,
+                    "intent_score": 85,
+                    "published_at": "2026-11-18T10:00:00Z",
+                },
+            ],
+        }
+
+        with patch.object(csp, "compile_b2b_startup_leads", return_value=sample_raw), \
+             patch.object(ad, "fetch_producthunt_launches", return_value=[]), \
+             patch.object(csp, "fetch_json", return_value={"jobs": []}), \
+             patch.object(ad, "extract_business_contact_from_site", return_value={"email": None}):
+            with tempfile.TemporaryDirectory() as tmpd:
+                pack = ad.generate_b2b_agency_pack(limit=10, niche="all", output_dir=tmpd, save=True)
+                self.assertEqual(pack["total_leads"], 2)
+                self.assertEqual(len(pack["sample_5_preview"]), 2)
+                self.assertTrue(Path(pack["artifacts"]["csv"]).exists())
+                self.assertTrue(Path(pack["artifacts"]["json"]).exists())
+
+        def fake_ecom_fetch(url):
+            if "Bulbasaur" in url:
+                return {"url": url, "domain": "scrapeme.live", "status": "ok", "title": "Anchor Hoodie", "price": 100.0, "currency": "USD", "in_stock": True, "sku": "A1", "platform": "WooCommerce", "error": None}
+            return {"url": url, "domain": "comp.shop", "status": "ok", "title": "Rival Hoodie", "price": 85.0, "currency": "USD", "in_stock": False, "sku": "B1", "platform": "Shopify", "error": None}
+
+        with patch.object(ad, "_fetch_live_ecom_product", side_effect=fake_ecom_fetch):
+            matrix = ad.generate_ecom_competitor_matrix(
+                "https://scrapeme.live/shop/Bulbasaur/",
+                competitor_urls=["https://comp.shop/products/rival-hoodie"],
+                save=False,
+            )
+            self.assertEqual(matrix["live_verified_count"], 2)
+            self.assertEqual(matrix["rows"][1]["price_delta"], -15.0)
+            self.assertEqual(matrix["rows"][1]["delta_pct"], -15.0)
+
+        # Verify zero micro-pricing in high-ticket Agency, E-Com & AI SaaS pitches
+        for seg, audit_note in [
+            ("segment_agency", ad.format_b2b_sample_block(sample_raw["leads"])),
+            ("segment_ecom", "1. Rival Hoodie (comp.shop): 85.0 USD [OUT OF STOCK] (-15.0% vs anchor)"),
+            ("segment_ai_saas", "Free CanaryGuard automated check: status=clean in 4 ms (0 rule triggers)."),
+        ]:
+            subj, body = ad.craft_high_ticket_pitch({"segment": seg, "name": "Elena Boss", "company": "ScaleCo"}, audit_summary=audit_note)
+            self.assertIn("Hey Elena,", body)
+            self.assertNotIn("$0.005", body)
+            self.assertNotIn("$0.010", body)
+            self.assertIn("agentfuel402.ak10082247.workers.dev", body)
+            self.assertTrue(len(subj) < 70)
+
+        engine_src = Path(__file__).resolve().with_name("unified_empire_engine.py").read_text(encoding="utf-8")
+        self.assertIn("segment_agency", engine_src)
+        self.assertIn("agency_dealmaker", engine_src)
+
 
 if __name__ == "__main__":
     unittest.main()

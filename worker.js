@@ -2492,8 +2492,10 @@ Endpoints:
         try { bodyParams = await req.json(); } catch { bodyParams = {}; }
       }
       const rawSku = String(url.searchParams.get("sku") || bodyParams.sku || "dual").toLowerCase();
-      if (rawSku === "csv-pack" || rawSku === DATA_PACK_PLANS["csv-pack"].sku) {
-        const csvPlan = DATA_PACK_PLANS["csv-pack"];
+      const dataPackMatch = Object.values(DATA_PACK_PLANS).find(
+        (d) => rawSku === d.id || rawSku === d.sku,
+      );
+      if (dataPackMatch) {
         try {
           const session = await createStripeCheckoutSession({
             successUrl: `${url.origin}/v1/stripe/success?session_id={CHECKOUT_SESSION_ID}`,
@@ -2501,24 +2503,24 @@ Endpoints:
             lineItems: [{
               price_data: {
                 currency: "usd",
-                unit_amount: csvPlan.amountCents,
+                unit_amount: dataPackMatch.amountCents,
                 product_data: {
-                  name: csvPlan.name,
-                  description: csvPlan.description
+                  name: dataPackMatch.name,
+                  description: dataPackMatch.description
                 }
               },
               quantity: 1
             }],
-            metadata: { kind: "data_pack", sku: csvPlan.sku }
+            metadata: { kind: "data_pack", sku: dataPackMatch.sku }
           }, env);
 
           if (req.method === "POST" || url.searchParams.get("format") === "json") {
             return new Response(JSON.stringify({
               id: session.id,
               url: session.url,
-              sku: csvPlan.sku,
-              name: csvPlan.name,
-              price: csvPlan.priceDisplay
+              sku: dataPackMatch.sku,
+              name: dataPackMatch.name,
+              price: dataPackMatch.priceDisplay
             }, null, 2), { status: 200, headers: { ...cors, "Content-Type": "application/json" } });
           }
           return new Response(null, { status: 303, headers: { ...cors, Location: session.url } });
@@ -2609,6 +2611,19 @@ Endpoints:
         });
       }
       const payload = await verifyKuroxToken(token, env.KUROX_SIGNING_SECRET, "dl_v1");
+      if (payload && payload.typ === "download" && payload.bundle === DATA_PACK_PLANS["agency-pack"].sku) {
+        const dataset = await getStoreDataset("b2b-startup-leads-500", env);
+        const sliced = { ...(dataset || {}), leads: (dataset?.leads || []).slice(0, 200) };
+        return new Response(b2bLeadsToCsv(sliced), {
+          status: 200,
+          headers: {
+            ...cors,
+            "Content-Type": "text/csv; charset=utf-8",
+            "Content-Disposition": `attachment; filename="${DATA_PACK_PLANS["agency-pack"].filename}"`,
+            "Cache-Control": "no-store"
+          }
+        });
+      }
       if (payload && payload.typ === "download" && payload.bundle === DATA_PACK_PLANS["csv-pack"].sku) {
         const b2bResult = await fetchB2BLeads(25, "all");
         const leadRows = Array.isArray(b2bResult) ? b2bResult : (b2bResult?.leads || []);

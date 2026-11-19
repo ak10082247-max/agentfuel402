@@ -79,6 +79,18 @@ export const DATA_PACK_PLANS = {
     bonusApiTtlSeconds: 30 * 24 * 60 * 60,
     tier: "data_pack",
   },
+  "agency-pack": {
+    id: "agency-pack",
+    sku: "agency-custom-data-pack-v1",
+    name: "Agency Arbitrage Custom 200-Lead Pack & E-Com Monitor (.csv + 90d API)",
+    description:
+      "Productized high-ticket agency/e-commerce data drop (compiled B2B startup & hiring CSV export) + 90-day Unified API Key.",
+    amountCents: 14900,
+    priceDisplay: "$149 USD",
+    filename: "Kurox_Agency_Arbitrage_Data_Pack.csv",
+    bonusApiTtlSeconds: 90 * 24 * 60 * 60,
+    tier: "agency_custom",
+  },
 };
 
 const PRICE_ID_TO_BUNDLE = Object.fromEntries(
@@ -367,6 +379,7 @@ function resolveCatalogItemFromSession(session) {
     if (session.amount_total === 3900) return { kind: "store_product", item: STORE_PRODUCTS["b2b-startup-leads-500"] };
     if (session.amount_total === 999) return { kind: "store_product", item: STORE_PRODUCTS["instant-security-audit"] };
   }
+  if (session.amount_total === 14900) return { kind: "data_pack", item: DATA_PACK_PLANS["agency-pack"] };
   if (session.amount_total === 1900 && metaKind === "data_pack") return { kind: "data_pack", item: DATA_PACK_PLANS["csv-pack"] };
   if (session.amount_total === 1900) return { kind: "api_key", item: API_KEY_PLANS.pro };
   if (session.amount_total === 500) return { kind: "api_key", item: API_KEY_PLANS.starter };
