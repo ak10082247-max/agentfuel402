@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-19T11:50:21.695059+00:00",
+  "updated_at": "2026-11-19T20:45:03.214221+00:00",
   "suppressed_emails": [
     "paulalexeev10@gmail.com",
     "serge.lopes.94@free.fr",
@@ -271,7 +271,13 @@
     "pr359347@gmail.com",
     "contact@shapediver.com",
     "danlapteacru@gmail.com",
-    "hello@hrih.si"
+    "hello@hrih.si",
+    "arkndjl@gmail.com",
+    "hello@cozmoslabs.com",
+    "abosalehworld@gmail.com",
+    "diamondteam4coding@gmail.com",
+    "hello@contextflo.com",
+    "hello@publicrows.com"
   ],
   "contacted_users": [
     "bennyjo",
@@ -532,7 +538,13 @@
     "pr359347-sketch",
     "shapediver",
     "danlapteacru",
-    "donatimator"
+    "donatimator",
+    "arkndjl",
+    "cozmoslabs-com",
+    "abosalehworld-oss",
+    "donovancraig54",
+    "depthfirst",
+    "publicrows"
   ],
   "history": [
     {
@@ -2383,6 +2395,60 @@
       "company": "Hrih",
       "repo": "https://hrih.si/projects/qr-anatomy/",
       "sent_date": "2026-11-19T11:50:21.695036+00:00"
+    },
+    {
+      "username": "arkndjl",
+      "email": "arkndjl@gmail.com",
+      "track": "segment_agency",
+      "lead_source": "agency_org_search",
+      "company": "Driveline Baseball / Agentiq Sports",
+      "repo": "arkndjl/website",
+      "sent_date": "2026-11-19T20:43:41.664288+00:00"
+    },
+    {
+      "username": "cozmoslabs-com",
+      "email": "hello@cozmoslabs.com",
+      "track": "segment_agency",
+      "lead_source": "agency_org_search",
+      "company": "wp-webhooks.com",
+      "repo": "cozmoslabs-com/wp-webhooks",
+      "sent_date": "2026-11-19T20:43:52.565787+00:00"
+    },
+    {
+      "username": "abosalehworld-oss",
+      "email": "abosalehworld@gmail.com",
+      "track": "segment_ecom",
+      "lead_source": "ecom_brand_search",
+      "company": "creative-ui-ux-skill",
+      "repo": "abosalehworld-oss/creative-ui-ux-skill",
+      "sent_date": "2026-11-19T20:44:11.594942+00:00"
+    },
+    {
+      "username": "donovancraig54",
+      "email": "diamondteam4coding@gmail.com",
+      "track": "segment_ecom",
+      "lead_source": "ecom_brand_search",
+      "company": "ecoroots.us",
+      "repo": "donovancraig54/ecoroots-shopify",
+      "sent_date": "2026-11-19T20:44:34.588744+00:00"
+    },
+    {
+      "username": "depthfirst",
+      "email": "hello@contextflo.com",
+      "track": "segment_ai_saas",
+      "lead_source": "show_hn_launch",
+      "company": "Contextflo",
+      "repo": "https://contextflo.com/benchmarks/dabstep-haiku",
+      "sent_date": "2026-11-19T20:44:53.233058+00:00"
+    },
+    {
+      "username": "publicrows",
+      "email": "hello@publicrows.com",
+      "track": "segment_ai_saas",
+      "lead_source": "show_hn_launch",
+      "company": "PublicRows",
+      "repo": "https://publicrows.com",
+      "sent_date": "2026-11-19T20:45:03.214202+00:00"
     }
   ]
 }
