@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-20T11:51:11.360909+00:00",
+  "updated_at": "2026-11-20T20:30:15.789845+00:00",
   "suppressed_emails": [
     "paulalexeev10@gmail.com",
     "serge.lopes.94@free.fr",
@@ -289,7 +289,13 @@
     "faizanbasheer38@gmail.com",
     "me@yan.ad",
     "hello@heartpad.app",
-    "lee@acme.dev"
+    "lee@acme.dev",
+    "dev@grails.apache.org",
+    "benharbfarah85@gmail.com",
+    "contact@aura-historia.com",
+    "service@wpbrewer.com",
+    "a.svitelskyi@gmail.com",
+    "hello@edgy.to"
   ],
   "contacted_users": [
     "bennyjo",
@@ -568,7 +574,13 @@
     "fayzan101",
     "yan-ad",
     "vikasghodke",
-    "yasotha"
+    "yasotha",
+    "apache",
+    "farah-ben-harb",
+    "aura-historia",
+    "wpbrewer",
+    "artsvit",
+    "gabrielgaravit"
   ],
   "history": [
     {
@@ -2581,6 +2593,60 @@
       "company": "Sandscale",
       "repo": "https://sandscale.dev",
       "sent_date": "2026-11-20T11:51:11.360883+00:00"
+    },
+    {
+      "username": "apache",
+      "email": "dev@grails.apache.org",
+      "track": "segment_agency",
+      "lead_source": "agency_org_search",
+      "company": "grails.apache.org",
+      "repo": "apache/grails-website",
+      "sent_date": "2026-11-20T20:28:48.381221+00:00"
+    },
+    {
+      "username": "farah-ben-harb",
+      "email": "benharbfarah85@gmail.com",
+      "track": "segment_agency",
+      "lead_source": "agency_org_search",
+      "company": "farah-me.vercel.app",
+      "repo": "farah-ben-harb/farah-me",
+      "sent_date": "2026-11-20T20:29:02.122179+00:00"
+    },
+    {
+      "username": "aura-historia",
+      "email": "contact@aura-historia.com",
+      "track": "segment_ecom",
+      "lead_source": "ecom_brand_search",
+      "company": "apps.shopify.com",
+      "repo": "aura-historia/shopify-app",
+      "sent_date": "2026-11-20T20:29:29.207037+00:00"
+    },
+    {
+      "username": "wpbrewer",
+      "email": "service@wpbrewer.com",
+      "track": "segment_ecom",
+      "lead_source": "ecom_brand_search",
+      "company": "wordpress.org",
+      "repo": "WPBrewer/wpbr-linepay-tw",
+      "sent_date": "2026-11-20T20:29:39.994868+00:00"
+    },
+    {
+      "username": "artsvit",
+      "email": "a.svitelskyi@gmail.com",
+      "track": "segment_ai_saas",
+      "lead_source": "show_hn_launch",
+      "company": "Play",
+      "repo": "https://play.google.com/store/apps/details?id=com.artsvit.openpi&hl=en_US",
+      "sent_date": "2026-11-20T20:30:02.452745+00:00"
+    },
+    {
+      "username": "gabrielgaravit",
+      "email": "hello@edgy.to",
+      "track": "segment_ai_saas",
+      "lead_source": "show_hn_launch",
+      "company": "Edgy",
+      "repo": "https://edgy.to/",
+      "sent_date": "2026-11-20T20:30:15.789822+00:00"
     }
   ]
 }
