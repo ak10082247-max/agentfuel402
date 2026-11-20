@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-20T02:24:13.140409+00:00",
+  "updated_at": "2026-11-20T11:51:11.360909+00:00",
   "suppressed_emails": [
     "paulalexeev10@gmail.com",
     "serge.lopes.94@free.fr",
@@ -283,7 +283,13 @@
     "contact@opendrone.be",
     "hello@sanity.io",
     "privacy@slotvfx.com",
-    "alex@thunderphone.com"
+    "alex@thunderphone.com",
+    "clearglass369@gmail.com",
+    "bpopauline@gmail.com",
+    "faizanbasheer38@gmail.com",
+    "me@yan.ad",
+    "hello@heartpad.app",
+    "lee@acme.dev"
   ],
   "contacted_users": [
     "bennyjo",
@@ -556,7 +562,13 @@
     "opendrone-hw",
     "sanity-io",
     "slotvfx",
-    "kolchinski"
+    "kolchinski",
+    "cleargla88",
+    "bpopauline-crypto",
+    "fayzan101",
+    "yan-ad",
+    "vikasghodke",
+    "yasotha"
   ],
   "history": [
     {
@@ -2515,6 +2527,60 @@
       "company": "Zeus",
       "repo": "https://thunderphone.com/blog/introducing-zeus",
       "sent_date": "2026-11-20T02:24:13.140382+00:00"
+    },
+    {
+      "username": "cleargla88",
+      "email": "clearglass369@gmail.com",
+      "track": "segment_agency",
+      "lead_source": "agency_org_search",
+      "company": "ClearGlass Inc.",
+      "repo": "ClearGla88/ClearGlass-Inc.",
+      "sent_date": "2026-11-20T11:49:38.809717+00:00"
+    },
+    {
+      "username": "bpopauline-crypto",
+      "email": "bpopauline@gmail.com",
+      "track": "segment_agency",
+      "lead_source": "agency_org_search",
+      "company": "Pauline BPO Solutions Pvt. Ltd.",
+      "repo": "bpopauline-crypto/bpopauline-crypto",
+      "sent_date": "2026-11-20T11:49:53.267566+00:00"
+    },
+    {
+      "username": "fayzan101",
+      "email": "faizanbasheer38@gmail.com",
+      "track": "segment_ecom",
+      "lead_source": "ecom_brand_search",
+      "company": "Strug Inc",
+      "repo": "fayzan101/StyleGuides",
+      "sent_date": "2026-11-20T11:50:17.462698+00:00"
+    },
+    {
+      "username": "yan-ad",
+      "email": "me@yan.ad",
+      "track": "segment_ecom",
+      "lead_source": "ecom_brand_search",
+      "company": "kiriminaja",
+      "repo": "yan-ad/nuxt-shopify",
+      "sent_date": "2026-11-20T11:50:35.475790+00:00"
+    },
+    {
+      "username": "vikasghodke",
+      "email": "hello@heartpad.app",
+      "track": "segment_ai_saas",
+      "lead_source": "show_hn_launch",
+      "company": "Heartpad",
+      "repo": "https://heartpad.app/",
+      "sent_date": "2026-11-20T11:50:56.195906+00:00"
+    },
+    {
+      "username": "yasotha",
+      "email": "lee@acme.dev",
+      "track": "segment_ai_saas",
+      "lead_source": "show_hn_launch",
+      "company": "Sandscale",
+      "repo": "https://sandscale.dev",
+      "sent_date": "2026-11-20T11:51:11.360883+00:00"
     }
   ]
 }
