@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-20T20:30:15.789845+00:00",
+  "updated_at": "2026-11-21T02:25:30.387911+00:00",
   "suppressed_emails": [
     "paulalexeev10@gmail.com",
     "serge.lopes.94@free.fr",
@@ -295,7 +295,12 @@
     "contact@aura-historia.com",
     "service@wpbrewer.com",
     "a.svitelskyi@gmail.com",
-    "hello@edgy.to"
+    "hello@edgy.to",
+    "mzaiger@gmail.com",
+    "contact@frocket.co.uk",
+    "engineering@shopify.engineering",
+    "contact@resell-lausanne.ch",
+    "hi@solocraft.app"
   ],
   "contacted_users": [
     "bennyjo",
@@ -580,7 +585,12 @@
     "aura-historia",
     "wpbrewer",
     "artsvit",
-    "gabrielgaravit"
+    "gabrielgaravit",
+    "mzaiger",
+    "frocket-exe",
+    "shopify",
+    "reselllausanne",
+    "addozhang"
   ],
   "history": [
     {
@@ -2647,6 +2657,51 @@
       "company": "Edgy",
       "repo": "https://edgy.to/",
       "sent_date": "2026-11-20T20:30:15.789822+00:00"
+    },
+    {
+      "username": "mzaiger",
+      "email": "mzaiger@gmail.com",
+      "track": "segment_agency",
+      "lead_source": "agency_org_search",
+      "company": "Marcitech",
+      "repo": "mzaiger/SlickDealsTracker",
+      "sent_date": "2026-11-21T02:24:34.903357+00:00"
+    },
+    {
+      "username": "frocket-exe",
+      "email": "contact@frocket.co.uk",
+      "track": "segment_agency",
+      "lead_source": "agency_org_search",
+      "company": "frocket.co.uk",
+      "repo": "frocket-exe/youtube-views-tracker",
+      "sent_date": "2026-11-21T02:24:46.129247+00:00"
+    },
+    {
+      "username": "shopify",
+      "email": "engineering@shopify.engineering",
+      "track": "segment_ecom",
+      "lead_source": "ecom_brand_search",
+      "company": "shopify.dev",
+      "repo": "Shopify/checkout-kit",
+      "sent_date": "2026-11-21T02:25:04.729468+00:00"
+    },
+    {
+      "username": "reselllausanne",
+      "email": "contact@resell-lausanne.ch",
+      "track": "segment_ecom",
+      "lead_source": "ecom_brand_search",
+      "company": "Solutions Manzinali",
+      "repo": "reselllausanne/shopify-fulfillment-dashboard",
+      "sent_date": "2026-11-21T02:25:16.383378+00:00"
+    },
+    {
+      "username": "addozhang",
+      "email": "hi@solocraft.app",
+      "track": "segment_ai_saas",
+      "lead_source": "show_hn_launch",
+      "company": "AbcTab",
+      "repo": "https://solocraft.app/abctab",
+      "sent_date": "2026-11-21T02:25:30.387884+00:00"
     }
   ]
 }
