@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-21T11:16:32.399414+00:00",
+  "updated_at": "2026-11-21T19:24:41.053866+00:00",
   "suppressed_emails": [
     "paulalexeev10@gmail.com",
     "serge.lopes.94@free.fr",
@@ -306,7 +306,13 @@
     "contact@isaacbell.io",
     "carsonmail009@gmail.com",
     "hey@getyoutubetext.com",
-    "opensource-contacts@janestreet.com"
+    "opensource-contacts@janestreet.com",
+    "simbani011@gmail.com",
+    "apoorvdarshan@gmail.com",
+    "syedshaban785@gmail.com",
+    "hello@craftcms.com",
+    "hi@zachshallbetter.com",
+    "hello@hubbub.page"
   ],
   "contacted_users": [
     "bennyjo",
@@ -602,7 +608,13 @@
     "isaacbell",
     "cmfh009",
     "mkapoor26",
-    "david_2107"
+    "david_2107",
+    "fenet254",
+    "apoorvdarshan",
+    "syedshabandeve",
+    "craftcms",
+    "zachshallbetter",
+    "roansh"
   ],
   "history": [
     {
@@ -2768,6 +2780,60 @@
       "company": "Try-now",
       "repo": "https://try-now.pages.dev/socratic-tutor/",
       "sent_date": "2026-11-21T11:16:32.399390+00:00"
+    },
+    {
+      "username": "fenet254",
+      "email": "simbani011@gmail.com",
+      "track": "segment_agency",
+      "lead_source": "agency_org_search",
+      "company": "portfolio-beryl-omega-68.vercel.app",
+      "repo": "Fenet254/Home-Furniture-E-Commerce-Website",
+      "sent_date": "2026-11-21T19:23:30.480937+00:00"
+    },
+    {
+      "username": "apoorvdarshan",
+      "email": "apoorvdarshan@gmail.com",
+      "track": "segment_agency",
+      "lead_source": "agency_org_search",
+      "company": "apoorvdarshan.com",
+      "repo": "apoorvdarshan/apoorvdarshan",
+      "sent_date": "2026-11-21T19:23:42.359586+00:00"
+    },
+    {
+      "username": "syedshabandeve",
+      "email": "syedshaban785@gmail.com",
+      "track": "segment_ecom",
+      "lead_source": "ecom_brand_search",
+      "company": "Sani IT-Consultant",
+      "repo": "SyedShabanDeve/portfolio",
+      "sent_date": "2026-11-21T19:23:59.160157+00:00"
+    },
+    {
+      "username": "craftcms",
+      "email": "hello@craftcms.com",
+      "track": "segment_ecom",
+      "lead_source": "ecom_brand_search",
+      "company": "craftcms.com",
+      "repo": "craftcms/shopify",
+      "sent_date": "2026-11-21T19:24:12.879365+00:00"
+    },
+    {
+      "username": "zachshallbetter",
+      "email": "hi@zachshallbetter.com",
+      "track": "segment_ai_saas",
+      "lead_source": "show_hn_launch",
+      "company": "Fundamentalengine",
+      "repo": "https://fundamentalengine.com/",
+      "sent_date": "2026-11-21T19:24:30.336301+00:00"
+    },
+    {
+      "username": "roansh",
+      "email": "hello@hubbub.page",
+      "track": "segment_ai_saas",
+      "lead_source": "show_hn_launch",
+      "company": "Hubbub",
+      "repo": "https://hubbub.page",
+      "sent_date": "2026-11-21T19:24:41.053842+00:00"
     }
   ]
 }
