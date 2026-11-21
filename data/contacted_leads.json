@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-21T02:25:30.387911+00:00",
+  "updated_at": "2026-11-21T11:16:32.399414+00:00",
   "suppressed_emails": [
     "paulalexeev10@gmail.com",
     "serge.lopes.94@free.fr",
@@ -300,7 +300,13 @@
     "contact@frocket.co.uk",
     "engineering@shopify.engineering",
     "contact@resell-lausanne.ch",
-    "hi@solocraft.app"
+    "hi@solocraft.app",
+    "yuriepix08@gmail.com",
+    "saeidhoseinipour9@gmail.com",
+    "contact@isaacbell.io",
+    "carsonmail009@gmail.com",
+    "hey@getyoutubetext.com",
+    "opensource-contacts@janestreet.com"
   ],
   "contacted_users": [
     "bennyjo",
@@ -590,7 +596,13 @@
     "frocket-exe",
     "shopify",
     "reselllausanne",
-    "addozhang"
+    "addozhang",
+    "yuriryzk",
+    "saeidhoseinipour",
+    "isaacbell",
+    "cmfh009",
+    "mkapoor26",
+    "david_2107"
   ],
   "history": [
     {
@@ -2702,6 +2714,60 @@
       "company": "AbcTab",
       "repo": "https://solocraft.app/abctab",
       "sent_date": "2026-11-21T02:25:30.387884+00:00"
+    },
+    {
+      "username": "yuriryzk",
+      "email": "yuriepix08@gmail.com",
+      "track": "segment_agency",
+      "lead_source": "agency_org_search",
+      "company": "cpe-class-hub.vercel.app",
+      "repo": "yuriryzk/CPE-Class-Hub",
+      "sent_date": "2026-11-21T11:15:16.770654+00:00"
+    },
+    {
+      "username": "saeidhoseinipour",
+      "email": "saeidhoseinipour9@gmail.com",
+      "track": "segment_agency",
+      "lead_source": "agency_org_search",
+      "company": "Persiancoclust",
+      "repo": "Saeidhoseinipour/Persiancoclust",
+      "sent_date": "2026-11-21T11:15:27.603103+00:00"
+    },
+    {
+      "username": "isaacbell",
+      "email": "contact@isaacbell.io",
+      "track": "segment_ecom",
+      "lead_source": "ecom_brand_search",
+      "company": "IkeWebStudio",
+      "repo": "IsaacBell/IsaacBell",
+      "sent_date": "2026-11-21T11:15:51.023444+00:00"
+    },
+    {
+      "username": "cmfh009",
+      "email": "carsonmail009@gmail.com",
+      "track": "segment_ecom",
+      "lead_source": "ecom_brand_search",
+      "company": "Orbit Security",
+      "repo": "CmfH009/Orbit-Security",
+      "sent_date": "2026-11-21T11:16:01.243456+00:00"
+    },
+    {
+      "username": "mkapoor26",
+      "email": "hey@getyoutubetext.com",
+      "track": "segment_ai_saas",
+      "lead_source": "show_hn_launch",
+      "company": "Getyoutubetext",
+      "repo": "https://getyoutubetext.com/youtube-transcript-api",
+      "sent_date": "2026-11-21T11:16:19.189114+00:00"
+    },
+    {
+      "username": "david_2107",
+      "email": "opensource-contacts@janestreet.com",
+      "track": "segment_ai_saas",
+      "lead_source": "show_hn_launch",
+      "company": "Try-now",
+      "repo": "https://try-now.pages.dev/socratic-tutor/",
+      "sent_date": "2026-11-21T11:16:32.399390+00:00"
     }
   ]
 }
