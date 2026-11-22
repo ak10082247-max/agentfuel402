@@ -130,7 +130,7 @@ export function escapeHtml(value) {
     .replace(/'/g, "&#39;");
 }
 
-function cleanSecret(value) {
+export function cleanSecret(value) {
   return typeof value === "string" ? value.replace(/[\uFEFF\x00-\x20\x7F]+/g, "") : "";
 }
 

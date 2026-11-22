@@ -934,3 +934,255 @@ test("Intelligence Store (/store, /v1/store/products, Stripe & x402 checkout, do
     globalThis.fetch = ORIG_FETCH;
   }
 });
+
+test("Stripe MPP (method=stripe) challenge, Payment-Receipt, 7-day unified pass, 422 never-charge invariant, /v1/mpp/pass & /internal/mpp/stripe/verify", async () => {
+  const { createHmac } = await import("node:crypto");
+  const { computeChallengeId, DEFAULT_STRIPE_PROFILE_ID, buildStripeChargeChallenge } = await import("./stripe_mpp.js");
+  const MPP_ENV = {
+    ...ENV,
+    KUROX_SIGNING_SECRET: "kurox_mpp_test_signing_secret_32bytes_min",
+    STRIPE_SECRET_KEY: "sk_test_mpp_mock_key_000000000000000",
+  };
+
+  try {
+    // 1. Unpaid /v1/fuel/b2b-intent-leads emits valid WWW-Authenticate: Payment ..., method="stripe" + X402 dual headers
+    const unpaidRes = await worker.fetch(
+      new Request("https://agentfuel402.ak10082247.workers.dev/v1/fuel/b2b-intent-leads"),
+      MPP_ENV,
+    );
+    assert.equal(unpaidRes.status, 402);
+    const wwwAuth = unpaidRes.headers.get("WWW-Authenticate") || "";
+    assert.ok(wwwAuth.startsWith("Payment "), "WWW-Authenticate must start with Payment scheme");
+    assert.match(wwwAuth, /method="stripe"/);
+    assert.match(wwwAuth, /intent="charge"/);
+    assert.match(wwwAuth, /realm="agentfuel402\.ak10082247\.workers\.dev"/);
+    const unpaidJson = await unpaidRes.json();
+    assert.equal(unpaidJson.mpp.method, "stripe");
+    assert.equal(unpaidJson.mpp.amountCents, "50");
+    assert.equal(unpaidJson.mpp.challenge.request.methodDetails.networkId, DEFAULT_STRIPE_PROFILE_ID);
+
+    // 2. Malformed Authorization: Payment garbage returns 402 with fresh WWW-Authenticate (never 500 or 401)
+    const badCredRes = await worker.fetch(
+      new Request("https://agentfuel402.ak10082247.workers.dev/v1/fuel/b2b-intent-leads", {
+        headers: { Authorization: "Payment dGhpcyBpcyBnYXJiYWdl" },
+      }),
+      MPP_ENV,
+    );
+    assert.equal(badCredRes.status, 402);
+    assert.ok((badCredRes.headers.get("WWW-Authenticate") || "").startsWith("Payment "));
+
+    // Build real serialized MPP credential matching mppx@0.21.1 wire format
+    const reqParamMatch = /request="([^"]+)"/.exec(wwwAuth);
+    assert.ok(reqParamMatch?.[1]);
+    const serializeCred = (challengeObj, spt = "spt_test_valid_token_123") => {
+      const wire = {
+        challenge: {
+          id: challengeObj.id,
+          realm: challengeObj.realm,
+          method: challengeObj.method,
+          intent: challengeObj.intent,
+          expires: challengeObj.expires,
+          request: challengeObj._rawReq || Buffer.from(JSON.stringify(challengeObj.request)).toString("base64url"),
+        },
+        payload: { spt },
+      };
+      return `Payment ${Buffer.from(JSON.stringify(wire)).toString("base64url")}`;
+    };
+
+    const stripeCalls = [];
+    globalThis.fetch = async (url, init = {}) => {
+      const u = String(url);
+      if (u.startsWith("https://api.stripe.com/v1/payment_intents")) {
+        stripeCalls.push({ url: u, headers: init.headers, body: String(init.body || "") });
+        return new Response(
+          JSON.stringify({ id: `pi_mpp_${stripeCalls.length}`, status: "succeeded" }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        );
+      }
+      if (u.startsWith("https://hn.algolia.com/")) {
+        return new Response(
+          JSON.stringify({
+            hits: [
+              { title: "Show HN: AgentInfra", url: "https://agentinfra.dev", points: 42, num_comments: 11, created_at: "2026-11-22T12:00:00Z" },
+            ],
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        );
+      }
+      if (u.startsWith("https://pypi.org/")) {
+        return new Response("Not Found", { status: 404 });
+      }
+      throw new Error(`Unexpected external fetch in test: ${u}`);
+    };
+
+    // 3. Upstream failure (422) NEVER charges Stripe!
+    const sdk402 = await worker.fetch(
+      new Request("https://agentfuel402.ak10082247.workers.dev/v1/fuel/sdk-live-spec?package=nonexistent_pkg_xyz"),
+      MPP_ENV,
+    );
+    const sdkWww = sdk402.headers.get("WWW-Authenticate") || "";
+    const sdkReqB64 = /request="([^"]+)"/.exec(sdkWww)[1];
+    const sdkChallenge = {
+      id: /id="([^"]+)"/.exec(sdkWww)[1],
+      realm: /realm="([^"]+)"/.exec(sdkWww)[1],
+      method: "stripe",
+      intent: "charge",
+      expires: /expires="([^"]+)"/.exec(sdkWww)[1],
+      _rawReq: sdkReqB64,
+    };
+    const sdk422Res = await worker.fetch(
+      new Request("https://agentfuel402.ak10082247.workers.dev/v1/fuel/sdk-live-spec?package=nonexistent_pkg_xyz", {
+        headers: { Authorization: serializeCred(sdkChallenge, "spt_should_not_charge") },
+      }),
+      MPP_ENV,
+    );
+    assert.equal(sdk422Res.status, 422);
+    assert.equal((await sdk422Res.json()).charged, false);
+    assert.equal(stripeCalls.length, 0);
+
+    // 4. Paid Stripe MPP call on /v1/fuel/b2b-intent-leads settles PaymentIntent, returns Payment-Receipt & mints 7d unified Bearer key
+    const validCredHdr = serializeCred({
+      ...unpaidJson.mpp.challenge,
+      _rawReq: reqParamMatch[1],
+    }, "spt_test_charge_001");
+    const paidRes = await worker.fetch(
+      new Request("https://agentfuel402.ak10082247.workers.dev/v1/fuel/b2b-intent-leads", {
+        headers: { Authorization: validCredHdr },
+      }),
+      MPP_ENV,
+    );
+    assert.equal(paidRes.status, 200);
+    assert.equal(stripeCalls.length, 1);
+    assert.equal(stripeCalls[0].headers["Stripe-Version"], "2026-07-29.preview");
+    assert.match(stripeCalls[0].body, /shared_payment_granted_token=spt_test_charge_001/);
+    assert.match(stripeCalls[0].body, /metadata%5Bmachine_payment%5D=true/);
+    assert.equal(paidRes.headers.get("X-Kurox-Auth"), "stripe-mpp");
+    const receiptHdr = paidRes.headers.get("Payment-Receipt");
+    assert.ok(receiptHdr);
+    const decodedReceipt = JSON.parse(Buffer.from(receiptHdr, "base64url").toString("utf8"));
+    assert.equal(decodedReceipt.method, "stripe");
+    assert.equal(decodedReceipt.status, "success");
+    assert.equal(decodedReceipt.reference, "pi_mpp_1");
+
+    const mintedPassKey = paidRes.headers.get("X-Kurox-Api-Key");
+    assert.ok(mintedPassKey && mintedPassKey.startsWith("sk_kurox_v1."));
+
+    // Reuse minted 7-day Bearer key immediately -> zero extra Stripe charges!
+    const followUpRes = await worker.fetch(
+      new Request("https://agentfuel402.ak10082247.workers.dev/v1/fuel/b2b-intent-leads", {
+        headers: { Authorization: `Bearer ${mintedPassKey}` },
+      }),
+      MPP_ENV,
+    );
+    assert.equal(followUpRes.status, 200);
+    assert.equal(stripeCalls.length, 1);
+    assert.equal(followUpRes.headers.get("X-Kurox-Auth"), "bearer-api-key");
+
+    // 5. Replay protection: duplicate challenge.id is rejected 402 without extra Stripe charge
+    const replayRes = await worker.fetch(
+      new Request("https://agentfuel402.ak10082247.workers.dev/v1/fuel/b2b-intent-leads", {
+        headers: { Authorization: validCredHdr },
+      }),
+      MPP_ENV,
+    );
+    assert.equal(replayRes.status, 402);
+    assert.equal(stripeCalls.length, 1);
+
+    // 6. Dedicated /v1/mpp/pass?tier=starter enforces 500c minimum and mints 30d Starter key
+    const pass402 = await worker.fetch(
+      new Request("https://agentfuel402.ak10082247.workers.dev/v1/mpp/pass?tier=starter", { method: "POST" }),
+      MPP_ENV,
+    );
+    assert.equal(pass402.status, 402);
+    const passBody = await pass402.json();
+    assert.equal(passBody.mpp.amountCents, "500");
+
+    // Paying 50c challenge against tier=starter (500c) must reject 402
+    const ch50 = await buildStripeChargeChallenge({
+      realm: "agentfuel402.ak10082247.workers.dev",
+      amountCents: 50,
+      description: "Underpaid pass",
+      secretKey: MPP_ENV.KUROX_SIGNING_SECRET,
+    });
+    const underpaidRes = await worker.fetch(
+      new Request("https://agentfuel402.ak10082247.workers.dev/v1/mpp/pass?tier=starter", {
+        method: "POST",
+        headers: { Authorization: serializeCred({ ...ch50.challenge, _rawReq: ch50.requestEncoded }, "spt_underpay") },
+      }),
+      MPP_ENV,
+    );
+    assert.equal(underpaidRes.status, 402);
+    assert.equal(stripeCalls.length, 1);
+
+    const passPaid = await worker.fetch(
+      new Request("https://agentfuel402.ak10082247.workers.dev/v1/mpp/pass?tier=starter", {
+        method: "POST",
+        headers: { Authorization: serializeCred({ ...passBody.mpp.challenge, _rawReq: /request="([^"]+)"/.exec(pass402.headers.get("WWW-Authenticate"))[1] }, "spt_starter_500") },
+      }),
+      MPP_ENV,
+    );
+    assert.equal(passPaid.status, 200);
+    assert.equal(stripeCalls.length, 2);
+    const passJson = await passPaid.json();
+    assert.equal(passJson.tier, "starter");
+    assert.ok(passJson.api_key.startsWith("sk_kurox_v1."));
+
+    // 7. Internal HMAC relay endpoint for CanaryGuard & RugShield fails closed on invalid auth and settles signed sibling requests
+    const unauthRelay = await worker.fetch(
+      new Request("https://agentfuel402.ak10082247.workers.dev/internal/mpp/stripe/verify", {
+        method: "POST",
+        body: JSON.stringify({ service: "canaryguard-402" }),
+      }),
+      MPP_ENV,
+    );
+    assert.equal(unauthRelay.status, 401);
+
+    const cgChallenge = await buildStripeChargeChallenge({
+      realm: "canaryguard-402.onrender.com",
+      amountCents: 50,
+      description: "CanaryGuard Sanitize Pass",
+      secretKey: MPP_ENV.KUROX_SIGNING_SECRET,
+    });
+    const cgComputedId = await computeChallengeId(cgChallenge.challenge, MPP_ENV.KUROX_SIGNING_SECRET);
+    assert.equal(cgChallenge.challenge.id, cgComputedId);
+
+    const relayBody = JSON.stringify({
+      service: "canaryguard-402",
+      expectedRealm: "canaryguard-402.onrender.com",
+      minAmountCents: 50,
+      credential: {
+        challenge: {
+          ...cgChallenge.challenge,
+          request: cgChallenge.requestEncoded,
+        },
+        payload: { spt: "spt_canaryguard_relay_01" },
+      },
+    });
+    const ts = String(Math.floor(Date.now() / 1000));
+    const relaySig = createHmac("sha256", MPP_ENV.KUROX_SIGNING_SECRET)
+      .update(`${ts}.canaryguard-402.${relayBody}`)
+      .digest("base64url");
+
+    const okRelay = await worker.fetch(
+      new Request("https://agentfuel402.ak10082247.workers.dev/internal/mpp/stripe/verify", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Kurox-Internal-Timestamp": ts,
+          "X-Kurox-Internal-Service": "canaryguard-402",
+          "X-Kurox-Internal-Signature": relaySig,
+        },
+        body: relayBody,
+      }),
+      MPP_ENV,
+    );
+    assert.equal(okRelay.status, 200);
+    assert.equal(stripeCalls.length, 3);
+    const okRelayJson = await okRelay.json();
+    assert.equal(okRelayJson.ok, true);
+    assert.equal(okRelayJson.paymentIntentId, "pi_mpp_3");
+    assert.ok(okRelayJson.apiKey.startsWith("sk_kurox_v1."));
+  } finally {
+    globalThis.fetch = ORIG_FETCH;
+  }
+});

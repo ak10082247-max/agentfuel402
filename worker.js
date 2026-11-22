@@ -34,6 +34,21 @@ import {
   renderAuditCertificateHtml,
   renderStoreHtml,
 } from "./store_engine.js";
+import {
+  ALLOWED_INTERNAL_REALMS,
+  DEFAULT_STRIPE_PROFILE_ID,
+  MPP_PASS_PLANS,
+  STRIPE_MIN_USD_CENTS,
+  buildStripeChargeChallenge,
+  extractPaymentSchemeHeader,
+  normalizeCredentialObject,
+  parsePaymentCredentialToken,
+  resolveStripeProfileId,
+  settleStripeMppCredential,
+  toBase64Utf8,
+  verifyInternalMppRelayRequest,
+  verifyStripeChallengeAndCredential,
+} from "./stripe_mpp.js";
 
 const MERCHANT_BASE = "0x80E0Ae84679b7f11bE171DaADd492FBECf628cd6";
 const BASE_USDC = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
@@ -199,8 +214,8 @@ function corsHeaders(req) {
   return {
     "Access-Control-Allow-Origin": origin,
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS, HEAD",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization, X-API-Key, X-RapidAPI-Proxy-Secret, PAYMENT-SIGNATURE, X-PAYMENT, X-Payment-Signature, X-Fuel-Session, Mcp-Session-Id",
-    "Access-Control-Expose-Headers": "PAYMENT-REQUIRED, PAYMENT-RESPONSE, X-Payment-Required, X-Payment-Response, X-402-Version, X-402-Amount, X-402-Payment-To, X-402-Network, X-402-Asset, X-Fuel-Calls-Remaining, X-Edge-Cache, Server-Timing, X-Kurox-Auth, X-Kurox-Tier, X-RapidAPI-Bypass",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization, Payment-Authorization, X-API-Key, X-RapidAPI-Proxy-Secret, PAYMENT-SIGNATURE, X-PAYMENT, X-Payment-Signature, X-Fuel-Session, Mcp-Session-Id",
+    "Access-Control-Expose-Headers": "WWW-Authenticate, Payment-Receipt, PAYMENT-REQUIRED, PAYMENT-RESPONSE, X-Payment-Required, X-Payment-Response, X-402-Version, X-402-Amount, X-402-Payment-To, X-402-Network, X-402-Asset, X-Fuel-Calls-Remaining, X-Edge-Cache, Server-Timing, X-Kurox-Auth, X-Kurox-Tier, X-Kurox-Api-Key, X-Kurox-Api-Key-Expires, X-RapidAPI-Bypass",
     "Access-Control-Max-Age": "86400"
   };
 }
@@ -482,21 +497,69 @@ function buildChallengePayload(req, routePath, details, cfgOverride = null) {
   return { cfg, challengeObj };
 }
 
-function mcpPaymentRequiredResponse(cors, id, req, toolRoute, reason) {
-  const { challengeObj } = buildChallengePayload(req, toolRoute, reason);
+async function mcpPaymentRequiredResponse(cors, id, req, toolRoute, reason, env = null) {
+  const { cfg, challengeObj } = buildChallengePayload(req, toolRoute, reason);
+  const url = new URL(req.url);
+  const stripeCents = Math.max(STRIPE_MIN_USD_CENTS, Number(cfg.stripeCents) || STRIPE_MIN_USD_CENTS);
+  const stripeMpp = await buildStripeChargeChallenge({
+    realm: url.hostname || "agentfuel402.ak10082247.workers.dev",
+    amountCents: stripeCents,
+    description: `${cfg.description || cfg.name} (+7d Unified Kurox API Pass)`,
+    networkId: resolveStripeProfileId(env),
+    secretKey: env?.KUROX_SIGNING_SECRET,
+  });
   return new Response(JSON.stringify({
     jsonrpc: "2.0",
     id,
     result: {
-      content: [{ type: "text", text: JSON.stringify(challengeObj) }],
-      isError: true
+      content: [{ type: "text", text: JSON.stringify({ ...challengeObj, mpp_stripe_challenge: stripeMpp.challenge }) }],
+      isError: true,
+      _meta: {
+        "org.paymentauth/payment-required": [stripeMpp.challenge],
+      }
     }
-  }), { status: 200, headers: { ...cors, "Content-Type": "application/json" } });
+  }), {
+    status: 200,
+    headers: {
+      ...cors,
+      "Content-Type": "application/json",
+      "WWW-Authenticate": stripeMpp.headerValue
+    }
+  });
 }
 
-function build402Challenge(req, routePath, details, cfgOverride = null) {
+async function build402Challenge(req, routePath, details, cfgOverride = null, env = null) {
   const { cfg, challengeObj } = buildChallengePayload(req, routePath, details, cfgOverride);
-  const b64Invoice = btoa(JSON.stringify(challengeObj));
+  const url = new URL(req.url);
+  const stripeCents = Number(cfg.stripeCents) > 0
+    ? Math.max(STRIPE_MIN_USD_CENTS, Number(cfg.stripeCents))
+    : Math.max(STRIPE_MIN_USD_CENTS, Math.round(Number(cfg.amountMicro || 10000) / 10000));
+  const mppDesc = stripeCents === STRIPE_MIN_USD_CENTS && Number(cfg.amountMicro || 10000) < 500000
+    ? `${cfg.name || "AgentFuel402"} ($0.50 Stripe card minimum; includes 7-day Unified Kurox API Pass)`
+    : (cfg.description || cfg.name || "AgentFuel402 Consumable Data");
+  const stripeMpp = await buildStripeChargeChallenge({
+    realm: url.hostname || "agentfuel402.ak10082247.workers.dev",
+    amountCents: stripeCents,
+    description: mppDesc,
+    networkId: resolveStripeProfileId(env),
+    secretKey: env?.KUROX_SIGNING_SECRET,
+  });
+
+  challengeObj.mpp = {
+    protocol: "mpp",
+    method: "stripe",
+    intent: "charge",
+    networkId: resolveStripeProfileId(env),
+    amountCents: String(stripeCents),
+    currency: "usd",
+    paymentMethodTypes: ["card"],
+    challenge: stripeMpp.challenge,
+    note: stripeCents === STRIPE_MIN_USD_CENTS && Number(cfg.amountMicro || 10000) < 500000
+      ? "Stripe card SPT minimum is $0.50 USD; settling via MPP unlocks this request AND returns a 7-day Unified Kurox API Key in X-Kurox-Api-Key."
+      : "Settling via MPP returns Payment-Receipt and activates a Unified Kurox API Key in X-Kurox-Api-Key.",
+  };
+
+  const b64Invoice = toBase64Utf8(JSON.stringify(challengeObj));
 
   const headers = {
     ...corsHeaders(req),
@@ -509,7 +572,7 @@ function build402Challenge(req, routePath, details, cfgOverride = null) {
     "X-402-Payment-To": MERCHANT_BASE,
     "X-402-Network": "base",
     "X-402-Asset": BASE_USDC,
-    "WWW-Authenticate": `x402 realm="AgentFuel402", price="${cfg.priceDisplay}", network="Base,Solana"`
+    "WWW-Authenticate": stripeMpp.headerValue
   };
 
   return new Response(JSON.stringify(challengeObj, null, 2), { status: 402, headers });
@@ -1584,6 +1647,28 @@ async function handleWorkerFetch(req, env, ctx) {
         facilitator: PAYAI_FACILITATOR,
         gasless_sponsorship: "100% sponsored ($0 ETH / $0 SOL required)",
         endpoints,
+        stripe_mpp: {
+          protocol: "mpp",
+          method: "stripe",
+          intent: "charge",
+          network_id: resolveStripeProfileId(env),
+          business_profile: "https://stripe.com/@kurox_x402",
+          payment_method_types: ["card"],
+          minimum_card_charge_usd: "0.50",
+          pass_endpoint: `${url.origin}/v1/mpp/pass`,
+          unified_services: [
+            "https://agentfuel402.ak10082247.workers.dev",
+            "https://canaryguard-402.onrender.com",
+            "https://rugshield-402.onrender.com"
+          ],
+          tiers: Object.values(MPP_PASS_PLANS).map((p) => ({
+            tier: p.id,
+            sku: p.sku,
+            amount_cents: p.amountCents,
+            price: p.priceDisplay,
+            duration_days: Math.round(p.durationSeconds / 86400)
+          }))
+        },
         credit_card_apify_store: "https://apify.com/kuroxreal",
         credit_card_stripe_checkout: {
           api_key_plans: {
@@ -1867,7 +1952,37 @@ async function handleWorkerFetch(req, env, ctx) {
               },
               responses: {
                 "200": { description: "Fulfilled order with time-limited /v1/store/download?token=... links" },
-                "402": { description: "Payment Required via x402 V2 (Base or Solana USDC)" }
+                "402": { description: "Payment Required via x402 V2 (Base or Solana USDC) or Stripe MPP (method=stripe)" }
+              }
+            }
+          },
+          "/v1/mpp/pass": {
+            post: {
+              summary: "Mint Unified Kurox API Key via Stripe MPP Shared Payment Token (or x402 USDC)",
+              description: "Settle $0.50 (7-day pass), $5.00 (30-day starter), or $19.00 (90-day pro) via MPP method=stripe Shared Payment Token to receive a unified sk_kurox_v1.* API key valid across AgentFuel402, CanaryGuard-402, and RugShield-402.",
+              "x-payment-info": {
+                amount: "50",
+                currency: "usd",
+                method: "stripe",
+                intent: "charge"
+              },
+              requestBody: {
+                required: false,
+                content: {
+                  "application/json": {
+                    example: { tier: "pass" },
+                    schema: {
+                      type: "object",
+                      properties: {
+                        tier: { type: "string", enum: ["pass", "starter", "pro"], default: "pass" }
+                      }
+                    }
+                  }
+                }
+              },
+              responses: {
+                "200": { description: "Minted unified sk_kurox_v1.* Bearer API key + Payment-Receipt header" },
+                "402": { description: "MPP Payment Required (WWW-Authenticate: Payment ..., method=stripe) or x402 V2 USDC" }
               }
             }
           }
@@ -1880,16 +1995,17 @@ async function handleWorkerFetch(req, env, ctx) {
     if (path === "/skill.md") {
       return new Response(`---
 name: agentfuel402
-description: High-frequency consumable B2B buying intent leads, LLM-clean Markdown sanitization, live e-commerce price & stock monitoring, real-time SDK specs, and Reverse Engineer Anything (REA) via x402 dual-chain payment and MCP.
+description: High-frequency consumable B2B buying intent leads, LLM-clean Markdown sanitization, live e-commerce price & stock monitoring, real-time SDK specs, and Reverse Engineer Anything (REA) via x402 dual-chain payment, Stripe MPP (method=stripe), and MCP.
 ---
 # AgentFuel402 Skill
 
 Provides live, non-cacheable consumable data feeds for AI agents:
-1. \`/v1/fuel/b2b-intent-leads\` ($0.010 USDC): Live startup launches, hiring signals, domains.
-2. \`/v1/fuel/llm-clean-markdown\` ($0.005 USDC): SSRF-safe Markdown extraction + prompt-injection defense.
-3. \`/v1/fuel/ecom-price-stock\` ($0.005 USDC): Shopify, WooCommerce & Schema.org price, stock, and variant tracker.
-4. \`/v1/fuel/sdk-live-spec\` ($0.005 USDC): Real-time PyPI & npm release versions and deprecation warnings.
-5. \`/v1/fuel/reverse-engineer\` ($0.020 USDC): Hidden REST/GraphQL endpoint discovery, hydration extraction, and OpenAPI 3.1 synthesis.
+1. \`/v1/fuel/b2b-intent-leads\` ($0.010 USDC / $0.50 Stripe MPP pass): Live startup launches, hiring signals, domains.
+2. \`/v1/fuel/llm-clean-markdown\` ($0.005 USDC / $0.50 Stripe MPP pass): SSRF-safe Markdown extraction + prompt-injection defense.
+3. \`/v1/fuel/ecom-price-stock\` ($0.005 USDC / $0.50 Stripe MPP pass): Shopify, WooCommerce & Schema.org price, stock, and variant tracker.
+4. \`/v1/fuel/sdk-live-spec\` ($0.005 USDC / $0.50 Stripe MPP pass): Real-time PyPI & npm release versions and deprecation warnings.
+5. \`/v1/fuel/reverse-engineer\` ($0.020 USDC / $0.50 Stripe MPP pass): Hidden REST/GraphQL endpoint discovery, hydration extraction, and OpenAPI 3.1 synthesis.
+6. \`/v1/mpp/pass\` ($0.50 / $5.00 / $19.00 Stripe MPP): Mints unified \`sk_kurox_v1.*\` API key valid on AgentFuel402, CanaryGuard-402, and RugShield-402.
 `, { status: 200, headers: { ...cors, "Content-Type": "text/markdown; charset=utf-8" } });
     }
 
@@ -1897,14 +2013,16 @@ Provides live, non-cacheable consumable data feeds for AI agents:
     if (path === "/llms.txt") {
       return new Response(`# AgentFuel402 — Consumable Data Engine
 Base URL: https://agentfuel402.ak10082247.workers.dev
-Protocol: x402 V2 (Base Mainnet 0x80E0... / Solana Mainnet DD3A...) + MCP JSON-RPC 2.0
+Protocol: x402 V2 (Base Mainnet 0x80E0... / Solana Mainnet DD3A...) + Stripe MPP (method=stripe, networkId=${resolveStripeProfileId(env)}) + MCP JSON-RPC 2.0
 Facilitator: PayAI (https://facilitator.payai.network)
+Stripe Business Profile: https://stripe.com/@kurox_x402
 Endpoints:
 - /v1/fuel/b2b-intent-leads ($0.010 USDC): Intent signals from tech launches
 - /v1/fuel/llm-clean-markdown ($0.005 USDC): Stripped DOM to Markdown with prompt injection defense
 - /v1/fuel/ecom-price-stock ($0.005 USDC): Live Shopify/WooCommerce/Schema.org prices
 - /v1/fuel/sdk-live-spec ($0.005 USDC): PyPI & npm latest versions & breaking warnings
 - /v1/fuel/reverse-engineer ($0.020 USDC): Hidden APIs, hydration state & OpenAPI 3.1 synthesis
+- /v1/mpp/pass ($0.50 / $5.00 / $19.00 USD Stripe MPP): Mints unified sk_kurox_v1.* API key usable across AgentFuel402, CanaryGuard-402 & RugShield-402
 `, { status: 200, headers: { ...cors, "Content-Type": "text/plain; charset=utf-8" } });
     }
 
@@ -1916,6 +2034,15 @@ Endpoints:
         merchantAddressBase: MERCHANT_BASE,
         merchantAddressSolana: MERCHANT_SOLANA_ATA,
         facilitator: PAYAI_FACILITATOR,
+        mpp: {
+          method: "stripe",
+          intent: "charge",
+          networkId: resolveStripeProfileId(env),
+          businessProfile: "https://stripe.com/@kurox_x402",
+          paymentMethodTypes: ["card"],
+          minAmountCents: STRIPE_MIN_USD_CENTS,
+          passEndpoint: "/v1/mpp/pass",
+        },
         endpoints: Object.keys(ROUTE_CONFIGS).map(k => ({
           path: k,
           name: ROUTE_CONFIGS[k].name,
@@ -2185,6 +2312,7 @@ Endpoints:
       const storeCfg = {
         name: product.name,
         amountMicro: product.amountMicro,
+        stripeCents: product.amountCents,
         priceDisplay: `$${(product.amountCents / 100).toFixed(2)} USDC`,
         description: product.tagline,
         inputSchema: {
@@ -2205,9 +2333,10 @@ Endpoints:
         }
       };
 
+      const mppHdr = extractPaymentSchemeHeader(req);
       const paymentHdr = req.headers.get("PAYMENT-SIGNATURE") || req.headers.get("X-PAYMENT") || req.headers.get("payment-signature");
-      if (!paymentHdr) {
-        return build402Challenge(req, path, undefined, storeCfg);
+      if (!mppHdr && !paymentHdr) {
+        return await build402Challenge(req, path, undefined, storeCfg, env);
       }
 
       if (!hasSigningSecretConfigured(env)) {
@@ -2219,11 +2348,24 @@ Endpoints:
         }, null, 2), { status: 503, headers: { ...cors, "Content-Type": "application/json" } });
       }
 
-      let paymentPrep;
-      try {
-        paymentPrep = await validateAndVerifyPayAI(req, path, paymentHdr, storeCfg);
-      } catch (verifyErr) {
-        return build402Challenge(req, path, `Payment validation rejected: ${verifyErr.message}`, storeCfg);
+      let mppCredential = null;
+      let paymentPrep = null;
+      if (mppHdr) {
+        try {
+          mppCredential = parsePaymentCredentialToken(mppHdr);
+          const pre = await verifyStripeChallengeAndCredential(mppCredential, env, [url.hostname, "agentfuel402.ak10082247.workers.dev"]);
+          if (pre.amountCents < product.amountCents) {
+            throw new Error(`Store SKU ${product.id} requires ${product.amountCents} cents`);
+          }
+        } catch (verifyErr) {
+          return await build402Challenge(req, path, `Payment validation rejected: ${verifyErr.message}`, storeCfg, env);
+        }
+      } else {
+        try {
+          paymentPrep = await validateAndVerifyPayAI(req, path, paymentHdr, storeCfg);
+        } catch (verifyErr) {
+          return await build402Challenge(req, path, `Payment validation rejected: ${verifyErr.message}`, storeCfg, env);
+        }
       }
 
       // Execute / verify deliverable BEFORE settling payment so buyers are never charged on bad targets
@@ -2244,16 +2386,32 @@ Endpoints:
         }, null, 2), { status: execErr.httpStatus || 422, headers: { ...cors, "Content-Type": "application/json" } });
       }
 
-      let receipt;
+      let receipt = null;
+      let mppResult = null;
       try {
-        receipt = await settlePayAI(paymentPrep);
+        if (mppCredential) {
+          mppResult = await settleStripeMppCredential({
+            credential: mppCredential,
+            env,
+            serviceSlug: "agentfuel402-store",
+            expectedRealms: [url.hostname, "agentfuel402.ak10082247.workers.dev"],
+            minAmountCents: product.amountCents
+          });
+          receipt = {
+            transaction: mppResult.paymentIntentId,
+            network: "stripe",
+            payer: "stripe_spt"
+          };
+        } else {
+          receipt = await settlePayAI(paymentPrep);
+        }
       } catch (settleErr) {
         return new Response(JSON.stringify({
           status: "error",
           error: "settlement_failed",
           charged: false,
-          message: `On-chain settlement could not be completed: ${settleErr.message}`
-        }, null, 2), { status: 502, headers: { ...cors, "Content-Type": "application/json" } });
+          message: `Settlement could not be completed: ${settleErr.message}`
+        }, null, 2), { status: mppCredential ? 402 : 502, headers: { ...cors, "Content-Type": "application/json" } });
       }
 
       const now = Math.floor(Date.now() / 1000);
@@ -2287,6 +2445,18 @@ Endpoints:
       }, env.KUROX_SIGNING_SECRET, "sk_kurox_v1");
 
       const b64Receipt = btoa(JSON.stringify(receipt));
+      const storeOutHeaders = {
+        ...cors,
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store",
+        "PAYMENT-RESPONSE": b64Receipt,
+        "X-Payment-Response": b64Receipt,
+        "X-Kurox-Api-Key": apiKey,
+        "X-Kurox-Api-Key-Expires": new Date((now + product.bonusApiTtlSeconds) * 1000).toISOString(),
+      };
+      if (mppResult) {
+        storeOutHeaders["Payment-Receipt"] = mppResult.receiptHeader;
+      }
       return new Response(JSON.stringify({
         status: "fulfilled",
         paid: true,
@@ -2301,13 +2471,7 @@ Endpoints:
         deliverable: inlinePayload
       }, null, 2), {
         status: 200,
-        headers: {
-          ...cors,
-          "Content-Type": "application/json",
-          "Cache-Control": "no-store",
-          "PAYMENT-RESPONSE": b64Receipt,
-          "X-Payment-Response": b64Receipt
-        }
+        headers: storeOutHeaders
       });
     }
 
@@ -2717,7 +2881,7 @@ Endpoints:
 
       const paymentHdr = req.headers.get("PAYMENT-SIGNATURE") || req.headers.get("X-PAYMENT") || req.headers.get("payment-signature");
       if (!paymentHdr) {
-        return build402Challenge(req, "/v1/pass/prepay", undefined, PASS_PREPAY_CONFIG);
+        return await build402Challenge(req, "/v1/pass/prepay", undefined, PASS_PREPAY_CONFIG, env);
       }
 
       if (!hasSigningSecretConfigured(env)) {
@@ -2736,7 +2900,7 @@ Endpoints:
       try {
         paymentPrep = await validateAndVerifyPayAI(req, "/v1/pass/prepay", paymentHdr, PASS_PREPAY_CONFIG);
       } catch (verifyErr) {
-        return build402Challenge(req, "/v1/pass/prepay", `Payment validation rejected: ${verifyErr.message}`, PASS_PREPAY_CONFIG);
+        return await build402Challenge(req, "/v1/pass/prepay", `Payment validation rejected: ${verifyErr.message}`, PASS_PREPAY_CONFIG, env);
       }
 
       let receipt;
@@ -2778,6 +2942,214 @@ Endpoints:
           "X-Payment-Response": b64Receipt
         }
       });
+    }
+
+    // Stripe MPP Pass Minting Route: settles $0.50 / $5.00 / $19.00 via MPP method="stripe" (or x402 USDC) -> sk_kurox_v1.* unified key
+    if (path === "/v1/mpp/pass") {
+      if (req.method !== "POST" && req.method !== "GET") {
+        return new Response(JSON.stringify({ error: "Method not allowed", charged: false }), {
+          status: 405,
+          headers: { ...cors, "Content-Type": "application/json" }
+        });
+      }
+      let bodyParams = {};
+      if (req.method === "POST") {
+        try { bodyParams = await req.json(); } catch { bodyParams = {}; }
+      }
+      const tierKey = String(url.searchParams.get("tier") || bodyParams.tier || "pass").toLowerCase();
+      const plan = MPP_PASS_PLANS[tierKey];
+      if (!plan) {
+        return new Response(JSON.stringify({ error: "invalid_tier", available: Object.keys(MPP_PASS_PLANS), charged: false }), {
+          status: 400,
+          headers: { ...cors, "Content-Type": "application/json" }
+        });
+      }
+      const mppPassCfg = {
+        name: plan.name,
+        amountMicro: plan.amountCents * 10000,
+        stripeCents: plan.amountCents,
+        priceDisplay: `$${(plan.amountCents / 100).toFixed(2)} USD`,
+        description: `${plan.name} — Valid across AgentFuel402, CanaryGuard-402, and RugShield-402`,
+        inputSchema: { type: "object", properties: { tier: { type: "string", enum: ["pass", "starter", "pro"] } } },
+        outputSchema: { type: "object", properties: { status: { type: "string" }, api_key: { type: "string" } } }
+      };
+
+      const mppHdr = extractPaymentSchemeHeader(req);
+      const paymentHdr = req.headers.get("PAYMENT-SIGNATURE") || req.headers.get("X-PAYMENT") || req.headers.get("payment-signature");
+      if (!mppHdr && !paymentHdr) {
+        return await build402Challenge(req, path, undefined, mppPassCfg, env);
+      }
+
+      if (!hasSigningSecretConfigured(env)) {
+        return new Response(JSON.stringify({
+          status: "error",
+          error: "signing_secret_not_configured",
+          charged: false,
+          message: "Pass signing key is not configured on this worker isolate."
+        }, null, 2), { status: 503, headers: { ...cors, "Content-Type": "application/json" } });
+      }
+
+      if (mppHdr) {
+        try {
+          const credential = parsePaymentCredentialToken(mppHdr);
+          const mppRes = await settleStripeMppCredential({
+            credential,
+            env,
+            serviceSlug: "agentfuel402-mpp-pass",
+            expectedRealms: [url.hostname, "agentfuel402.ak10082247.workers.dev"],
+            minAmountCents: plan.amountCents
+          });
+          return new Response(JSON.stringify({
+            status: "active",
+            method: "stripe",
+            tier: mppRes.tier,
+            sku: mppRes.sku,
+            api_key: mppRes.apiKey,
+            expires_at: mppRes.apiKeyExpiresAt,
+            payment_intent: mppRes.paymentIntentId,
+            amount_cents: mppRes.amountCents,
+            currency: mppRes.currency,
+            valid_on: [
+              "https://agentfuel402.ak10082247.workers.dev",
+              "https://canaryguard-402.onrender.com",
+              "https://rugshield-402.onrender.com"
+            ],
+            usage: "Send Authorization: Bearer <api_key> or X-API-Key: <api_key>"
+          }, null, 2), {
+            status: 200,
+            headers: {
+              ...cors,
+              "Content-Type": "application/json",
+              "Cache-Control": "no-store",
+              "Payment-Receipt": mppRes.receiptHeader,
+              "X-Kurox-Auth": "stripe-mpp",
+              "X-Kurox-Tier": mppRes.tier,
+              "X-Kurox-Api-Key": mppRes.apiKey,
+              "X-Kurox-Api-Key-Expires": mppRes.apiKeyExpiresAt
+            }
+          });
+        } catch (err) {
+          if (err?.httpStatus === 503) {
+            return new Response(JSON.stringify({ status: "error", error: "stripe_mpp_unavailable", charged: false, message: err.message }), {
+              status: 503,
+              headers: { ...cors, "Content-Type": "application/json" }
+            });
+          }
+          return await build402Challenge(req, path, `Payment validation rejected: ${err.message}`, mppPassCfg, env);
+        }
+      }
+
+      let paymentPrep;
+      try {
+        paymentPrep = await validateAndVerifyPayAI(req, path, paymentHdr, mppPassCfg);
+      } catch (verifyErr) {
+        return await build402Challenge(req, path, `Payment validation rejected: ${verifyErr.message}`, mppPassCfg, env);
+      }
+      let receipt;
+      try {
+        receipt = await settlePayAI(paymentPrep);
+      } catch (settleErr) {
+        return new Response(JSON.stringify({
+          status: "error",
+          error: "settlement_failed",
+          charged: false,
+          message: `On-chain settlement could not be completed: ${settleErr.message}`
+        }, null, 2), { status: 502, headers: { ...cors, "Content-Type": "application/json" } });
+      }
+      const nowSec = Math.floor(Date.now() / 1000);
+      const expSec = nowSec + plan.durationSeconds;
+      const apiKey = await signKuroxToken({
+        typ: "api_key",
+        sid: receipt.transaction,
+        sku: plan.sku,
+        tier: plan.tier,
+        iat: nowSec,
+        exp: expSec
+      }, env.KUROX_SIGNING_SECRET, "sk_kurox_v1");
+      const b64Receipt = btoa(JSON.stringify(receipt));
+      return new Response(JSON.stringify({
+        status: "active",
+        method: "x402",
+        tier: plan.tier,
+        sku: plan.sku,
+        api_key: apiKey,
+        expires_at: new Date(expSec * 1000).toISOString(),
+        tx_hash: receipt.transaction,
+        network: receipt.network,
+        payer: receipt.payer,
+        valid_on: [
+          "https://agentfuel402.ak10082247.workers.dev",
+          "https://canaryguard-402.onrender.com",
+          "https://rugshield-402.onrender.com"
+        ],
+        usage: "Send Authorization: Bearer <api_key> or X-API-Key: <api_key>"
+      }, null, 2), {
+        status: 200,
+        headers: {
+          ...cors,
+          "Content-Type": "application/json",
+          "Cache-Control": "no-store",
+          "PAYMENT-RESPONSE": b64Receipt,
+          "X-Payment-Response": b64Receipt,
+          "X-Kurox-Api-Key": apiKey,
+          "X-Kurox-Api-Key-Expires": new Date(expSec * 1000).toISOString()
+        }
+      });
+    }
+
+    // Internal signed relay endpoint for sibling Kurox services (CanaryGuard / RugShield)
+    if (path === "/internal/mpp/stripe/verify") {
+      if (req.method !== "POST") {
+        return new Response(JSON.stringify({ ok: false, error: "Method not allowed", charged: false }), {
+          status: 405,
+          headers: { ...cors, "Content-Type": "application/json" }
+        });
+      }
+      const rawBody = await req.text();
+      let relayAuth;
+      try {
+        relayAuth = await verifyInternalMppRelayRequest(req, rawBody, env);
+      } catch (authErr) {
+        return new Response(JSON.stringify({ ok: false, error: "unauthorized_internal_relay", message: authErr.message, charged: false }), {
+          status: authErr.httpStatus || 401,
+          headers: { ...cors, "Content-Type": "application/json" }
+        });
+      }
+      let payload;
+      try {
+        payload = JSON.parse(rawBody);
+      } catch {
+        return new Response(JSON.stringify({ ok: false, error: "invalid_json", charged: false }), {
+          status: 400,
+          headers: { ...cors, "Content-Type": "application/json" }
+        });
+      }
+      try {
+        const expectedRealms = payload.expectedRealm
+          ? [String(payload.expectedRealm), ...ALLOWED_INTERNAL_REALMS]
+          : Array.from(ALLOWED_INTERNAL_REALMS);
+        const settled = await settleStripeMppCredential({
+          credential: payload.credential,
+          env,
+          serviceSlug: payload.service || relayAuth.service,
+          expectedRealms,
+          minAmountCents: Math.max(STRIPE_MIN_USD_CENTS, Number(payload.minAmountCents) || STRIPE_MIN_USD_CENTS),
+        });
+        return new Response(JSON.stringify(settled), {
+          status: 200,
+          headers: { ...cors, "Content-Type": "application/json", "Cache-Control": "no-store" }
+        });
+      } catch (settleErr) {
+        return new Response(JSON.stringify({
+          ok: false,
+          charged: false,
+          error: "stripe_mpp_verification_failed",
+          message: settleErr.message
+        }), {
+          status: settleErr.httpStatus || 402,
+          headers: { ...cors, "Content-Type": "application/json", "Cache-Control": "no-store" }
+        });
+      }
     }
 
     // -------------------------------------------------------------------------
@@ -2873,25 +3245,42 @@ Endpoints:
           }), { status: bearerAuth.status || 401, headers: { ...cors, "Content-Type": "application/json" } });
         }
 
-        // Step 1: Verify payment authorization BEFORE tool execution (or bypass via verified Kurox Bearer API key or RapidAPI proxy secret)
+        // Step 1: Verify payment authorization BEFORE tool execution (or bypass via verified Kurox Bearer API key, Stripe MPP, or RapidAPI proxy secret)
         let paymentPrep = null;
+        let mppCredential = null;
         if (!isRapidApi && !bearerAuth.valid) {
+          const mppHttpHdr = extractPaymentSchemeHeader(req);
+          const mppMetaCred = params?._meta?.["org.paymentauth/credential"];
           const paymentHdr = req.headers.get("PAYMENT-SIGNATURE") || req.headers.get("X-PAYMENT") || params?._meta?.["x402/payment"];
 
-          if (!paymentHdr) {
-            return mcpPaymentRequiredResponse(
+          if (!mppHttpHdr && !mppMetaCred && !paymentHdr) {
+            return await mcpPaymentRequiredResponse(
               cors,
               id,
               req,
               toolRoute,
-              "Payment required: attach x402 payment in params._meta['x402/payment'] or PAYMENT-SIGNATURE header, or pass Authorization: Bearer sk_kurox_v1.* (or use free REST /v1/preview/* routes)."
+              "Payment required: attach Stripe MPP (Authorization: Payment / _meta['org.paymentauth/credential']), x402 payment (_meta['x402/payment'] / PAYMENT-SIGNATURE), or Authorization: Bearer sk_kurox_v1.*",
+              env
             );
           }
 
-          try {
-            paymentPrep = await validateAndVerifyPayAI(req, toolRoute, paymentHdr);
-          } catch (verifyErr) {
-            return mcpPaymentRequiredResponse(cors, id, req, toolRoute, `Payment validation rejected: ${verifyErr.message}`);
+          if (mppHttpHdr || mppMetaCred) {
+            try {
+              mppCredential = mppHttpHdr
+                ? parsePaymentCredentialToken(mppHttpHdr)
+                : (typeof mppMetaCred === "string"
+                    ? parsePaymentCredentialToken(`Payment ${mppMetaCred}`)
+                    : normalizeCredentialObject(mppMetaCred));
+              await verifyStripeChallengeAndCredential(mppCredential, env, [url.hostname, "agentfuel402.ak10082247.workers.dev"]);
+            } catch (verifyErr) {
+              return await mcpPaymentRequiredResponse(cors, id, req, toolRoute, `Stripe MPP validation rejected: ${verifyErr.message}`, env);
+            }
+          } else {
+            try {
+              paymentPrep = await validateAndVerifyPayAI(req, toolRoute, paymentHdr);
+            } catch (verifyErr) {
+              return await mcpPaymentRequiredResponse(cors, id, req, toolRoute, `Payment validation rejected: ${verifyErr.message}`, env);
+            }
           }
         }
 
@@ -2926,18 +3315,41 @@ Endpoints:
 
         // Step 3: Settle verified payment AFTER successful execution
         let meta = {};
+        const mcpOutHeaders = { ...cors, "Content-Type": "application/json" };
         if (isRapidApi) {
           meta["rapidapi/auth"] = { mode: "proxy-secret" };
         }
         if (bearerAuth.valid) {
           meta["kurox/auth"] = { mode: "bearer-api-key", tier: bearerAuth.payload.tier, sid: bearerAuth.payload.sid };
         }
-        if (paymentPrep) {
+        if (mppCredential) {
+          try {
+            const mppSettlement = await settleStripeMppCredential({
+              credential: mppCredential,
+              env,
+              serviceSlug: "agentfuel402-mcp",
+              expectedRealms: [url.hostname, "agentfuel402.ak10082247.workers.dev"],
+              minAmountCents: STRIPE_MIN_USD_CENTS
+            });
+            meta["org.paymentauth/receipt"] = mppSettlement.receipt;
+            meta["kurox/api-key"] = {
+              api_key: mppSettlement.apiKey,
+              expires_at: mppSettlement.apiKeyExpiresAt,
+              tier: mppSettlement.tier,
+            };
+            mcpOutHeaders["Payment-Receipt"] = mppSettlement.receiptHeader;
+            mcpOutHeaders["X-Kurox-Api-Key"] = mppSettlement.apiKey;
+            mcpOutHeaders["X-Kurox-Api-Key-Expires"] = mppSettlement.apiKeyExpiresAt;
+            mcpOutHeaders["X-Kurox-Auth"] = "stripe-mpp";
+          } catch (settleErr) {
+            return await mcpPaymentRequiredResponse(cors, id, req, toolRoute, `Stripe MPP settlement failed: ${settleErr.message}`, env);
+          }
+        } else if (paymentPrep) {
           try {
             const receipt = await settlePayAI(paymentPrep);
             meta["x402/payment-response"] = receipt;
           } catch (settleErr) {
-            return mcpPaymentRequiredResponse(cors, id, req, toolRoute, `Settlement failed: ${settleErr.message}`);
+            return await mcpPaymentRequiredResponse(cors, id, req, toolRoute, `Settlement failed: ${settleErr.message}`, env);
           }
         }
 
@@ -2949,7 +3361,7 @@ Endpoints:
             isError: false,
             _meta: meta
           }
-        }), { status: 200, headers: { ...cors, "Content-Type": "application/json" } });
+        }), { status: 200, headers: mcpOutHeaders });
       }
 
       return new Response(JSON.stringify({ jsonrpc: "2.0", id, error: { code: -32601, message: "Method not found" } }), { status: 200, headers: cors });
@@ -2975,20 +3387,31 @@ Endpoints:
         });
       }
 
-      // Step 1: Pre-Verify Payment Authorization via PayAI Facilitator (or bypass via verified Kurox Bearer API key or RapidAPI proxy secret)
+      // Step 1: Pre-Verify Payment Authorization (Stripe MPP or PayAI x402) before execution
       let paymentPrep = null;
+      let mppCredential = null;
       if (!isRapidApi && !bearerAuth.valid) {
+        const mppHdr = extractPaymentSchemeHeader(req);
         const paymentHdr = req.headers.get("PAYMENT-SIGNATURE") || req.headers.get("X-PAYMENT") || req.headers.get("payment-signature");
 
-        if (!paymentHdr) {
-          return build402Challenge(req, path);
+        if (!mppHdr && !paymentHdr) {
+          return await build402Challenge(req, path, undefined, null, env);
         }
 
-        try {
-          paymentPrep = await validateAndVerifyPayAI(req, path, paymentHdr);
-        } catch (verifyErr) {
-          // Negative test proof: invalid or dummy payment headers return HTTP 402 with details
-          return build402Challenge(req, path, `Payment validation rejected: ${verifyErr.message}`);
+        if (mppHdr) {
+          try {
+            mppCredential = parsePaymentCredentialToken(mppHdr);
+            await verifyStripeChallengeAndCredential(mppCredential, env, [url.hostname, "agentfuel402.ak10082247.workers.dev"]);
+          } catch (verifyErr) {
+            return await build402Challenge(req, path, `Stripe MPP validation rejected: ${verifyErr.message}`, null, env);
+          }
+        } else {
+          try {
+            paymentPrep = await validateAndVerifyPayAI(req, path, paymentHdr);
+          } catch (verifyErr) {
+            // Negative test proof: invalid or dummy payment headers return HTTP 402 with details
+            return await build402Challenge(req, path, `Payment validation rejected: ${verifyErr.message}`, null, env);
+          }
         }
       }
 
@@ -3046,9 +3469,28 @@ Endpoints:
         });
       }
 
-      // Step 3: Target data is confirmed valid! Now Settle payment on-chain
+      // Step 3: Target data is confirmed valid! Now settle payment (Stripe MPP or PayAI x402)
       let receipt = null;
-      if (paymentPrep) {
+      let mppSettlement = null;
+      if (mppCredential) {
+        try {
+          mppSettlement = await settleStripeMppCredential({
+            credential: mppCredential,
+            env,
+            serviceSlug: "agentfuel402",
+            expectedRealms: [url.hostname, "agentfuel402.ak10082247.workers.dev"],
+            minAmountCents: STRIPE_MIN_USD_CENTS
+          });
+        } catch (settleErr) {
+          if (settleErr?.httpStatus === 503) {
+            return new Response(JSON.stringify({ error: "stripe_mpp_unavailable", charged: false, message: settleErr.message }), {
+              status: 503,
+              headers: { ...cors, "Content-Type": "application/json" }
+            });
+          }
+          return await build402Challenge(req, path, `Stripe MPP settlement rejected: ${settleErr.message}`, null, env);
+        }
+      } else if (paymentPrep) {
         try {
           receipt = await settlePayAI(paymentPrep);
         } catch (settleErr) {
@@ -3077,6 +3519,14 @@ Endpoints:
       if (bearerAuth.valid) {
         outHeaders["X-Kurox-Auth"] = "bearer-api-key";
         outHeaders["X-Kurox-Tier"] = bearerAuth.payload.tier || "api_key";
+      }
+
+      if (mppSettlement) {
+        outHeaders["Payment-Receipt"] = mppSettlement.receiptHeader;
+        outHeaders["X-Kurox-Auth"] = "stripe-mpp";
+        outHeaders["X-Kurox-Tier"] = mppSettlement.tier;
+        outHeaders["X-Kurox-Api-Key"] = mppSettlement.apiKey;
+        outHeaders["X-Kurox-Api-Key-Expires"] = mppSettlement.apiKeyExpiresAt;
       }
 
       if (receipt) {
