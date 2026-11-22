@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-21T19:24:41.053866+00:00",
+  "updated_at": "2026-11-22T01:25:14.036624+00:00",
   "suppressed_emails": [
     "paulalexeev10@gmail.com",
     "serge.lopes.94@free.fr",
@@ -312,7 +312,13 @@
     "syedshaban785@gmail.com",
     "hello@craftcms.com",
     "hi@zachshallbetter.com",
-    "hello@hubbub.page"
+    "hello@hubbub.page",
+    "learnder@gmail.com",
+    "gahonsh@gmail.com",
+    "hello@nayem.page",
+    "maksim@martirosoff.ru",
+    "hello@dasaas.com",
+    "hello@hearthenapp.com"
   ],
   "contacted_users": [
     "bennyjo",
@@ -614,7 +620,13 @@
     "syedshabandeve",
     "craftcms",
     "zachshallbetter",
-    "roansh"
+    "roansh",
+    "teethaking",
+    "gahonsh-blip",
+    "nasratulnayem",
+    "kalbac",
+    "aeskiev",
+    "mamorales"
   ],
   "history": [
     {
@@ -2834,6 +2846,60 @@
       "company": "Hubbub",
       "repo": "https://hubbub.page",
       "sent_date": "2026-11-21T19:24:41.053842+00:00"
+    },
+    {
+      "username": "teethaking",
+      "email": "learnder@gmail.com",
+      "track": "segment_agency",
+      "lead_source": "agency_org_search",
+      "company": "ezocha-farm-website.vercel.app",
+      "repo": "teethaking/ezocha-farm-website",
+      "sent_date": "2026-11-22T01:23:50.872758+00:00"
+    },
+    {
+      "username": "gahonsh-blip",
+      "email": "gahonsh@gmail.com",
+      "track": "segment_agency",
+      "lead_source": "agency_org_search",
+      "company": "Gahonsh Freelancing",
+      "repo": "gahonsh-blip/painter-plus-website",
+      "sent_date": "2026-11-22T01:24:04.007045+00:00"
+    },
+    {
+      "username": "nasratulnayem",
+      "email": "hello@nayem.page",
+      "track": "segment_ecom",
+      "lead_source": "ecom_brand_search",
+      "company": "nayem.dev",
+      "repo": "nasratulnayem/importon-bridge",
+      "sent_date": "2026-11-22T01:24:29.856807+00:00"
+    },
+    {
+      "username": "kalbac",
+      "email": "maksim@martirosoff.ru",
+      "track": "segment_ecom",
+      "lead_source": "ecom_brand_search",
+      "company": "Woodev",
+      "repo": "kalbac/woodev-plugin-framework",
+      "sent_date": "2026-11-22T01:24:43.125464+00:00"
+    },
+    {
+      "username": "aeskiev",
+      "email": "hello@dasaas.com",
+      "track": "segment_ai_saas",
+      "lead_source": "show_hn_launch",
+      "company": "Matinee",
+      "repo": "https://matineegame.com/",
+      "sent_date": "2026-11-22T01:24:59.523883+00:00"
+    },
+    {
+      "username": "mamorales",
+      "email": "hello@hearthenapp.com",
+      "track": "segment_ai_saas",
+      "lead_source": "show_hn_launch",
+      "company": "Hearthenapp",
+      "repo": "https://hearthenapp.com",
+      "sent_date": "2026-11-22T01:25:14.036601+00:00"
     }
   ]
 }
