@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-22T11:36:05.309162+00:00",
+  "updated_at": "2026-11-22T19:47:41.216769+00:00",
   "suppressed_emails": [
     "paulalexeev10@gmail.com",
     "serge.lopes.94@free.fr",
@@ -324,7 +324,13 @@
     "integration@send21.io",
     "icu090@gmail.com",
     "oliveraltergott@protonmail.com",
-    "contact@realeditpdf.com"
+    "contact@realeditpdf.com",
+    "itp_java@googlegroups.com",
+    "krishnaenterpriseandservices@gmail.com",
+    "liyan215500115@gmail.com",
+    "igor.trnko1996@gmail.com",
+    "founder@itsuki.app",
+    "hello@visionflick.com"
   ],
   "contacted_users": [
     "bennyjo",
@@ -638,7 +644,13 @@
     "send21io",
     "n-for-all",
     "oalterg",
-    "lucky_dev0"
+    "lucky_dev0",
+    "perujug",
+    "krishnaenterprise",
+    "liyan215500115-lang",
+    "igortrnko",
+    "12ziyad",
+    "bjoern_live"
   ],
   "history": [
     {
@@ -2966,6 +2978,60 @@
       "company": "RealEditPDF",
       "repo": "https://realeditpdf.com/",
       "sent_date": "2026-11-22T11:36:05.309144+00:00"
+    },
+    {
+      "username": "perujug",
+      "email": "itp_java@googlegroups.com",
+      "track": "segment_agency",
+      "lead_source": "agency_org_search",
+      "company": "perujug.github.io",
+      "repo": "perujug/jconfperu",
+      "sent_date": "2026-11-22T19:46:29.156187+00:00"
+    },
+    {
+      "username": "krishnaenterprise",
+      "email": "krishnaenterpriseandservices@gmail.com",
+      "track": "segment_agency",
+      "lead_source": "agency_org_search",
+      "company": "krishnaenterprise.github.io",
+      "repo": "krishnaenterprise/website",
+      "sent_date": "2026-11-22T19:46:41.139619+00:00"
+    },
+    {
+      "username": "liyan215500115-lang",
+      "email": "liyan215500115@gmail.com",
+      "track": "segment_ecom",
+      "lead_source": "ecom_brand_search",
+      "company": "flashant.vercel.app",
+      "repo": "liyan215500115-lang/Flashant",
+      "sent_date": "2026-11-22T19:46:59.564439+00:00"
+    },
+    {
+      "username": "igortrnko",
+      "email": "igor.trnko1996@gmail.com",
+      "track": "segment_ecom",
+      "lead_source": "ecom_brand_search",
+      "company": "igortrnko.com",
+      "repo": "igortrnko/rn-barcode-renderer",
+      "sent_date": "2026-11-22T19:47:11.672509+00:00"
+    },
+    {
+      "username": "12ziyad",
+      "email": "founder@itsuki.app",
+      "track": "segment_ai_saas",
+      "lead_source": "show_hn_launch",
+      "company": "Ai",
+      "repo": "https://ai.fissionagents.com/#models",
+      "sent_date": "2026-11-22T19:47:30.722762+00:00"
+    },
+    {
+      "username": "bjoern_live",
+      "email": "hello@visionflick.com",
+      "track": "segment_ai_saas",
+      "lead_source": "show_hn_launch",
+      "company": "Visionflick",
+      "repo": "https://www.visionflick.com/",
+      "sent_date": "2026-11-22T19:47:41.216748+00:00"
     }
   ]
 }
