@@ -1862,42 +1862,46 @@ async function handleWorkerFetch(req, env, ctx) {
           "/v1/fuel/b2b-intent-leads": {
             get: {
               summary: "Fetch B2B Intent Leads",
+              "x-payment-info": { amount: "50", currency: "usd", method: "stripe", intent: "charge" },
               responses: {
                 "200": { description: "Verified live B2B intent leads data" },
-                "402": { description: "Payment Required via x402 V2 (0.010 USDC on Base or Solana)" }
+                "402": { description: "Payment Required via x402 V2 (0.010 USDC on Base or Solana) or Stripe MPP ($0.50 USD + 7d Unified Key)" }
               }
             }
           },
           "/v1/fuel/llm-clean-markdown": {
             get: {
               summary: "Clean Markdown & Sanitizer",
-              parameters: [{ name: "url", in: "query", required: true, schema: { type: "string" } }],
+              "x-payment-info": { amount: "50", currency: "usd", method: "stripe", intent: "charge" },
+              parameters: [{ name: "url", in: "query", required: true, schema: { type: "string", example: "https://example.com" } }],
               responses: {
                 "200": { description: "Clean Markdown with prompt-injection defense" },
-                "402": { description: "Payment Required (0.005 USDC)" }
+                "402": { description: "Payment Required (0.005 USDC or $0.50 USD Stripe MPP)" }
               }
             }
           },
           "/v1/fuel/ecom-price-stock": {
             get: {
               summary: "E-Commerce Price & Stock Check",
-              parameters: [{ name: "url", in: "query", required: true, schema: { type: "string" } }],
+              "x-payment-info": { amount: "50", currency: "usd", method: "stripe", intent: "charge" },
+              parameters: [{ name: "url", in: "query", required: true, schema: { type: "string", example: "https://example.com" } }],
               responses: {
                 "200": { description: "Live price, stock boolean, and SKU details" },
-                "402": { description: "Payment Required (0.005 USDC)" }
+                "402": { description: "Payment Required (0.005 USDC or $0.50 USD Stripe MPP)" }
               }
             }
           },
           "/v1/fuel/sdk-live-spec": {
             get: {
               summary: "SDK Live Spec & Breaking Change Monitor",
+              "x-payment-info": { amount: "50", currency: "usd", method: "stripe", intent: "charge" },
               parameters: [
-                { name: "package", in: "query", required: true, schema: { type: "string" } },
+                { name: "package", in: "query", required: true, schema: { type: "string", example: "mppx" } },
                 { name: "ecosystem", in: "query", schema: { type: "string", enum: ["pypi", "npm"], default: "pypi" } }
               ],
               responses: {
                 "200": { description: "Live package version and release notes" },
-                "402": { description: "Payment Required (0.005 USDC)" },
+                "402": { description: "Payment Required (0.005 USDC or $0.50 USD Stripe MPP)" },
                 "422": { description: "Upstream target unreachable (charged: false)" }
               }
             }
@@ -1906,10 +1910,12 @@ async function handleWorkerFetch(req, env, ctx) {
             post: {
               summary: "Reverse Engineer Anything (REA)",
               description: "Detects frameworks, hidden REST/GraphQL endpoints, hydration state, and generates OpenAPI 3.1 specs for a target URL.",
+              "x-payment-info": { amount: "50", currency: "usd", method: "stripe", intent: "charge" },
               requestBody: {
                 required: true,
                 content: {
                   "application/json": {
+                    example: { url: "https://example.com" },
                     schema: {
                       type: "object",
                       properties: { url: { type: "string", format: "uri" } },
@@ -1920,7 +1926,7 @@ async function handleWorkerFetch(req, env, ctx) {
               },
               responses: {
                 "200": { description: "Extracted API endpoints, hydration state, and OpenAPI 3.1 spec" },
-                "402": { description: "Payment Required (0.020 USDC)" },
+                "402": { description: "Payment Required (0.020 USDC or $0.50 USD Stripe MPP)" },
                 "422": { description: "Upstream target unreachable (charged: false)" }
               }
             }
@@ -1933,11 +1939,13 @@ async function handleWorkerFetch(req, env, ctx) {
           },
           "/v1/store/buy": {
             post: {
-              summary: "Purchase Store Dataset or Security Audit Certificate via x402 V2 (Base or Solana USDC)",
+              summary: "Purchase Store Dataset or Security Audit Certificate via x402 V2 (Base or Solana USDC) or Stripe MPP",
+              "x-payment-info": { amount: "1900", currency: "usd", method: "stripe", intent: "charge" },
               requestBody: {
                 required: true,
                 content: {
                   "application/json": {
+                    example: { sku: "base-alpha-feed", format: "json" },
                     schema: {
                       type: "object",
                       properties: {
