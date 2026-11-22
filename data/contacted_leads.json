@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-22T01:25:14.036624+00:00",
+  "updated_at": "2026-11-22T11:36:05.309162+00:00",
   "suppressed_emails": [
     "paulalexeev10@gmail.com",
     "serge.lopes.94@free.fr",
@@ -318,7 +318,13 @@
     "hello@nayem.page",
     "maksim@martirosoff.ru",
     "hello@dasaas.com",
-    "hello@hearthenapp.com"
+    "hello@hearthenapp.com",
+    "sandeepmudhiraj7500@gmail.com",
+    "ilhamfrafli@gmail.com",
+    "integration@send21.io",
+    "icu090@gmail.com",
+    "oliveraltergott@protonmail.com",
+    "contact@realeditpdf.com"
   ],
   "contacted_users": [
     "bennyjo",
@@ -626,7 +632,13 @@
     "nasratulnayem",
     "kalbac",
     "aeskiev",
-    "mamorales"
+    "mamorales",
+    "sandeepai369",
+    "illhammf",
+    "send21io",
+    "n-for-all",
+    "oalterg",
+    "lucky_dev0"
   ],
   "history": [
     {
@@ -2900,6 +2912,60 @@
       "company": "Hearthenapp",
       "repo": "https://hearthenapp.com",
       "sent_date": "2026-11-22T01:25:14.036601+00:00"
+    },
+    {
+      "username": "sandeepai369",
+      "email": "sandeepmudhiraj7500@gmail.com",
+      "track": "segment_agency",
+      "lead_source": "agency_org_search",
+      "company": "Student",
+      "repo": "SandeepAi369/xel-studio",
+      "sent_date": "2026-11-22T11:34:47.785134+00:00"
+    },
+    {
+      "username": "illhammf",
+      "email": "ilhamfrafli@gmail.com",
+      "track": "segment_agency",
+      "lead_source": "agency_org_search",
+      "company": "Universitas Esa Unggul",
+      "repo": "illhammf/boilerplate",
+      "sent_date": "2026-11-22T11:35:02.435695+00:00"
+    },
+    {
+      "username": "send21io",
+      "email": "integration@send21.io",
+      "track": "segment_ecom",
+      "lead_source": "ecom_brand_search",
+      "company": "send21.io",
+      "repo": "send21io/send21-examples",
+      "sent_date": "2026-11-22T11:35:23.363463+00:00"
+    },
+    {
+      "username": "n-for-all",
+      "email": "icu090@gmail.com",
+      "track": "segment_ecom",
+      "lead_source": "ecom_brand_search",
+      "company": "Ajaxy",
+      "repo": "n-for-all/amerta",
+      "sent_date": "2026-11-22T11:35:38.023573+00:00"
+    },
+    {
+      "username": "oalterg",
+      "email": "oliveraltergott@protonmail.com",
+      "track": "segment_ai_saas",
+      "lead_source": "show_hn_launch",
+      "company": "HomeBrain",
+      "repo": "https://www.homebrain.house",
+      "sent_date": "2026-11-22T11:35:53.071777+00:00"
+    },
+    {
+      "username": "lucky_dev0",
+      "email": "contact@realeditpdf.com",
+      "track": "segment_ai_saas",
+      "lead_source": "show_hn_launch",
+      "company": "RealEditPDF",
+      "repo": "https://realeditpdf.com/",
+      "sent_date": "2026-11-22T11:36:05.309144+00:00"
     }
   ]
 }
