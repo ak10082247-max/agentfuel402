@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-23T01:49:03.010184+00:00",
+  "updated_at": "2026-11-23T13:00:07.147988+00:00",
   "suppressed_emails": [
     "paulalexeev10@gmail.com",
     "serge.lopes.94@free.fr",
@@ -335,7 +335,11 @@
     "ziyuecommentary@gmail.com",
     "michal.sek@swmansion.com",
     "sammyarthurflints@gmail.com",
-    "gdanzo@gmail.com"
+    "gdanzo@gmail.com",
+    "me@duarteocarmo.com",
+    "ashoksiyol45@gmail.com",
+    "contact@symidic.xyz",
+    "contact@seomatic.ai"
   ],
   "contacted_users": [
     "bennyjo",
@@ -660,7 +664,11 @@
     "ziyuecommentary",
     "michalsek",
     "calflint",
-    "danwills"
+    "danwills",
+    "duarteocarmo",
+    "ashoksiyol",
+    "abdulrehman-symidic",
+    "minh42"
   ],
   "history": [
     {
@@ -3087,6 +3095,42 @@
       "company": "UltraIterator",
       "repo": "https://danwills.github.io/ultraiterator/",
       "sent_date": "2026-11-23T01:49:03.010159+00:00"
+    },
+    {
+      "username": "duarteocarmo",
+      "email": "me@duarteocarmo.com",
+      "track": "segment_agency",
+      "lead_source": "agency_org_search",
+      "company": "Independent",
+      "repo": "duarteocarmo/duarteocarmo.com",
+      "sent_date": "2026-11-23T12:59:19.852204+00:00"
+    },
+    {
+      "username": "ashoksiyol",
+      "email": "ashoksiyol45@gmail.com",
+      "track": "segment_agency",
+      "lead_source": "agency_org_search",
+      "company": "ashoksiyol.github.io",
+      "repo": "ashoksiyol/ashoksiyol.github.io",
+      "sent_date": "2026-11-23T12:59:31.320376+00:00"
+    },
+    {
+      "username": "abdulrehman-symidic",
+      "email": "contact@symidic.xyz",
+      "track": "segment_ecom",
+      "lead_source": "ecom_brand_search",
+      "company": "\u26a1 SYMIDIC",
+      "repo": "abdulrehman-symidic/deflectai",
+      "sent_date": "2026-11-23T12:59:53.047778+00:00"
+    },
+    {
+      "username": "minh42",
+      "email": "contact@seomatic.ai",
+      "track": "segment_ecom",
+      "lead_source": "ecom_brand_search",
+      "company": "seomatic.ai",
+      "repo": "Minh42/seomatic-mcp",
+      "sent_date": "2026-11-23T13:00:07.147967+00:00"
     }
   ]
 }
