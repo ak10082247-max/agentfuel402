@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-22T19:47:41.216769+00:00",
+  "updated_at": "2026-11-23T01:49:03.010184+00:00",
   "suppressed_emails": [
     "paulalexeev10@gmail.com",
     "serge.lopes.94@free.fr",
@@ -330,7 +330,12 @@
     "liyan215500115@gmail.com",
     "igor.trnko1996@gmail.com",
     "founder@itsuki.app",
-    "hello@visionflick.com"
+    "hello@visionflick.com",
+    "chenxieyuanli@hotmail.com",
+    "ziyuecommentary@gmail.com",
+    "michal.sek@swmansion.com",
+    "sammyarthurflints@gmail.com",
+    "gdanzo@gmail.com"
   ],
   "contacted_users": [
     "bennyjo",
@@ -650,7 +655,12 @@
     "liyan215500115-lang",
     "igortrnko",
     "12ziyad",
-    "bjoern_live"
+    "bjoern_live",
+    "chen-xieyuanli",
+    "ziyuecommentary",
+    "michalsek",
+    "calflint",
+    "danwills"
   ],
   "history": [
     {
@@ -3032,6 +3042,51 @@
       "company": "Visionflick",
       "repo": "https://www.visionflick.com/",
       "sent_date": "2026-11-22T19:47:41.216748+00:00"
+    },
+    {
+      "username": "chen-xieyuanli",
+      "email": "chenxieyuanli@hotmail.com",
+      "track": "segment_agency",
+      "lead_source": "agency_org_search",
+      "company": "chen-xieyuanli.github.io",
+      "repo": "Chen-Xieyuanli/Chen-Xieyuanli.github.io",
+      "sent_date": "2026-11-23T01:47:55.348356+00:00"
+    },
+    {
+      "username": "ziyuecommentary",
+      "email": "ziyuecommentary@gmail.com",
+      "track": "segment_agency",
+      "lead_source": "agency_org_search",
+      "company": "\u5b50\u60a6\u6c49\u5316\u7ec4",
+      "repo": "ZiYueCommentary/CBMR-Web-Admin",
+      "sent_date": "2026-11-23T01:48:08.759658+00:00"
+    },
+    {
+      "username": "michalsek",
+      "email": "michal.sek@swmansion.com",
+      "track": "segment_ecom",
+      "lead_source": "ecom_brand_search",
+      "company": "Software Mansion",
+      "repo": "michalsek/vexflow-native",
+      "sent_date": "2026-11-23T01:48:29.471592+00:00"
+    },
+    {
+      "username": "calflint",
+      "email": "sammyarthurflints@gmail.com",
+      "track": "segment_ecom",
+      "lead_source": "ecom_brand_search",
+      "company": "keelhob.com",
+      "repo": "calflint/keelhob",
+      "sent_date": "2026-11-23T01:48:43.799700+00:00"
+    },
+    {
+      "username": "danwills",
+      "email": "gdanzo@gmail.com",
+      "track": "segment_ai_saas",
+      "lead_source": "show_hn_launch",
+      "company": "UltraIterator",
+      "repo": "https://danwills.github.io/ultraiterator/",
+      "sent_date": "2026-11-23T01:49:03.010159+00:00"
     }
   ]
 }
