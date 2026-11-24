@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-24T02:18:21.721398+00:00",
+  "updated_at": "2026-11-24T13:54:05.432965+00:00",
   "suppressed_emails": [
     "paulalexeev10@gmail.com",
     "serge.lopes.94@free.fr",
@@ -345,7 +345,13 @@
     "hello@tensorpass.app",
     "tushar987gupta@gmail.com",
     "daluan217@wordspies.com",
-    "contact@novyn.ai"
+    "contact@novyn.ai",
+    "s@morgunov.tech",
+    "kelli.johnson@noaa.gov",
+    "yo@robotostudio.com",
+    "contact@wpheka.com",
+    "hello@advent-of-ai-security.com",
+    "ceo@aisma.ai"
   ],
   "contacted_users": [
     "bennyjo",
@@ -680,7 +686,13 @@
     "tensorpass",
     "tushar987",
     "hardicecream",
-    "ahmedashraf"
+    "ahmedashraf",
+    "morgunovtech",
+    "noaa-fims",
+    "robotostudio",
+    "wpheka",
+    "icepuma",
+    "abalex"
   ],
   "history": [
     {
@@ -3197,6 +3209,60 @@
       "company": "Novyn",
       "repo": "https://www.novyn.ai/blog/announcing-novyn-looped-decision-0.9/",
       "sent_date": "2026-11-24T02:18:21.721373+00:00"
+    },
+    {
+      "username": "morgunovtech",
+      "email": "s@morgunov.tech",
+      "track": "segment_agency",
+      "lead_source": "agency_org_search",
+      "company": "morgunov.tech",
+      "repo": "morgunovtech/Fingerprint",
+      "sent_date": "2026-11-24T13:52:35.553335+00:00"
+    },
+    {
+      "username": "noaa-fims",
+      "email": "kelli.johnson@noaa.gov",
+      "track": "segment_agency",
+      "lead_source": "agency_org_search",
+      "company": "noaa-fims.github.io",
+      "repo": "NOAA-FIMS/noaa-fims.github.io",
+      "sent_date": "2026-11-24T13:52:50.109359+00:00"
+    },
+    {
+      "username": "robotostudio",
+      "email": "yo@robotostudio.com",
+      "track": "segment_ecom",
+      "lead_source": "ecom_brand_search",
+      "company": "turbo-start-aisle-web.vercel.app",
+      "repo": "robotostudio/turbo-start-aisle",
+      "sent_date": "2026-11-24T13:53:20.870824+00:00"
+    },
+    {
+      "username": "wpheka",
+      "email": "contact@wpheka.com",
+      "track": "segment_ecom",
+      "lead_source": "ecom_brand_search",
+      "company": "wordpress.org",
+      "repo": "wpheka/wc-backorder-split",
+      "sent_date": "2026-11-24T13:53:34.669875+00:00"
+    },
+    {
+      "username": "icepuma",
+      "email": "hello@advent-of-ai-security.com",
+      "track": "segment_ai_saas",
+      "lead_source": "show_hn_launch",
+      "company": "Advent-of-ai-security",
+      "repo": "https://advent-of-ai-security.com/",
+      "sent_date": "2026-11-24T13:53:54.722568+00:00"
+    },
+    {
+      "username": "abalex",
+      "email": "ceo@aisma.ai",
+      "track": "segment_ai_saas",
+      "lead_source": "show_hn_launch",
+      "company": "Aisma",
+      "repo": "https://aisma.ai/developers",
+      "sent_date": "2026-11-24T13:54:05.432943+00:00"
     }
   ]
 }
