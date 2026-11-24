@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-23T13:00:07.147988+00:00",
+  "updated_at": "2026-11-24T02:18:21.721398+00:00",
   "suppressed_emails": [
     "paulalexeev10@gmail.com",
     "serge.lopes.94@free.fr",
@@ -339,7 +339,13 @@
     "me@duarteocarmo.com",
     "ashoksiyol45@gmail.com",
     "contact@symidic.xyz",
-    "contact@seomatic.ai"
+    "contact@seomatic.ai",
+    "dupitas.reaven@gmail.com",
+    "contact@smalltech.in",
+    "hello@tensorpass.app",
+    "tushar987gupta@gmail.com",
+    "daluan217@wordspies.com",
+    "contact@novyn.ai"
   ],
   "contacted_users": [
     "bennyjo",
@@ -668,7 +674,13 @@
     "duarteocarmo",
     "ashoksiyol",
     "abdulrehman-symidic",
-    "minh42"
+    "minh42",
+    "u-kuro",
+    "smalltechorg",
+    "tensorpass",
+    "tushar987",
+    "hardicecream",
+    "ahmedashraf"
   ],
   "history": [
     {
@@ -3131,6 +3143,60 @@
       "company": "seomatic.ai",
       "repo": "Minh42/seomatic-mcp",
       "sent_date": "2026-11-23T13:00:07.147967+00:00"
+    },
+    {
+      "username": "u-kuro",
+      "email": "dupitas.reaven@gmail.com",
+      "track": "segment_agency",
+      "lead_source": "agency_org_search",
+      "company": "kanshi.vercel.app",
+      "repo": "u-Kuro/Kanshi-Anime-Recommender",
+      "sent_date": "2026-11-24T02:17:07.357578+00:00"
+    },
+    {
+      "username": "smalltechorg",
+      "email": "contact@smalltech.in",
+      "track": "segment_agency",
+      "lead_source": "agency_org_search",
+      "company": "chatbot0.smalltech.in",
+      "repo": "smallTechOrg/chatbot0",
+      "sent_date": "2026-11-24T02:17:19.531507+00:00"
+    },
+    {
+      "username": "tensorpass",
+      "email": "hello@tensorpass.app",
+      "track": "segment_ecom",
+      "lead_source": "ecom_brand_search",
+      "company": "tensorpass.app",
+      "repo": "tensorpass/aiconnect",
+      "sent_date": "2026-11-24T02:17:38.496562+00:00"
+    },
+    {
+      "username": "tushar987",
+      "email": "tushar987gupta@gmail.com",
+      "track": "segment_ecom",
+      "lead_source": "ecom_brand_search",
+      "company": "tushar987.github.io",
+      "repo": "Tushar987/engineering-blog-monitor",
+      "sent_date": "2026-11-24T02:17:50.999299+00:00"
+    },
+    {
+      "username": "hardicecream",
+      "email": "daluan217@wordspies.com",
+      "track": "segment_ai_saas",
+      "lead_source": "show_hn_launch",
+      "company": "Wordspies",
+      "repo": "https://wordspies.com/",
+      "sent_date": "2026-11-24T02:18:08.584755+00:00"
+    },
+    {
+      "username": "ahmedashraf",
+      "email": "contact@novyn.ai",
+      "track": "segment_ai_saas",
+      "lead_source": "show_hn_launch",
+      "company": "Novyn",
+      "repo": "https://www.novyn.ai/blog/announcing-novyn-looped-decision-0.9/",
+      "sent_date": "2026-11-24T02:18:21.721373+00:00"
     }
   ]
 }
