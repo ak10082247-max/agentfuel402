@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-24T13:54:05.432965+00:00",
+  "updated_at": "2026-11-24T23:57:52.033669+00:00",
   "suppressed_emails": [
     "paulalexeev10@gmail.com",
     "serge.lopes.94@free.fr",
@@ -351,7 +351,13 @@
     "yo@robotostudio.com",
     "contact@wpheka.com",
     "hello@advent-of-ai-security.com",
-    "ceo@aisma.ai"
+    "ceo@aisma.ai",
+    "dor.aka.inbox@gmail.com",
+    "bkushwaha.dev@gmail.com",
+    "hi@allscale.io",
+    "privacypolicyupdates@automattic.com",
+    "hello@checkmyapp.dev",
+    "hello@phoundry.app"
   ],
   "contacted_users": [
     "bennyjo",
@@ -692,7 +698,13 @@
     "robotostudio",
     "wpheka",
     "icepuma",
-    "abalex"
+    "abalex",
+    "d0raka",
+    "bsingh6636",
+    "allscale-io",
+    "automattic",
+    "sorokinvj",
+    "mrtrunks"
   ],
   "history": [
     {
@@ -3263,6 +3275,60 @@
       "company": "Aisma",
       "repo": "https://aisma.ai/developers",
       "sent_date": "2026-11-24T13:54:05.432943+00:00"
+    },
+    {
+      "username": "d0raka",
+      "email": "dor.aka.inbox@gmail.com",
+      "track": "segment_agency",
+      "lead_source": "agency_org_search",
+      "company": "d0raka.cc",
+      "repo": "d0raka/d0rz-status",
+      "sent_date": "2026-11-24T23:56:31.164746+00:00"
+    },
+    {
+      "username": "bsingh6636",
+      "email": "bkushwaha.dev@gmail.com",
+      "track": "segment_agency",
+      "lead_source": "agency_org_search",
+      "company": "team-vedak",
+      "repo": "bsingh6636/myPortfolio",
+      "sent_date": "2026-11-24T23:56:43.358261+00:00"
+    },
+    {
+      "username": "allscale-io",
+      "email": "hi@allscale.io",
+      "track": "segment_ecom",
+      "lead_source": "ecom_brand_search",
+      "company": "allscale.io",
+      "repo": "allscale-io/allscale-wordpress-plugin",
+      "sent_date": "2026-11-24T23:57:11.035415+00:00"
+    },
+    {
+      "username": "automattic",
+      "email": "privacypolicyupdates@automattic.com",
+      "track": "segment_ecom",
+      "lead_source": "ecom_brand_search",
+      "company": "automattic.com",
+      "repo": "Automattic/woocommerce-subscriptions-lite",
+      "sent_date": "2026-11-24T23:57:22.659876+00:00"
+    },
+    {
+      "username": "sorokinvj",
+      "email": "hello@checkmyapp.dev",
+      "track": "segment_ai_saas",
+      "lead_source": "show_hn_launch",
+      "company": "CheckMyApp",
+      "repo": "https://checkmyapp.dev",
+      "sent_date": "2026-11-24T23:57:39.039654+00:00"
+    },
+    {
+      "username": "mrtrunks",
+      "email": "hello@phoundry.app",
+      "track": "segment_ai_saas",
+      "lead_source": "show_hn_launch",
+      "company": "Phials",
+      "repo": "https://phials.phoundry.app/",
+      "sent_date": "2026-11-24T23:57:52.033650+00:00"
     }
   ]
 }
