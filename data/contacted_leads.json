@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-24T23:57:52.033669+00:00",
+  "updated_at": "2026-11-25T08:45:42.023254+00:00",
   "suppressed_emails": [
     "paulalexeev10@gmail.com",
     "serge.lopes.94@free.fr",
@@ -357,7 +357,13 @@
     "hi@allscale.io",
     "privacypolicyupdates@automattic.com",
     "hello@checkmyapp.dev",
-    "hello@phoundry.app"
+    "hello@phoundry.app",
+    "mochi0216@proton.me",
+    "hitgalani@gmail.com",
+    "thealirazadev@gmail.com",
+    "developers@bwh.tech",
+    "ingeng2004@adaptorch.com",
+    "hello@whatrunsindia.com"
   ],
   "contacted_users": [
     "bennyjo",
@@ -704,7 +710,13 @@
     "allscale-io",
     "automattic",
     "sorokinvj",
-    "mrtrunks"
+    "mrtrunks",
+    "mochi-sora",
+    "hitgalani",
+    "thealirazadev",
+    "bwhtech",
+    "dmae97",
+    "rishilahoti"
   ],
   "history": [
     {
@@ -3329,6 +3341,60 @@
       "company": "Phials",
       "repo": "https://phials.phoundry.app/",
       "sent_date": "2026-11-24T23:57:52.033650+00:00"
+    },
+    {
+      "username": "mochi-sora",
+      "email": "mochi0216@proton.me",
+      "track": "segment_agency",
+      "lead_source": "agency_org_search",
+      "company": "mochi-sora.github.io",
+      "repo": "Mochi-Sora/SoraOfficialWebsite",
+      "sent_date": "2026-11-25T08:44:36.473563+00:00"
+    },
+    {
+      "username": "hitgalani",
+      "email": "hitgalani@gmail.com",
+      "track": "segment_agency",
+      "lead_source": "agency_org_search",
+      "company": "Learning-Lab",
+      "repo": "hitgalani/Learning-Lab",
+      "sent_date": "2026-11-25T08:44:49.482125+00:00"
+    },
+    {
+      "username": "thealirazadev",
+      "email": "thealirazadev@gmail.com",
+      "track": "segment_ecom",
+      "lead_source": "ecom_brand_search",
+      "company": "ali-raza-ten.vercel.app",
+      "repo": "thealirazadev/shopify-bulk-editor",
+      "sent_date": "2026-11-25T08:45:02.356756+00:00"
+    },
+    {
+      "username": "bwhtech",
+      "email": "developers@bwh.tech",
+      "track": "segment_ecom",
+      "lead_source": "ecom_brand_search",
+      "company": "commera.app",
+      "repo": "bwhtech/commera",
+      "sent_date": "2026-11-25T08:45:15.306334+00:00"
+    },
+    {
+      "username": "dmae97",
+      "email": "ingeng2004@adaptorch.com",
+      "track": "segment_ai_saas",
+      "lead_source": "show_hn_launch",
+      "company": "Adaptorch",
+      "repo": "https://adaptorch.com/",
+      "sent_date": "2026-11-25T08:45:30.125880+00:00"
+    },
+    {
+      "username": "rishilahoti",
+      "email": "hello@whatrunsindia.com",
+      "track": "segment_ai_saas",
+      "lead_source": "show_hn_launch",
+      "company": "Whatrunsindia",
+      "repo": "https://whatrunsindia.com",
+      "sent_date": "2026-11-25T08:45:42.023228+00:00"
     }
   ]
 }
