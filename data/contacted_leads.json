@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-26T03:39:15.485189+00:00",
+  "updated_at": "2026-11-26T17:02:15.502715+00:00",
   "suppressed_emails": [
     "paulalexeev10@gmail.com",
     "serge.lopes.94@free.fr",
@@ -375,7 +375,13 @@
     "hello@walden.us",
     "tahermahram0@gmail.com",
     "jay@olumino.app",
-    "ionmoisei755@gmail.com"
+    "ionmoisei755@gmail.com",
+    "dev@nativityoftheotokos.com",
+    "hello@spiffe.io",
+    "contact@liaison.sh",
+    "priyanshukumarthakur937@gmail.com",
+    "hello@myscreenbreak.com",
+    "you@studio.com"
   ],
   "contacted_users": [
     "bennyjo",
@@ -740,7 +746,13 @@
     "waldenmeditation",
     "dev-taherm",
     "wiyseful",
-    "wayy10"
+    "wayy10",
+    "nativityoftheotokosroc",
+    "spiffe",
+    "liaison-sh",
+    "gravion-ux",
+    "yorgos_kats",
+    "micahele"
   ],
   "history": [
     {
@@ -3527,6 +3539,60 @@
       "company": "Just-dashboard",
       "repo": "https://just-dashboard.com/",
       "sent_date": "2026-11-26T03:39:15.485163+00:00"
+    },
+    {
+      "username": "nativityoftheotokosroc",
+      "email": "dev@nativityoftheotokos.com",
+      "track": "segment_agency",
+      "lead_source": "agency_org_search",
+      "company": "nativityoftheotokos.com",
+      "repo": "NativityOfTheotokosROC/nativity-of-theotokos-website",
+      "sent_date": "2026-11-26T17:00:59.938166+00:00"
+    },
+    {
+      "username": "spiffe",
+      "email": "hello@spiffe.io",
+      "track": "segment_agency",
+      "lead_source": "agency_org_search",
+      "company": "spiffe.io",
+      "repo": "spiffe/spiffe.io",
+      "sent_date": "2026-11-26T17:01:12.311661+00:00"
+    },
+    {
+      "username": "liaison-sh",
+      "email": "contact@liaison.sh",
+      "track": "segment_ecom",
+      "lead_source": "ecom_brand_search",
+      "company": "liaison.sh",
+      "repo": "liaison-sh/liaison",
+      "sent_date": "2026-11-26T17:01:29.838189+00:00"
+    },
+    {
+      "username": "gravion-ux",
+      "email": "priyanshukumarthakur937@gmail.com",
+      "track": "segment_ecom",
+      "lead_source": "ecom_brand_search",
+      "company": "Independent",
+      "repo": "gravion-ux/catalog-forge",
+      "sent_date": "2026-11-26T17:01:42.990085+00:00"
+    },
+    {
+      "username": "yorgos_kats",
+      "email": "hello@myscreenbreak.com",
+      "track": "segment_ai_saas",
+      "lead_source": "show_hn_launch",
+      "company": "Myscreenbreak",
+      "repo": "https://www.myscreenbreak.com/",
+      "sent_date": "2026-11-26T17:02:03.394069+00:00"
+    },
+    {
+      "username": "micahele",
+      "email": "you@studio.com",
+      "track": "segment_ai_saas",
+      "lead_source": "show_hn_launch",
+      "company": "AutoCaptions",
+      "repo": "https://autocaptions.cc",
+      "sent_date": "2026-11-26T17:02:15.502692+00:00"
     }
   ]
 }
