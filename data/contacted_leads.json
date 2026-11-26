@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-25T19:24:07.776234+00:00",
+  "updated_at": "2026-11-26T03:39:15.485189+00:00",
   "suppressed_emails": [
     "paulalexeev10@gmail.com",
     "serge.lopes.94@free.fr",
@@ -369,7 +369,13 @@
     "contact@trylexsis.com",
     "yoonsunlee150@gmail.com",
     "arora.abhilaksh@gmail.com",
-    "founders@skillsync.com"
+    "founders@skillsync.com",
+    "contact@ewancroft.uk",
+    "keithneryprof@gmail.com",
+    "hello@walden.us",
+    "tahermahram0@gmail.com",
+    "jay@olumino.app",
+    "ionmoisei755@gmail.com"
   ],
   "contacted_users": [
     "bennyjo",
@@ -728,7 +734,13 @@
     "aetheria-labs1",
     "persephonepunch",
     "abhilaksharora",
-    "cat-whisperer"
+    "cat-whisperer",
+    "ewanc26",
+    "keithnery",
+    "waldenmeditation",
+    "dev-taherm",
+    "wiyseful",
+    "wayy10"
   ],
   "history": [
     {
@@ -3461,6 +3473,60 @@
       "company": "App",
       "repo": "https://app.skillsync.com",
       "sent_date": "2026-11-25T19:24:07.776213+00:00"
+    },
+    {
+      "username": "ewanc26",
+      "email": "contact@ewancroft.uk",
+      "track": "segment_agency",
+      "lead_source": "agency_org_search",
+      "company": "shut.croft.click",
+      "repo": "ewanc26/shut",
+      "sent_date": "2026-11-26T03:37:59.239765+00:00"
+    },
+    {
+      "username": "keithnery",
+      "email": "keithneryprof@gmail.com",
+      "track": "segment_agency",
+      "lead_source": "agency_org_search",
+      "company": "keithnery.github.io",
+      "repo": "keithnery/FOLIO",
+      "sent_date": "2026-11-26T03:38:09.980625+00:00"
+    },
+    {
+      "username": "waldenmeditation",
+      "email": "hello@walden.us",
+      "track": "segment_ecom",
+      "lead_source": "ecom_brand_search",
+      "company": "walden-shopify-theme",
+      "repo": "waldenmeditation/walden-shopify-theme",
+      "sent_date": "2026-11-26T03:38:30.848671+00:00"
+    },
+    {
+      "username": "dev-taherm",
+      "email": "tahermahram0@gmail.com",
+      "track": "segment_ecom",
+      "lead_source": "ecom_brand_search",
+      "company": "tujjar.pixovagency.com",
+      "repo": "dev-taherm/Tujjar",
+      "sent_date": "2026-11-26T03:38:45.400279+00:00"
+    },
+    {
+      "username": "wiyseful",
+      "email": "jay@olumino.app",
+      "track": "segment_ai_saas",
+      "lead_source": "show_hn_launch",
+      "company": "Olumino",
+      "repo": "https://olumino.app",
+      "sent_date": "2026-11-26T03:39:02.395108+00:00"
+    },
+    {
+      "username": "wayy10",
+      "email": "ionmoisei755@gmail.com",
+      "track": "segment_ai_saas",
+      "lead_source": "show_hn_launch",
+      "company": "Just-dashboard",
+      "repo": "https://just-dashboard.com/",
+      "sent_date": "2026-11-26T03:39:15.485163+00:00"
     }
   ]
 }
