@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-26T17:02:15.502715+00:00",
+  "updated_at": "2026-11-27T01:48:19.629772+00:00",
   "suppressed_emails": [
     "paulalexeev10@gmail.com",
     "serge.lopes.94@free.fr",
@@ -381,7 +381,11 @@
     "contact@liaison.sh",
     "priyanshukumarthakur937@gmail.com",
     "hello@myscreenbreak.com",
-    "you@studio.com"
+    "you@studio.com",
+    "selvagant@gmail.com",
+    "hello@leadcms.ai",
+    "hello@glassveil.app",
+    "shields@conformal.co"
   ],
   "contacted_users": [
     "bennyjo",
@@ -752,7 +756,11 @@
     "liaison-sh",
     "gravion-ux",
     "yorgos_kats",
-    "micahele"
+    "micahele",
+    "intxdv",
+    "leadcms",
+    "ftwelve",
+    "avrecum"
   ],
   "history": [
     {
@@ -3593,6 +3601,42 @@
       "company": "AutoCaptions",
       "repo": "https://autocaptions.cc",
       "sent_date": "2026-11-26T17:02:15.502692+00:00"
+    },
+    {
+      "username": "intxdv",
+      "email": "selvagant@gmail.com",
+      "track": "segment_agency",
+      "lead_source": "agency_org_search",
+      "company": "Diponegoro University",
+      "repo": "intxdv/adventure-log",
+      "sent_date": "2026-11-27T01:47:04.644533+00:00"
+    },
+    {
+      "username": "leadcms",
+      "email": "hello@leadcms.ai",
+      "track": "segment_agency",
+      "lead_source": "agency_org_search",
+      "company": "leadcms.ai",
+      "repo": "LeadCMS/leadcms.core",
+      "sent_date": "2026-11-27T01:47:15.600911+00:00"
+    },
+    {
+      "username": "ftwelve",
+      "email": "hello@glassveil.app",
+      "track": "segment_ai_saas",
+      "lead_source": "show_hn_launch",
+      "company": "Glassveil",
+      "repo": "https://glassveil.app",
+      "sent_date": "2026-11-27T01:48:08.298467+00:00"
+    },
+    {
+      "username": "avrecum",
+      "email": "shields@conformal.co",
+      "track": "segment_ai_saas",
+      "lead_source": "show_hn_launch",
+      "company": "Shirudo.today",
+      "repo": "https://shirudo.today/blog/launch.html",
+      "sent_date": "2026-11-27T01:48:19.629748+00:00"
     }
   ]
 }
