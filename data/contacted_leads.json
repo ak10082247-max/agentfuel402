@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-27T01:48:19.629772+00:00",
+  "updated_at": "2026-11-27T12:36:50.775522+00:00",
   "suppressed_emails": [
     "paulalexeev10@gmail.com",
     "serge.lopes.94@free.fr",
@@ -385,7 +385,13 @@
     "selvagant@gmail.com",
     "hello@leadcms.ai",
     "hello@glassveil.app",
-    "shields@conformal.co"
+    "shields@conformal.co",
+    "xingyuliu@outlook.sg",
+    "nnyad90@gmail.com",
+    "hello@virling.com",
+    "builder@hintwise.org",
+    "anna@mail.com",
+    "hello@moonlightclues.com"
   ],
   "contacted_users": [
     "bennyjo",
@@ -760,7 +766,13 @@
     "intxdv",
     "leadcms",
     "ftwelve",
-    "avrecum"
+    "avrecum",
+    "hxlog",
+    "miadninezero",
+    "virling",
+    "pisan-labs",
+    "appetizersnack",
+    "shreshthdugar"
   ],
   "history": [
     {
@@ -3637,6 +3649,60 @@
       "company": "Shirudo.today",
       "repo": "https://shirudo.today/blog/launch.html",
       "sent_date": "2026-11-27T01:48:19.629748+00:00"
+    },
+    {
+      "username": "hxlog",
+      "email": "xingyuliu@outlook.sg",
+      "track": "segment_agency",
+      "lead_source": "agency_org_search",
+      "company": "prologue.dev",
+      "repo": "hxlog/prologue.dev",
+      "sent_date": "2026-11-27T12:35:38.947674+00:00"
+    },
+    {
+      "username": "miadninezero",
+      "email": "nnyad90@gmail.com",
+      "track": "segment_agency",
+      "lead_source": "agency_org_search",
+      "company": "mess-meal-system-web-02.vercel.app",
+      "repo": "miadninezero/mess-meal-system-web-02",
+      "sent_date": "2026-11-27T12:35:50.956100+00:00"
+    },
+    {
+      "username": "virling",
+      "email": "hello@virling.com",
+      "track": "segment_ecom",
+      "lead_source": "ecom_brand_search",
+      "company": "virling.com",
+      "repo": "virling/virling",
+      "sent_date": "2026-11-27T12:36:07.726775+00:00"
+    },
+    {
+      "username": "pisan-labs",
+      "email": "builder@hintwise.org",
+      "track": "segment_ecom",
+      "lead_source": "ecom_brand_search",
+      "company": "misrepresentation-preflight.hintwise.org",
+      "repo": "pisan-labs/misrepresentation-preflight",
+      "sent_date": "2026-11-27T12:36:18.895883+00:00"
+    },
+    {
+      "username": "appetizersnack",
+      "email": "anna@mail.com",
+      "track": "segment_ai_saas",
+      "lead_source": "show_hn_launch",
+      "company": "Slashanywhere",
+      "repo": "https://slashanywhere.com",
+      "sent_date": "2026-11-27T12:36:36.916133+00:00"
+    },
+    {
+      "username": "shreshthdugar",
+      "email": "hello@moonlightclues.com",
+      "track": "segment_ai_saas",
+      "lead_source": "show_hn_launch",
+      "company": "Moonlight",
+      "repo": "https://moonlight-1038733794937.asia-south1.run.app/",
+      "sent_date": "2026-11-27T12:36:50.775502+00:00"
     }
   ]
 }
