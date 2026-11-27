@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-27T12:36:50.775522+00:00",
+  "updated_at": "2026-11-27T23:31:44.817912+00:00",
   "suppressed_emails": [
     "paulalexeev10@gmail.com",
     "serge.lopes.94@free.fr",
@@ -391,7 +391,13 @@
     "hello@virling.com",
     "builder@hintwise.org",
     "anna@mail.com",
-    "hello@moonlightclues.com"
+    "hello@moonlightclues.com",
+    "hello@kir-dev.hu",
+    "halitsever@protonmail.com",
+    "hello@kioskthemes.com",
+    "contact@dragwyb.com",
+    "engineering@the-lean-startup.com",
+    "hello@usecodela.com"
   ],
   "contacted_users": [
     "bennyjo",
@@ -772,7 +778,13 @@
     "virling",
     "pisan-labs",
     "appetizersnack",
-    "shreshthdugar"
+    "shreshthdugar",
+    "kir-dev",
+    "halitsever",
+    "mrronniee",
+    "dragwyb",
+    "sturza",
+    "subomig"
   ],
   "history": [
     {
@@ -3703,6 +3715,60 @@
       "company": "Moonlight",
       "repo": "https://moonlight-1038733794937.asia-south1.run.app/",
       "sent_date": "2026-11-27T12:36:50.775502+00:00"
+    },
+    {
+      "username": "kir-dev",
+      "email": "hello@kir-dev.hu",
+      "track": "segment_agency",
+      "lead_source": "agency_org_search",
+      "company": "kir-dev.hu",
+      "repo": "kir-dev/kir-dev.hu",
+      "sent_date": "2026-11-27T23:30:36.125567+00:00"
+    },
+    {
+      "username": "halitsever",
+      "email": "halitsever@protonmail.com",
+      "track": "segment_agency",
+      "lead_source": "agency_org_search",
+      "company": "projects.halit.org",
+      "repo": "halitsever/shotscreen",
+      "sent_date": "2026-11-27T23:30:46.605608+00:00"
+    },
+    {
+      "username": "mrronniee",
+      "email": "hello@kioskthemes.com",
+      "track": "segment_ecom",
+      "lead_source": "ecom_brand_search",
+      "company": "kioskthemes.com",
+      "repo": "Mrronniee/flyer-theme",
+      "sent_date": "2026-11-27T23:31:08.150794+00:00"
+    },
+    {
+      "username": "dragwyb",
+      "email": "contact@dragwyb.com",
+      "track": "segment_ecom",
+      "lead_source": "ecom_brand_search",
+      "company": "Dragwyb",
+      "repo": "Dragwyb/translatesense",
+      "sent_date": "2026-11-27T23:31:19.058928+00:00"
+    },
+    {
+      "username": "sturza",
+      "email": "engineering@the-lean-startup.com",
+      "track": "segment_ai_saas",
+      "lead_source": "show_hn_launch",
+      "company": "Statusmeter",
+      "repo": "https://statusmeter.web.app/",
+      "sent_date": "2026-11-27T23:31:34.376066+00:00"
+    },
+    {
+      "username": "subomig",
+      "email": "hello@usecodela.com",
+      "track": "segment_ai_saas",
+      "lead_source": "show_hn_launch",
+      "company": "Usecodela",
+      "repo": "https://usecodela.com/",
+      "sent_date": "2026-11-27T23:31:44.817888+00:00"
     }
   ]
 }
