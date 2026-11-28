@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-27T23:31:44.817912+00:00",
+  "updated_at": "2026-11-28T07:58:45.952075+00:00",
   "suppressed_emails": [
     "paulalexeev10@gmail.com",
     "serge.lopes.94@free.fr",
@@ -397,7 +397,13 @@
     "hello@kioskthemes.com",
     "contact@dragwyb.com",
     "engineering@the-lean-startup.com",
-    "hello@usecodela.com"
+    "hello@usecodela.com",
+    "contact@dessinemoiunalpaga.com",
+    "your@email.com",
+    "developers@apideck.com",
+    "rodrigo.gabirobertz@gmail.com",
+    "rb9087988@gmail.com",
+    "hello@statementflow.win"
   ],
   "contacted_users": [
     "bennyjo",
@@ -784,7 +790,13 @@
     "mrronniee",
     "dragwyb",
     "sturza",
-    "subomig"
+    "subomig",
+    "dessine-moi-un-alpaga",
+    "ranakhan77",
+    "apideck-libraries",
+    "gabrtzweb",
+    "linford168",
+    "wangguode"
   ],
   "history": [
     {
@@ -3769,6 +3781,60 @@
       "company": "Usecodela",
       "repo": "https://usecodela.com/",
       "sent_date": "2026-11-27T23:31:44.817888+00:00"
+    },
+    {
+      "username": "dessine-moi-un-alpaga",
+      "email": "contact@dessinemoiunalpaga.com",
+      "track": "segment_agency",
+      "lead_source": "agency_org_search",
+      "company": "dessinemoiunalpaga.com",
+      "repo": "Dessine-Moi-un-Alpaga/website",
+      "sent_date": "2026-11-28T07:57:27.059506+00:00"
+    },
+    {
+      "username": "ranakhan77",
+      "email": "your@email.com",
+      "track": "segment_agency",
+      "lead_source": "agency_org_search",
+      "company": "2MNY",
+      "repo": "RanaKhan77/Website-Vulnerability-Scanner",
+      "sent_date": "2026-11-28T07:57:38.671069+00:00"
+    },
+    {
+      "username": "apideck-libraries",
+      "email": "developers@apideck.com",
+      "track": "segment_ecom",
+      "lead_source": "ecom_brand_search",
+      "company": "developers.apideck.com",
+      "repo": "apideck-libraries/api-skills",
+      "sent_date": "2026-11-28T07:58:01.992328+00:00"
+    },
+    {
+      "username": "gabrtzweb",
+      "email": "rodrigo.gabirobertz@gmail.com",
+      "track": "segment_ecom",
+      "lead_source": "ecom_brand_search",
+      "company": "Flamma Digital",
+      "repo": "gabrtzweb/flamma-digital",
+      "sent_date": "2026-11-28T07:58:15.959637+00:00"
+    },
+    {
+      "username": "linford168",
+      "email": "rb9087988@gmail.com",
+      "track": "segment_ai_saas",
+      "lead_source": "show_hn_launch",
+      "company": "Beardstylesformen",
+      "repo": "https://beardstylesformen.org/beard-design/",
+      "sent_date": "2026-11-28T07:58:34.134491+00:00"
+    },
+    {
+      "username": "wangguode",
+      "email": "hello@statementflow.win",
+      "track": "segment_ai_saas",
+      "lead_source": "show_hn_launch",
+      "company": "HardCall",
+      "repo": "https://hardcall.statementflow.win",
+      "sent_date": "2026-11-28T07:58:45.952051+00:00"
     }
   ]
 }
